@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, LayoutChangeEvent, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { v4 as uuid } from 'uuid';
 
 import { PdfWebView } from '@/components/pdf-webview';
@@ -12,9 +12,10 @@ import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLectures } from '@/hooks/use-lectures';
+import { usePracticeExams } from '@/hooks/use-practice-exams';
 import { useSessions } from '@/hooks/use-sessions';
-import { buildLectureChunks, ExtractedPdfPage, extractPdfText, generateReadinessAndRoadmap, generateStudyPlan } from '@/lib/openai';
-import { countLectureChunks, createSession, deleteLectureChunksForLecture, getSupabase, saveLectureInsights, saveStudyPlanEntries, updateLectureFileText, updateLectureNotes, updateLecturePlanStatus, upsertLectureChunks } from '@/lib/supabase';
+import { buildLectureChunks, ExtractedPdfPage, extractPdfText, generatePracticeExam, generateReadinessAndRoadmap, generateStudyPlan } from '@/lib/openai';
+import { countLectureChunks, createSession, deleteLecture, deleteLectureChunksForLecture, getLectureTotalCost, getSupabase, saveLectureInsights, saveStudyPlanEntries, updateLectureFileText, updateLectureNotes, updateLecturePlanStatus, upsertLectureChunks } from '@/lib/supabase';
 import { RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 
 const stripCodeFences = (text: string) => {
@@ -28,6 +29,7 @@ export default function LectureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: lectures = [], isFetching, refetch } = useLectures();
   const { data: sessions = [], refetch: refetchSessions } = useSessions();
+  const { data: practiceExams = [], refetch: refetchPracticeExams, isFetching: loadingPracticeExams } = usePracticeExams(id);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { t, agentLanguage } = useLanguage();
@@ -44,6 +46,17 @@ export default function LectureDetailScreen() {
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [insightError, setInsightError] = useState<string | null>(null);
   const [categoryOpen, setCategoryOpen] = useState<Record<string, boolean>>({});
+  const [lectureCost, setLectureCost] = useState<number | null>(null);
+  const [creatingPracticeExam, setCreatingPracticeExam] = useState(false);
+  const [questionCount, setQuestionCount] = useState('5');
+  const [deletingLecture, setDeletingLecture] = useState(false);
+
+  // Refs for scroll-to functionality
+  const scrollViewRef = useRef<ScrollView>(null);
+  const entryPositionsRef = useRef<Record<string, number>>({});
+  
+  // Track previous passed count to detect when a topic is newly passed
+  const prevPassedCountRef = useRef<number | null>(null);
 
   const lecture = useMemo(() => lectures.find((l) => l.id === id), [lectures, id]);
   
@@ -72,6 +85,14 @@ export default function LectureDetailScreen() {
   useEffect(() => {
     refetchSessions();
   }, [refetchSessions]);
+
+  // Fetch lecture total cost
+  useEffect(() => {
+    if (!id) return;
+    getLectureTotalCost(id)
+      .then((cost) => setLectureCost(cost))
+      .catch((err) => console.warn('[lecture] failed to fetch cost', err));
+  }, [id]);
 
   useEffect(() => {
     if (!lecture) return;
@@ -186,6 +207,66 @@ export default function LectureDetailScreen() {
     setStartingSession(null);
   };
 
+  const goToPracticeExam = useCallback((examId: string) => {
+    if (!lecture) return;
+    router.push(`/practice/${examId}?lectureId=${lecture.id}`);
+  }, [lecture, router]);
+
+  const handleGeneratePracticeExam = useCallback(async () => {
+    if (!lecture) return;
+    setCreatingPracticeExam(true);
+    try {
+      const parsedCount = Math.max(1, Math.min(20, parseInt(questionCount, 10) || 5));
+      const result = await generatePracticeExam({
+        lectureId: lecture.id,
+        questionCount: parsedCount,
+        language: agentLanguage,
+        title: `${lecture.title} Practice Exam`,
+      });
+      if (result.practiceExamId) {
+        await refetchPracticeExams();
+      }
+      Alert.alert(t('practiceExam.createdTitle'), t('practiceExam.createdBody'));
+    } catch (err) {
+      console.warn('[lecture] practice exam generation failed', err);
+      Alert.alert(t('common.errorGeneric'), t('practiceExam.errorCreating'));
+    } finally {
+      setCreatingPracticeExam(false);
+    }
+  }, [agentLanguage, lecture, questionCount, refetchPracticeExams, t]);
+
+  const performDeleteLecture = useCallback(async () => {
+    if (!lecture) return;
+    setDeletingLecture(true);
+    try {
+      await deleteLecture(lecture.id, lecture.files);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['lectures'] }),
+        queryClient.invalidateQueries({ queryKey: ['sessions'] }),
+        queryClient.invalidateQueries({ queryKey: ['practice-exams', lecture.id] }),
+      ]);
+      Alert.alert(t('lectureDetail.deleteSuccessTitle'), t('lectureDetail.deleteSuccessBody'));
+      router.replace('/');
+    } catch (err) {
+      console.warn('[lecture] delete failed', err);
+      Alert.alert(t('common.errorGeneric'), t('lectureDetail.deleteError'));
+    } finally {
+      setDeletingLecture(false);
+    }
+  }, [lecture, queryClient, router, t]);
+
+  const confirmDeleteLecture = useCallback(() => {
+    if (!lecture || deletingLecture) return;
+    Alert.alert(
+      t('lectureDetail.deleteTitle'),
+      t('lectureDetail.deleteConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('lectureDetail.deleteConfirmCta'), style: 'destructive', onPress: performDeleteLecture },
+      ]
+    );
+  }, [deletingLecture, lecture, performDeleteLecture, t]);
+
   const generatePlan = async () => {
     if (!lecture || lecture.files.length === 0) {
       Alert.alert(t('lectureDetail.alert.noMaterialsTitle'), t('lectureDetail.alert.noMaterialsBody'));
@@ -283,17 +364,21 @@ export default function LectureDetailScreen() {
       // Step 2: Generate study plan
       setGenerationProgress(t('lectureDetail.generating'));
 
-      let studyPlanEntries: Awaited<ReturnType<typeof generateStudyPlan>> = [];
+      let studyPlanEntries: Awaited<ReturnType<typeof generateStudyPlan>>['entries'] = [];
+      let planCostUsd: number | undefined;
       
       if (hasExtractedText) {
-        studyPlanEntries = await generateStudyPlan(extractedTexts, agentLanguage, {
+        const planResult = await generateStudyPlan(extractedTexts, agentLanguage, {
           additionalNotes: notesForPlan || undefined,
           thresholds: GOAL_THRESHOLDS,
+          lectureId,
         });
+        studyPlanEntries = planResult.entries;
+        planCostUsd = planResult.costUsd;
       } else {
         // Fallback: generate based on file names
         console.log('[lecture] No text extracted, generating plan from file names');
-        studyPlanEntries = await generateStudyPlan(
+        const planResult = await generateStudyPlan(
           lecture.files.map(f => ({ 
             fileName: f.name, 
             text: `PDF Document: ${f.name}. This file covers topics related to ${f.name.replace('.pdf', '').replace(/[-_]/g, ' ')}.`,
@@ -303,8 +388,11 @@ export default function LectureDetailScreen() {
           {
             additionalNotes: notesForPlan || undefined,
             thresholds: GOAL_THRESHOLDS,
+            lectureId,
           }
         );
+        studyPlanEntries = planResult.entries;
+        planCostUsd = planResult.costUsd;
       }
 
       // Step 3: Save study plan to database
@@ -332,6 +420,7 @@ export default function LectureDetailScreen() {
       console.log('[lecture] study plan generation succeeded', {
         lectureId,
         entries: studyPlanEntries.length,
+        costUsd: planCostUsd,
         durationMs: Date.now() - generationStartedAt,
       });
       Alert.alert('Success', `Study plan created with ${studyPlanEntries.length} topics!`);
@@ -378,6 +467,37 @@ export default function LectureDetailScreen() {
   const toggleCategory = useCallback((category: string) => {
     setCategoryOpen((prev) => ({ ...prev, [category]: !prev[category] }));
   }, []);
+
+  // Record position of a study plan entry for scroll-to
+  const handleEntryLayout = useCallback((entryId: string, event: LayoutChangeEvent) => {
+    const { y } = event.nativeEvent.layout;
+    entryPositionsRef.current[entryId] = y;
+  }, []);
+
+  // Scroll to a study plan entry by matching title
+  const scrollToEntry = useCallback((roadmapTitle: string) => {
+    if (!orderedPlan || orderedPlan.length === 0) return;
+    
+    // Find matching entry by title (case-insensitive)
+    const normalizedTitle = roadmapTitle.toLowerCase().trim();
+    const matchingEntry = orderedPlan.find(
+      (entry) => entry.title.toLowerCase().trim() === normalizedTitle
+    );
+    
+    if (matchingEntry) {
+      // Open the category containing this entry
+      const category = matchingEntry.category || 'General';
+      setCategoryOpen((prev) => ({ ...prev, [category]: true }));
+      
+      // Scroll to the entry after a brief delay to allow category to expand
+      setTimeout(() => {
+        const position = entryPositionsRef.current[matchingEntry.id];
+        if (position !== undefined && scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({ y: position - 100, animated: true });
+        }
+      }, 150);
+    }
+  }, [orderedPlan]);
 
   if (isFetching && !lecture) {
     return (
@@ -489,11 +609,28 @@ export default function LectureDetailScreen() {
     }
   }, [agentLanguage, lecture, notesDraft, orderedPlan, queryClient, sectionStatusCounts.failed, sectionStatusCounts.inProgress, sectionStatusCounts.notStarted, sectionStatusCounts.passed, t]);
 
+  // Only auto-refresh insights when a topic is newly passed (not on every visit)
   useEffect(() => {
-    if (hasStudyPlan && !readiness && !loadingInsights && orderedPlan.length > 0) {
+    if (!hasStudyPlan) {
+      prevPassedCountRef.current = null;
+      return;
+    }
+    
+    // On first render with section counts, store the initial value without refreshing
+    if (prevPassedCountRef.current === null) {
+      prevPassedCountRef.current = sectionStatusCounts.passed;
+      return;
+    }
+    
+    // If passed count increased, a topic was just passed - refresh insights
+    if (
+      sectionStatusCounts.passed > prevPassedCountRef.current &&
+      !loadingInsights
+    ) {
+      prevPassedCountRef.current = sectionStatusCounts.passed;
       refreshInsights();
     }
-  }, [hasStudyPlan, readiness, loadingInsights, orderedPlan.length, refreshInsights]);
+  }, [hasStudyPlan, sectionStatusCounts.passed, loadingInsights, refreshInsights]);
 
   const renderStatusBadge = (status: SectionStatus | undefined) => {
     const value = status ?? 'not_started';
@@ -540,13 +677,18 @@ export default function LectureDetailScreen() {
   const roadmapItems = roadmap ?? [];
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
       {/* Header Section */}
       <ThemedView style={styles.header}>
         <ThemedText type="title">{lecture.title}</ThemedText>
         <ThemedText style={styles.description}>
           {stripCodeFences(lecture.description) || t('lectureDetail.noDescription')}
         </ThemedText>
+        {typeof lectureCost === 'number' && lectureCost > 0 && (
+          <ThemedText style={styles.lectureCost}>
+            {t('lectureDetail.aiCost', { value: lectureCost.toFixed(4) })}
+          </ThemedText>
+        )}
         <View style={styles.sessionButtonsRow}>
           {existingFullSession ? (
             <>
@@ -596,6 +738,22 @@ export default function LectureDetailScreen() {
             </Pressable>
           )}
         </View>
+        <Pressable
+          style={[styles.deleteButton, deletingLecture && styles.buttonDisabled]}
+          onPress={confirmDeleteLecture}
+          disabled={deletingLecture}
+        >
+          {deletingLecture ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <>
+              <Ionicons name="trash" size={18} color="#fff" />
+              <ThemedText type="defaultSemiBold" style={styles.deleteButtonText}>
+                {t('lectureDetail.deleteButton')}
+              </ThemedText>
+            </>
+          )}
+        </Pressable>
       </ThemedView>
 
       <View style={styles.notesCard}>
@@ -695,11 +853,129 @@ export default function LectureDetailScreen() {
             </View>
           )}
 
+          {readiness?.priorityExplanation && (
+            <View style={styles.priorityExplanationCard}>
+              <View style={styles.priorityExplanationHeader}>
+                <Ionicons name="bulb" size={16} color="#f59e0b" />
+                <ThemedText type="defaultSemiBold" style={styles.priorityExplanationTitle}>
+                  {t('lectureDetail.priorityExplanation')}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.priorityExplanationText}>
+                {readiness.priorityExplanation}
+              </ThemedText>
+            </View>
+          )}
+
           {insightError && (
             <ThemedText style={styles.errorText}>{insightError}</ThemedText>
           )}
         </View>
       )}
+
+      <View style={styles.practiceExamCard}>
+        <View style={styles.sectionHeaderRow}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="clipboard" size={18} color="#0ea5e9" />
+            <ThemedText type="subtitle" style={styles.sectionTitle}>
+              {t('practiceExam.title')}
+            </ThemedText>
+          </View>
+          <Pressable
+            style={[
+              styles.regenerateButton,
+              (creatingPracticeExam || !lecture) && styles.buttonDisabled,
+            ]}
+            onPress={handleGeneratePracticeExam}
+            disabled={creatingPracticeExam || !lecture}
+          >
+            {creatingPracticeExam ? (
+              <ActivityIndicator color="#64748b" size="small" />
+            ) : (
+              <>
+                <Ionicons name="flash" size={16} color="#64748b" />
+                <ThemedText style={styles.regenerateButtonText}>
+                  {t('practiceExam.generate')}
+                </ThemedText>
+              </>
+            )}
+          </Pressable>
+        </View>
+        <ThemedText style={styles.sectionSubtitle}>
+          {t('practiceExam.description')}
+        </ThemedText>
+
+        <View style={styles.practiceExamControls}>
+          <View style={styles.practiceExamInputGroup}>
+            <ThemedText style={styles.practiceExamLabel}>{t('practiceExam.questionCount')}</ThemedText>
+            <TextInput
+              style={styles.practiceExamInput}
+              keyboardType="number-pad"
+              value={questionCount}
+              onChangeText={setQuestionCount}
+              editable={!creatingPracticeExam}
+              maxLength={2}
+              placeholder="5"
+              placeholderTextColor={palette.textMuted}
+            />
+          </View>
+          {creatingPracticeExam && (
+            <View style={styles.practiceExamStatusRow}>
+              <ActivityIndicator color={palette.primary} size="small" />
+              <ThemedText style={styles.practiceExamStatusText}>
+                {t('practiceExam.generating')}
+              </ThemedText>
+            </View>
+          )}
+        </View>
+
+        {loadingPracticeExams ? (
+          <ActivityIndicator color={palette.primary} />
+        ) : practiceExams.length === 0 ? (
+          <ThemedText style={styles.sectionSubtitle}>{t('practiceExam.empty')}</ThemedText>
+        ) : (
+          practiceExams.map((exam) => (
+            <Pressable
+              key={exam.id}
+              style={styles.practiceExamItem}
+              onPress={() => goToPracticeExam(exam.id)}
+              disabled={exam.status === 'failed' || exam.status === 'pending'}
+            >
+              <View style={styles.practiceExamItemHeader}>
+                <ThemedText type="defaultSemiBold" style={styles.practiceExamTitle}>
+                  {exam.title}
+                </ThemedText>
+                <View style={[
+                  styles.practiceExamBadge,
+                  exam.status === 'completed'
+                    ? styles.practiceExamBadgeSuccess
+                    : exam.status === 'ready'
+                    ? styles.practiceExamBadgeReady
+                    : exam.status === 'in_progress'
+                    ? styles.practiceExamBadgeInProgress
+                    : exam.status === 'failed'
+                    ? styles.practiceExamBadgeFailed
+                    : styles.practiceExamBadgePending,
+                ]}>
+                  <ThemedText style={styles.practiceExamBadgeText}>
+                    {t(`practiceExam.status.${exam.status}`)}
+                  </ThemedText>
+                </View>
+              </View>
+              <ThemedText style={styles.practiceExamMeta}>
+                {t('practiceExam.meta', {
+                  count: exam.questionCount,
+                  score: exam.score ?? 0,
+                  created: new Date(exam.createdAt).toLocaleDateString(),
+                })}
+              </ThemedText>
+              {exam.error && (
+                <ThemedText style={styles.errorText}>{exam.error}</ThemedText>
+              )}
+            </Pressable>
+          ))
+        )}
+      </View>
 
       {(isPlanPending || isPlanFailed) && (
         <View style={[styles.planStatusCard, isPlanPending ? styles.planPendingCard : styles.planFailedCard]}>
@@ -827,8 +1103,18 @@ export default function LectureDetailScreen() {
               </ThemedText>
             )}
 
+            {roadmapItems.length > 0 && (
+              <ThemedText style={styles.tapToScrollHint}>
+                {t('lectureDetail.tapToScroll')}
+              </ThemedText>
+            )}
+
             {roadmapItems.map((step) => (
-              <View key={`${step.order}-${step.title}`} style={styles.roadmapCard}>
+              <Pressable 
+                key={`${step.order}-${step.title}`} 
+                style={styles.roadmapCard}
+                onPress={() => scrollToEntry(step.title)}
+              >
                 <View style={styles.roadmapHeader}>
                   <View style={styles.orderBadge}>
                     <ThemedText style={styles.orderBadgeText}>{step.order}</ThemedText>
@@ -870,6 +1156,14 @@ export default function LectureDetailScreen() {
                     {step.reason}
                   </ThemedText>
                 )}
+                {step.examTopics && step.examTopics.length > 0 && (
+                  <View style={styles.examTopicsRow}>
+                    <Ionicons name="school" size={12} color={palette.warning} />
+                    <ThemedText style={styles.examTopicsText}>
+                      {t('lectureDetail.examTopicBadge')}: {step.examTopics.join(', ')}
+                    </ThemedText>
+                  </View>
+                )}
                 <View style={styles.roadmapMetaRow}>
                   {step.category && (
                     <ThemedText style={styles.roadmapMetaText}>
@@ -882,7 +1176,7 @@ export default function LectureDetailScreen() {
                     </ThemedText>
                   )}
                 </View>
-              </View>
+              </Pressable>
             ))}
           </View>
 
@@ -920,9 +1214,15 @@ export default function LectureDetailScreen() {
                       ? styles.tierBadgeTextHigh
                       : styles.tierBadgeTextCore;
                   const statusValue = (entry.status ?? 'not_started') as SectionStatus;
+                  const entrySession = existingEntrySessions[entry.id];
+                  const isEntryPassed = statusValue === 'passed';
 
                   return (
-                    <View key={entry.id} style={styles.studyPlanCard}>
+                    <View 
+                      key={entry.id} 
+                      style={styles.studyPlanCard}
+                      onLayout={(event) => handleEntryLayout(entry.id, event)}
+                    >
                       <View style={styles.studyPlanCardHeader}>
                         <View style={styles.orderBadge}>
                           <ThemedText style={styles.orderBadgeText}>{orderNumber}</ThemedText>
@@ -934,6 +1234,22 @@ export default function LectureDetailScreen() {
                             </ThemedText>
                             <View style={styles.entryBadgesRow}>
                                 {renderStatusBadge(statusValue)}
+                              {(entry.fromExamSource || entry.examRelevance === 'high') && (
+                                <View style={styles.examBadge}>
+                                  <Ionicons name="school" size={10} color="#f59e0b" />
+                                  <ThemedText style={styles.examBadgeText}>
+                                    {t('lectureDetail.examTopicBadge')}
+                                  </ThemedText>
+                                </View>
+                              )}
+                              {entry.mentionedInNotes && (
+                                <View style={styles.professorFocusBadge}>
+                                  <Ionicons name="star" size={10} color="#8b5cf6" />
+                                  <ThemedText style={styles.professorFocusBadgeText}>
+                                    {t('lectureDetail.professorFocus')}
+                                  </ThemedText>
+                                </View>
+                              )}
                               <View style={[styles.tierBadge, tierBadgeStyle]}>
                                 <ThemedText style={[styles.tierBadgeText, tierBadgeTextStyle]}>
                                   {tierLabel}
@@ -966,12 +1282,57 @@ export default function LectureDetailScreen() {
                         </View>
                       )}
 
-                      <View style={styles.entryButtonsRow}>
-                        {existingEntrySessions[entry.id] ? (
+                      <View
+                        style={[styles.entryButtonsRow, isEntryPassed && styles.passedActionsRow]}
+                      >
+                        {isEntryPassed ? (
+                          <>
+                            {entrySession && (
+                              <Pressable
+                                style={[
+                                  styles.reviewLinkButton,
+                                  startingSession === entry.id && styles.buttonDisabled,
+                                ]}
+                                onPress={() => continueSession(entrySession)}
+                                disabled={startingSession !== null}
+                              >
+                                {startingSession === entry.id ? (
+                                  <ActivityIndicator color={palette.primary} size="small" />
+                                ) : (
+                                  <>
+                                    <Ionicons name="play" size={14} color={palette.primary} />
+                                    <ThemedText style={styles.reviewLinkText}>
+                                      {t('lectureDetail.review')}
+                                    </ThemedText>
+                                  </>
+                                )}
+                              </Pressable>
+                            )}
+                            <Pressable
+                              style={[
+                                styles.startAgainLinkButton,
+                                startingSession === entry.id && styles.buttonDisabled,
+                              ]}
+                              onPress={() => startSession(entry, true)}
+                              disabled={startingSession !== null}
+                            >
+                              {startingSession === entry.id ? (
+                                <ActivityIndicator color={palette.textMuted} size="small" />
+                              ) : (
+                                <>
+                                  <Ionicons name="refresh" size={14} color={palette.textMuted} />
+                                  <ThemedText style={styles.startAgainLinkText}>
+                                    {t('lectureDetail.startAgain')}
+                                  </ThemedText>
+                                </>
+                              )}
+                            </Pressable>
+                          </>
+                        ) : entrySession ? (
                           <>
                             <Pressable
                               style={[styles.continueEntryButton, startingSession === entry.id && styles.buttonDisabled]}
-                              onPress={() => continueSession(existingEntrySessions[entry.id])}
+                              onPress={() => continueSession(entrySession)}
                               disabled={startingSession !== null}
                             >
                               {startingSession === entry.id ? (
@@ -1108,6 +1469,10 @@ const createStyles = (palette: typeof Colors.light) =>
       color: palette.textMuted,
       lineHeight: 22,
     },
+    lectureCost: {
+      color: palette.textMuted,
+      fontSize: 13,
+    },
     button: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1122,6 +1487,21 @@ const createStyles = (palette: typeof Colors.light) =>
     fullSessionButton: {
       backgroundColor: palette.primary,
       marginTop: 4,
+    },
+    deleteButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      backgroundColor: '#ef4444',
+      borderColor: '#ef4444',
+      borderWidth: 1,
+      borderRadius: Radii.md,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      alignSelf: 'flex-start',
+    },
+    deleteButtonText: {
+      color: '#fff',
     },
     sessionButtonsRow: {
       flexDirection: 'row',
@@ -1239,6 +1619,100 @@ const createStyles = (palette: typeof Colors.light) =>
       borderWidth: 1,
       borderColor: palette.border,
       ...Shadows.sm,
+    },
+    practiceExamCard: {
+      padding: Spacing.md,
+      gap: Spacing.sm,
+      borderRadius: Radii.lg,
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      ...Shadows.sm,
+    },
+    practiceExamControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      flexWrap: 'wrap',
+    },
+    practiceExamInputGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    practiceExamLabel: {
+      color: palette.textMuted,
+      fontSize: 13,
+    },
+    practiceExamInput: {
+      minWidth: 60,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: Radii.md,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.surfaceAlt,
+      color: palette.text,
+    },
+    practiceExamStatusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    practiceExamStatusText: {
+      color: palette.textMuted,
+      fontSize: 13,
+    },
+    practiceExamItem: {
+      paddingVertical: Spacing.sm,
+      borderBottomWidth: 1,
+      borderColor: palette.border,
+      gap: Spacing.xs,
+    },
+    practiceExamItemHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      justifyContent: 'space-between',
+    },
+    practiceExamTitle: {
+      fontSize: 15,
+      color: palette.text,
+      flex: 1,
+    },
+    practiceExamBadge: {
+      borderRadius: Radii.pill,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderWidth: 1,
+    },
+    practiceExamBadgeText: {
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    practiceExamBadgeSuccess: {
+      backgroundColor: `${palette.success}14`,
+      borderColor: `${palette.success}33`,
+    },
+    practiceExamBadgeReady: {
+      backgroundColor: `${palette.primary}14`,
+      borderColor: `${palette.primary}33`,
+    },
+    practiceExamBadgeInProgress: {
+      backgroundColor: `${palette.warning}12`,
+      borderColor: `${palette.warning}33`,
+    },
+    practiceExamBadgeFailed: {
+      backgroundColor: '#fee2e2',
+      borderColor: '#fca5a5',
+    },
+    practiceExamBadgePending: {
+      backgroundColor: `${palette.muted}12`,
+      borderColor: `${palette.muted}33`,
+    },
+    practiceExamMeta: {
+      color: palette.textMuted,
+      fontSize: 12,
     },
     readinessSummary: {
       color: palette.text,
@@ -1544,6 +2018,34 @@ const createStyles = (palette: typeof Colors.light) =>
       gap: Spacing.xs,
       marginTop: 4,
     },
+    passedActionsRow: {
+      alignItems: 'flex-start',
+      gap: Spacing.xs,
+    },
+    reviewLinkButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingVertical: 6,
+      paddingHorizontal: 0,
+    },
+    reviewLinkText: {
+      color: palette.primary,
+      fontWeight: '700',
+      fontSize: 14,
+    },
+    startAgainLinkButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingVertical: 6,
+      paddingHorizontal: 0,
+    },
+    startAgainLinkText: {
+      color: palette.textMuted,
+      fontWeight: '600',
+      fontSize: 13,
+    },
     startEntryButton: {
       flex: 1,
       flexDirection: 'row',
@@ -1666,5 +2168,77 @@ const createStyles = (palette: typeof Colors.light) =>
       color: palette.success,
       fontSize: 11,
       fontWeight: '500',
+    },
+    // New styles for exam badges and priority explanation
+    examBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: Radii.sm,
+      backgroundColor: '#fef3c7',
+      borderWidth: 1,
+      borderColor: '#fcd34d',
+    },
+    examBadgeText: {
+      color: '#b45309',
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    professorFocusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: Radii.sm,
+      backgroundColor: '#ede9fe',
+      borderWidth: 1,
+      borderColor: '#c4b5fd',
+    },
+    professorFocusBadgeText: {
+      color: '#6d28d9',
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    priorityExplanationCard: {
+      backgroundColor: `${palette.warning}08`,
+      borderRadius: Radii.md,
+      padding: Spacing.md,
+      marginTop: Spacing.sm,
+      borderWidth: 1,
+      borderColor: `${palette.warning}22`,
+      gap: Spacing.xs,
+    },
+    priorityExplanationHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    priorityExplanationTitle: {
+      color: '#b45309',
+      fontSize: 14,
+    },
+    priorityExplanationText: {
+      color: palette.text,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    tapToScrollHint: {
+      color: palette.textMuted,
+      fontSize: 12,
+      fontStyle: 'italic',
+      marginBottom: Spacing.xs,
+    },
+    examTopicsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      marginTop: Spacing.xs,
+    },
+    examTopicsText: {
+      color: '#b45309',
+      fontSize: 12,
     },
   });

@@ -24,6 +24,7 @@ export type HandwritingCanvasHandle = {
 };
 
 type Props = {
+  width?: number;
   height?: number;
   strokeColor?: string;
   strokeWidth?: number;
@@ -70,7 +71,7 @@ const eraserIntersectsStroke = (eraserPoint: Point, stroke: Stroke, eraserRadius
 };
 
 export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
-  ({ height = 420, strokeColor = '#0f172a', strokeWidth = 3, mode: initialMode = 'pen', onDrawingStart, onDrawingEnd, onStrokesChange, initialStrokes }, ref) => {
+  ({ width, height = 420, strokeColor = '#0f172a', strokeWidth = 3, mode: initialMode = 'pen', onDrawingStart, onDrawingEnd, onStrokesChange, initialStrokes }, ref) => {
     const [strokes, setStrokes] = useState<Stroke[]>(initialStrokes || []);
     const [currentMode, setCurrentMode] = useState<CanvasMode>(initialMode);
     const [currentColor, setCurrentColor] = useState(strokeColor);
@@ -224,8 +225,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       setStrokes: (newStrokes: CanvasStroke[]) => setStrokes(newStrokes),
     }), [strokes]);
 
+    // Build dynamic size styles
+    const sizeStyle = { height, ...(width ? { width } : {}) };
+
     return (
-      <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={[styles.container, { height }]}>
+      <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={[styles.container, sizeStyle]}>
         <GestureDetector gesture={combinedGesture}>
           <Animated.View style={styles.canvas}>
             {Array.from({ length: lineCount }).map((_, idx) => (

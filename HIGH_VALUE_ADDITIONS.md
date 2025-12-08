@@ -1,16 +1,16 @@
 # High-Value Feature Additions (ranked highest → lowest)
 
-1) Grounded, cited tutoring and answers  
+1) Grounded, cited tutoring and answers  (DONE)
    - Problem: the tutor sends full material text to OpenAI and replies without sources, so accuracy and trust depend on the model and token limits.  
    - Addition: store per-page/per-section embeddings in Supabase (pgvector), retrieve top chunks for `feynmanChat`, and render inline citations that jump to the PDF page and canvas area. Show a “source” chip beside AI turns and reuse `answerLinkId` markers for canvas linkage.  
    - Value: reduces hallucinations, cuts token costs, and lets students audit every claim.
 
-2) Move AI + ingestion to secure, queued edge functions  
+2) Move AI + ingestion to secure, queued edge functions  (DONE)
    - Problem: all OpenAI calls and plan generation happen on-device with public keys, heavy payloads, and no retries (`lib/openai.ts`, `app/lecture/new.tsx`).  
    - Addition: wrap `generateStudyPlan`, `evaluateAnswer`, `feynmanChat`, `transcribeAudio`, and `generateLectureMetadata` in Supabase Edge Functions/queue jobs (e.g., a `jobs` table + background worker). Emit status updates via Postgres changes to drive UI spinners instead of long client waits.  
    - Value: protects keys, stabilizes long jobs, enables throttling/observability, and keeps the app responsive.
 
-3) Adaptive mastery & spaced repetition loop  
+3) Adaptive mastery & spaced repetition loop  (DONE)
    - Problem: section statuses (`passed/failed/in_progress`) are recorded but not used to schedule practice.  
    - Addition: compute mastery scores per `StudyPlanEntry` from quiz results and recency; surface “review deck” cards, spaced intervals, and streaks. Generate daily quiz sets that mix weak/high-priority concepts, and nudge users to failed items first.  
    - Value: turns the study plan into an outcomes engine instead of a static list.
@@ -30,7 +30,7 @@
    - Addition: export session summaries (questions, feedback, canvas snapshots) to PDF/Markdown; allow sharing a read-only link with blurred personal data. Provide per-question “open in canvas” deep links and thumbnail previews in the chat list.  
    - Value: improves retention, collaboration with peers/tutors, and makes the work product portable.
 
-7) Voice-first and accessibility upgrades  
+7) Voice-first and accessibility upgrades  (DONE)
    - Problem: voice input exists but the tutor is not conversational-first and TTS is non-streaming.  
    - Addition: add streaming TTS, “listening” mode for follow-ups, captions for all audio, and large-toggle UI for stylus users. Add quick actions (“explain again simpler”, “give analogy”, “show formula”) to reduce typing.  
    - Value: faster interaction on mobile/tablet and better accessibility.

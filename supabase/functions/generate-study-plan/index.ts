@@ -14,6 +14,8 @@ type StudyPlanOptions = {
   thresholds?: { pass: number; good: number; ace: number };
 };
 
+type ExamRelevance = "high" | "medium" | "low";
+
 type StudyPlanEntry = {
   title: string;
   description?: string;
@@ -22,6 +24,9 @@ type StudyPlanEntry = {
   importanceTier: "core" | "high-yield" | "stretch";
   priorityScore: number;
   orderIndex: number;
+  fromExamSource?: boolean;
+  examRelevance?: ExamRelevance;
+  mentionedInNotes?: boolean;
 };
 
 const tierOrder: Record<StudyPlanEntry["importanceTier"], number> = {
@@ -50,6 +55,14 @@ const normalizePriority = (value: any, tier: StudyPlanEntry["importanceTier"]): 
     return Math.max(0, Math.min(100, Math.round(numeric)));
   }
   return defaultPriority[tier];
+};
+
+const normalizeExamRelevance = (value: any): ExamRelevance | undefined => {
+  const normalized = typeof value === "string" ? value.toLowerCase().trim() : "";
+  if (normalized === "high") return "high";
+  if (normalized === "medium") return "medium";
+  if (normalized === "low") return "low";
+  return undefined;
 };
 
 Deno.serve(async (req: Request) => {
@@ -138,6 +151,9 @@ Deno.serve(async (req: Request) => {
         const importanceTier = normalizeTier(item.importanceTier);
         const priorityScore = normalizePriority(item.priorityScore, importanceTier);
         const category = (item.category || "").toString().trim() || "General";
+        const fromExamSource = item.fromExamSource === true;
+        const examRelevance = normalizeExamRelevance(item.examRelevance);
+        const mentionedInNotes = item.mentionedInNotes === true;
 
         allEntries.push({
           title: sanitizeForDatabase(title),
@@ -147,6 +163,9 @@ Deno.serve(async (req: Request) => {
           importanceTier,
           priorityScore,
           orderIndex: allEntries.length,
+          fromExamSource: fromExamSource || undefined,
+          examRelevance: examRelevance || undefined,
+          mentionedInNotes: mentionedInNotes || undefined,
         });
       });
     }
@@ -167,11 +186,20 @@ Deno.serve(async (req: Request) => {
         : allEntries
             .map((entry, originalIndex) => ({ ...entry, originalIndex }))
             .sort((a, b) => {
+              // First: prioritize exam source and notes-mentioned items
+              const aExamBoost = (a.fromExamSource ? 2 : 0) + (a.examRelevance === "high" ? 1 : 0) + (a.mentionedInNotes ? 1 : 0);
+              const bExamBoost = (b.fromExamSource ? 2 : 0) + (b.examRelevance === "high" ? 1 : 0) + (b.mentionedInNotes ? 1 : 0);
+              if (aExamBoost !== bExamBoost) return bExamBoost - aExamBoost;
+              
+              // Then by tier
               const tierDelta =
                 tierOrder[a.importanceTier ?? "core"] - tierOrder[b.importanceTier ?? "core"];
               if (tierDelta !== 0) return tierDelta;
+              
+              // Then by priority score
               const priorityDelta = (b.priorityScore ?? 0) - (a.priorityScore ?? 0);
               if (priorityDelta !== 0) return priorityDelta;
+              
               return (a as any).originalIndex - (b as any).originalIndex;
             })
             .map((entry, idx) => {

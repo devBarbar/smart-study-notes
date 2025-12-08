@@ -11,6 +11,19 @@ type MarkdownTextProps = {
 };
 
 /**
+ * Normalize math notation so the markdown parser reliably emits math tokens.
+ * - Converts \( \) and \[ \] to $...$ / $$...$$
+ */
+const normalizeMathDelimiters = (raw: string) => {
+  if (!raw) return '';
+
+  // Handle common LaTeX delimiters that markdown-it-katex understands inconsistently
+  return raw
+    .replace(/\\\[(.+?)\\\]/gs, (_, inner) => `$$${inner}$$`)
+    .replace(/\\\((.+?)\\\)/gs, (_, inner) => `$${inner}$`);
+};
+
+/**
  * Renders markdown text with LaTeX math support.
  * - Inline math: $x^2$
  * - Block math: $$x^2 + y^2 = z^2$$
@@ -42,15 +55,16 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content }) => {
           math={node.content}
           style={styles.inlineMath}
           resizeMode="contain"
+          color={palette.accent}
         />
       ),
       math_block: (node) => (
         <View key={node.key} style={styles.blockMathWrapper}>
-          <MathView math={`\\displaystyle ${node.content}`} style={styles.blockMath} />
+          <MathView math={`\\displaystyle ${node.content}`} style={styles.blockMath} color={palette.accent} />
         </View>
       ),
     }),
-    []
+    [palette.accent]
   );
 
   const markdownStyles = useMemo(
@@ -94,7 +108,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content }) => {
 
   return (
     <Markdown markdownit={markdownIt} rules={renderRules} style={markdownStyles}>
-      {content || ''}
+      {normalizeMathDelimiters(content)}
     </Markdown>
   );
 };

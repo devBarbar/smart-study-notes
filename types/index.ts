@@ -37,6 +37,7 @@ export type RoadmapStep = {
   reason?: string;
   category?: string;
   estimatedMinutes?: number;
+  examTopics?: string[];
 };
 
 export type StudyReadiness = {
@@ -45,8 +46,11 @@ export type StudyReadiness = {
   ace: number;
   summary?: string;
   focusAreas?: string[];
+  priorityExplanation?: string;
   updatedAt?: string;
 };
+
+export type ExamRelevance = 'high' | 'medium' | 'low';
 
 export type StudyPlanEntry = {
   id: string;
@@ -61,6 +65,13 @@ export type StudyPlanEntry = {
   status?: SectionStatus;
   statusScore?: number;
   statusUpdatedAt?: string;
+  masteryScore?: number;
+  nextReviewAt?: string;
+  reviewCount?: number;
+  easeFactor?: number;
+  fromExamSource?: boolean;
+  examRelevance?: ExamRelevance;
+  mentionedInNotes?: boolean;
   createdAt: string;
 };
 
@@ -96,6 +107,14 @@ export type CanvasStrokeData = {
   width: number;
 };
 
+export type CanvasPage = {
+  id: string;
+  titleStrokes: CanvasStrokeData[];
+  strokes: CanvasStrokeData[];
+  width: number;
+  height: number;
+};
+
 export type StudySession = {
   id: string;
   materialId?: string;
@@ -104,7 +123,9 @@ export type StudySession = {
   title: string;
   status: StudySessionStatus;
   lastQuestionId?: string;
+  /** @deprecated Use canvasPages instead */
   canvasData?: CanvasStrokeData[];
+  canvasPages?: CanvasPage[];
   notesText?: string;
   createdAt: string;
 };
@@ -126,6 +147,7 @@ export type StudyAnswerLink = {
   id: string;
   sessionId: string;
   questionId: string;
+  pageId?: string;
   answerText?: string;
   answerImageUri?: string;
   canvasBounds?: CanvasBounds;
@@ -141,11 +163,48 @@ export type StudyChatMessage = {
   citations?: StudyCitation[];
 };
 
+export type PracticeExamStatus = 'pending' | 'ready' | 'in_progress' | 'completed' | 'failed';
+
+export type PracticeExam = {
+  id: string;
+  lectureId: string;
+  title: string;
+  status: PracticeExamStatus;
+  questionCount: number;
+  score?: number;
+  error?: string;
+  createdAt: string;
+  completedAt?: string;
+};
+
+export type PracticeExamQuestion = {
+  id: string;
+  practiceExamId: string;
+  studyPlanEntryId?: string;
+  orderIndex: number;
+  prompt: string;
+  answerKey?: string;
+  sourceType?: 'exam' | 'worksheet' | 'material';
+  sourceFileId?: string;
+  createdAt: string;
+};
+
+export type PracticeExamResponse = {
+  id: string;
+  practiceExamId: string;
+  questionId: string;
+  userAnswer?: string;
+  feedback?: StudyFeedback;
+  score?: number;
+  createdAt: string;
+};
+
 export type CanvasAnswerMarker = {
   questionId: string;
   questionIndex: number;
   messageId: string;
   answerLinkId: string;
+  pageId?: string;
   canvasBounds?: CanvasBounds;
 };
 
@@ -156,5 +215,28 @@ export type StudyCitation = {
   pageNumber?: number;
   similarity?: number;
   sourceBBox?: CanvasBounds;
+};
+
+export type ReviewQuality = 'correct' | 'incorrect' | 'partial' | 'skipped';
+
+export type ReviewEvent = {
+  id?: string;
+  studyPlanEntryId: string;
+  score?: number;
+  responseQuality?: ReviewQuality;
+  reviewedAt: string;
+};
+
+export type MasteryData = {
+  masteryScore: number;
+  nextReviewAt?: string;
+  reviewCount: number;
+  easeFactor: number;
+};
+
+export type StreakInfo = {
+  current: number;
+  longest: number;
+  lastReviewDate?: string;
 };
 

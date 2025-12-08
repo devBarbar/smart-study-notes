@@ -19,6 +19,13 @@ export type ChatMessage = {
 export type ExtractedPdfPage = { pageNumber: number; text: string };
 export type ExtractedPdfResult = { text: string; pages?: ExtractedPdfPage[]; pageCount?: number };
 
+const ensureKey = () => {
+  if (!OPENAI_API_KEY) {
+    throw new Error('Missing EXPO_PUBLIC_OPENAI_API_KEY for OpenAI calls.');
+  }
+  return OPENAI_API_KEY;
+};
+
 const callChat = async (content: ChatCompletionContent[]) => {
   ensureKey();
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -59,15 +66,19 @@ const sanitizeForDatabase = (text: string): string => {
     .trim();
 };
 
+export type AIActionResult<T> = T & { costUsd?: number };
+
 export const generateLectureMetadata = async (
   files: { name: string; notes?: string }[],
-  language: LanguageCode = 'en'
-): Promise<Pick<Lecture, 'title' | 'description'>> => {
-  const jobId = await enqueueJob('metadata', { files, language });
-  const data = await waitForJobResult<{ title?: string; description?: string }>(jobId);
+  language: LanguageCode = 'en',
+  lectureId?: string
+): Promise<AIActionResult<Pick<Lecture, 'title' | 'description'>>> => {
+  const jobId = await enqueueJob('metadata', { files, language, lectureId });
+  const data = await waitForJobResult<{ title?: string; description?: string; costUsd?: number }>(jobId);
   return {
     title: data?.title ?? 'New Lecture',
     description: data?.description ?? '',
+    costUsd: data?.costUsd,
   };
 };
 
@@ -97,14 +108,15 @@ type EvaluateAnswerParams = {
   question: StudyQuestion;
   answerText?: string;
   answerImageDataUrl?: string;
+  lectureId?: string;
 };
 
 export const evaluateAnswer = async (
-  { question, answerText, answerImageDataUrl }: EvaluateAnswerParams,
+  { question, answerText, answerImageDataUrl, lectureId }: EvaluateAnswerParams,
   language: LanguageCode = 'en'
-): Promise<StudyFeedback> => {
-  const jobId = await enqueueJob('grade', { question, answerText, answerImageDataUrl, language });
-  const data = await waitForJobResult<{ feedback?: StudyFeedback }>(jobId);
+): Promise<AIActionResult<StudyFeedback>> => {
+  const jobId = await enqueueJob('grade', { question, answerText, answerImageDataUrl, language, lectureId });
+  const data = await waitForJobResult<{ feedback?: StudyFeedback; costUsd?: number }>(jobId);
 
   if (data?.feedback) {
     return {
@@ -112,23 +124,29 @@ export const evaluateAnswer = async (
       correctness: data.feedback.correctness ?? 'unknown',
       score: data.feedback.score ?? undefined,
       improvements: data.feedback.improvements ?? [],
+      costUsd: data?.costUsd,
     };
   }
 
   return {
     summary: 'Evaluation failed',
     correctness: 'unknown',
+    costUsd: data?.costUsd,
   };
 };
 
 /**
  * Transcribe audio file to text using OpenAI Whisper API
  */
-export const transcribeAudio = async (audioUri: string, language: LanguageCode = 'en'): Promise<string> => {
+export const transcribeAudio = async (
+  audioUri: string,
+  language: LanguageCode = 'en',
+  lectureId?: string
+): Promise<AIActionResult<{ text: string }>> => {
   // Expect a remote URL or data URL for queued processing
-  const jobId = await enqueueJob('transcribe', { audioUrl: audioUri, language });
-  const data = await waitForJobResult<{ text?: string }>(jobId);
-  return data?.text ?? '';
+  const jobId = await enqueueJob('transcribe', { audioUrl: audioUri, language, lectureId });
+  const data = await waitForJobResult<{ text?: string; costUsd?: number }>(jobId);
+  return { text: data?.text ?? '', costUsd: data?.costUsd };
 };
 
 /**
@@ -277,12 +295,135 @@ export const embedQuery = async (text: string): Promise<number[]> => {
 export const feynmanChat = async (
   messages: ChatMessage[],
   materialContext: string,
-  language: LanguageCode = 'en'
-): Promise<string> => {
-  const jobId = await enqueueJob('chat', { messages, materialContext, language });
-  const data = await waitForJobResult<{ message?: string }>(jobId);
+  language: LanguageCode = 'en',
+  lectureId?: string
+): Promise<AIActionResult<{ message: string }>> => {
+  const jobId = await enqueueJob('chat', { messages, materialContext, language, lectureId });
+  const data = await waitForJobResult<{ message?: string; costUsd?: number }>(jobId);
 
-  return data?.message ?? '';
+  return { message: data?.message ?? '', costUsd: data?.costUsd };
+};
+
+export type StreamChatCallbacks = {
+  onChunk: (partialText: string) => void;
+  onDone?: (result: AIActionResult<{ message: string }>) => void;
+  onError?: (error: Error) => void;
+};
+
+/**
+ * Streaming version of feynmanChat that calls onChunk as tokens arrive
+ */
+export const streamFeynmanChat = async (
+  messages: ChatMessage[],
+  materialContext: string,
+  language: LanguageCode = 'en',
+  lectureId: string | undefined,
+  callbacks: StreamChatCallbacks
+): Promise<AIActionResult<{ message: string }>> => {
+  const supabase = getSupabase();
+  if (!supabase) throw new Error('Supabase client not configured.');
+
+  const jobId = await enqueueJob('chat', { messages, materialContext, language, lectureId });
+
+  return await new Promise<AIActionResult<{ message: string }>>((resolve, reject) => {
+    let settled = false;
+    let lastPartialResult = '';
+    const timeoutMs = 10 * 60 * 1000; // 10 minutes
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      channel.unsubscribe();
+      const error = new Error('Job timed out');
+      callbacks.onError?.(error);
+      reject(error);
+    }, timeoutMs);
+
+    const channel = supabase
+      .channel(`job-stream-${jobId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${jobId}` },
+        (payload) => {
+          if (settled) return;
+          const row = payload.new as any;
+
+          // Check for partial_result updates (streaming tokens)
+          if (row.partial_result && row.partial_result !== lastPartialResult) {
+            lastPartialResult = row.partial_result;
+            callbacks.onChunk(row.partial_result);
+          }
+
+          // Job completed successfully
+          if (row.status === 'succeeded') {
+            settled = true;
+            clearTimeout(timer);
+            channel.unsubscribe();
+            const result: AIActionResult<{ message: string }> = {
+              message: row.result?.message ?? lastPartialResult ?? '',
+              costUsd: row.result?.costUsd,
+            };
+            callbacks.onDone?.(result);
+            resolve(result);
+          }
+
+          // Job failed
+          if (row.status === 'failed') {
+            settled = true;
+            clearTimeout(timer);
+            channel.unsubscribe();
+            const error = new Error(row.error || 'Job failed');
+            callbacks.onError?.(error);
+            reject(error);
+          }
+        }
+      )
+      .subscribe(async (status) => {
+        if (status === 'CHANNEL_ERROR' && !settled) {
+          settled = true;
+          clearTimeout(timer);
+          channel.unsubscribe();
+          const error = new Error('Job channel error');
+          callbacks.onError?.(error);
+          reject(error);
+        }
+
+        // Once subscribed, check if job already completed (race condition)
+        if (status === 'SUBSCRIBED') {
+          const { data: current } = await supabase
+            .from('jobs')
+            .select('status,result,error,partial_result')
+            .eq('id', jobId)
+            .single();
+
+          if (settled) return;
+
+          if (current?.partial_result && current.partial_result !== lastPartialResult) {
+            lastPartialResult = current.partial_result;
+            callbacks.onChunk(current.partial_result);
+          }
+
+          if (current?.status === 'succeeded') {
+            settled = true;
+            clearTimeout(timer);
+            channel.unsubscribe();
+            const result: AIActionResult<{ message: string }> = {
+              message: current.result?.message ?? lastPartialResult ?? '',
+              costUsd: current.result?.costUsd,
+            };
+            callbacks.onDone?.(result);
+            resolve(result);
+          } else if (current?.status === 'failed') {
+            settled = true;
+            clearTimeout(timer);
+            channel.unsubscribe();
+            const error = new Error(current.error || 'Job failed');
+            callbacks.onError?.(error);
+            reject(error);
+          }
+        }
+      });
+  });
 };
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -463,6 +604,7 @@ type StudyPlanSource = { fileName: string; text: string; isExam?: boolean };
 type StudyPlanOptions = {
   additionalNotes?: string;
   thresholds?: { pass: number; good: number; ace: number };
+  lectureId?: string;
 };
 
 /**
@@ -472,13 +614,15 @@ export const generateStudyPlan = async (
   extractedTexts: StudyPlanSource[],
   language: LanguageCode = 'en',
   options: StudyPlanOptions = {}
-): Promise<Omit<StudyPlanEntry, 'id' | 'lectureId' | 'createdAt'>[]> => {
-  const jobId = await enqueueJob('plan', { extractedTexts, language, options });
+): Promise<AIActionResult<{ entries: Omit<StudyPlanEntry, 'id' | 'lectureId' | 'createdAt'>[] }>> => {
+  const { lectureId, ...rest } = options;
+  const jobId = await enqueueJob('plan', { extractedTexts, language, options: rest, lectureId });
   const data = await waitForJobResult<{
     entries?: Omit<StudyPlanEntry, 'id' | 'lectureId' | 'createdAt'>[];
+    costUsd?: number;
   }>(jobId);
 
-  return data?.entries ?? [];
+  return { entries: data?.entries ?? [], costUsd: data?.costUsd };
 };
 
 type RoadmapRequest = {
@@ -509,8 +653,20 @@ export const generateReadinessAndRoadmap = async (
     .join('\n');
 
   const notesBlock = additionalNotes
-    ? `Instructor / additional notes:\n${truncateToTokenLimit(additionalNotes, 2000)}\n`
+    ? `Instructor / additional notes (HIGH PRIORITY - topics mentioned here should be prioritized):\n${truncateToTokenLimit(additionalNotes, 2000)}\n`
     : '';
+
+  // Build enhanced plan summary with exam info
+  const enhancedPlanSummary = planEntries
+    .map((entry, idx) => {
+      const status = (entry.status ?? 'not_started').replace('_', ' ');
+      const examTag = entry.fromExamSource ? ' [EXAM TOPIC]' : (entry.examRelevance === 'high' ? ' [LIKELY EXAM]' : '');
+      const notesTag = entry.mentionedInNotes ? ' [PROF FOCUS]' : '';
+      return `${idx + 1}. ${entry.title}${examTag}${notesTag} [${entry.importanceTier ?? 'core'} | priority ${
+        entry.priorityScore ?? 0
+      } | status ${status}${entry.category ? ` | ${entry.category}` : ''}]`;
+    })
+    .join('\n');
 
   const prompt = `You are an exam readiness coach. Given a study plan with progress, produce an updated probability of achieving three goals and a focused roadmap that maximizes passing first, then solid (good), then ace.
 
@@ -526,15 +682,21 @@ Progress counts:
 - Failed: ${progress.failed}
 - Total sections: ${planEntries.length}
 
-Study plan entries:
-${planSummary || 'No plan entries provided.'}
+Study plan entries (note: [EXAM TOPIC] = from past exam, [LIKELY EXAM] = high exam relevance, [PROF FOCUS] = mentioned in instructor notes):
+${enhancedPlanSummary || 'No plan entries provided.'}
 
 ${notesBlock}
+
+IMPORTANT: 
+- Probabilities must satisfy: pass >= good >= ace (you can't ace without passing)
+- Items marked [EXAM TOPIC], [LIKELY EXAM], or [PROF FOCUS] should be given HIGHEST priority in the roadmap
+- Instructor notes indicate what the professor considers important - prioritize these heavily
 
 Return JSON ONLY with this shape:
 {
   "probabilities": { "pass": 0-100, "good": 0-100, "ace": 0-100 },
   "summary": "1-2 sentence overview",
+  "priorityExplanation": "2-3 sentences explaining WHY items are ordered this way, what factors drove the prioritization (exam topics, instructor notes, importance tier, etc.)",
   "focusAreas": ["short bullets to improve next"],
   "roadmap": [
     {
@@ -542,16 +704,19 @@ Return JSON ONLY with this shape:
       "title": "Topic or cluster",
       "action": "Specific next actions (1-2 sentences)",
       "target": "pass | good | ace",
-      "reason": "Why this now",
+      "reason": "Why this specific topic is prioritized at this position",
       "category": "Category name",
-      "estimatedMinutes": 20-90
+      "estimatedMinutes": 20-90,
+      "examTopics": ["list of exam-related topics covered here, if any"]
     }
   ]
 }
 
 Rules:
 - Put pass-critical items first, then steps toward good, then ace polish.
-- Keep roadmap to 5-8 steps max.`;
+- Prioritize items from past exams and instructor notes FIRST.
+- Keep roadmap to 5-8 steps max.
+- Each roadmap item's "reason" should explain why it's at that priority position.`;
 
   let parsed: any = null;
   try {
@@ -570,14 +735,25 @@ Rules:
     return fallback;
   };
 
+  // Parse probabilities first
+  let pass = clampPercent(parsed?.probabilities?.pass, fallbackPass);
+  let good = clampPercent(parsed?.probabilities?.good, fallbackGood);
+  let ace = clampPercent(parsed?.probabilities?.ace, fallbackAce);
+
+  // Enforce logical constraint: pass >= good >= ace
+  // (You can't ace if you can't pass; you can't do well if you can't pass)
+  good = Math.min(good, pass);
+  ace = Math.min(ace, good);
+
   const readiness: StudyReadiness = {
-    pass: clampPercent(parsed?.probabilities?.pass, fallbackPass),
-    good: clampPercent(parsed?.probabilities?.good, fallbackGood),
-    ace: clampPercent(parsed?.probabilities?.ace, fallbackAce),
+    pass,
+    good,
+    ace,
     summary: parsed?.summary || 'AI-estimated readiness based on current progress.',
     focusAreas: Array.isArray(parsed?.focusAreas)
       ? parsed.focusAreas.filter(Boolean).map((f: any) => String(f))
       : ['Focus on core topics first, then high-yield, then stretch.'],
+    priorityExplanation: parsed?.priorityExplanation || undefined,
     updatedAt: new Date().toISOString(),
   };
 
@@ -609,8 +785,31 @@ Rules:
           estimatedMinutes: Number.isFinite(Number(step.estimatedMinutes))
             ? Math.max(10, Math.min(180, Math.round(Number(step.estimatedMinutes))))
             : undefined,
+          examTopics: Array.isArray(step.examTopics)
+            ? step.examTopics.filter(Boolean).map((t: any) => String(t))
+            : undefined,
         }))
       : fallbackRoadmap;
 
   return { readiness, roadmap };
+};
+
+export const generatePracticeExam = async (params: {
+  lectureId: string;
+  questionCount?: number;
+  language?: LanguageCode;
+  title?: string;
+}) => {
+  const { lectureId, questionCount = 5, language = 'en', title } = params;
+  const { practiceExamId, jobId } = await callSupabaseFunction<{
+    practiceExamId: string;
+    jobId: string;
+  }>('generate-practice-exam', { lectureId, questionCount, language, title });
+
+  const result = await waitForJobResult<{ practiceExamId: string; questionCount: number }>(jobId);
+  return {
+    practiceExamId: result?.practiceExamId ?? practiceExamId,
+    questionCount: result?.questionCount ?? questionCount,
+    jobId,
+  };
 };

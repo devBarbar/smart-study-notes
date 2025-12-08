@@ -1,125 +1,135 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
+import { useMemo } from 'react';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+
+import { Colors, Radii, Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+
+import { ThemedText } from './themed-text';
 
 type Props = {
   uri: string;
 };
 
 export const PdfWebView = ({ uri }: Props) => {
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
-  const [useGoogleViewer, setUseGoogleViewer] = useState(true);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const colorScheme = useColorScheme();
+  const palette = Colors[colorScheme ?? 'light'];
+  const themedStyles = useMemo(() => createThemedStyles(palette), [palette]);
 
-  const displayUri = useMemo(() => {
+  const isWeb = Platform.OS === 'web';
+
+  const googleViewerUri = useMemo(() => {
     if (!uri) return '';
-    if (!useGoogleViewer) return uri;
     if (uri.includes('docs.google.com/gview')) return uri;
     return `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(uri)}`;
-  }, [uri, useGoogleViewer]);
-
-  useEffect(() => {
-    setLoaded(false);
-    setErrored(false);
-    setUseGoogleViewer(true);
-    
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    // Auto-hide spinner after 5 seconds as a fallback
-    // Google Docs viewer sometimes doesn't trigger onLoadEnd reliably
-    timeoutRef.current = setTimeout(() => {
-      setLoaded(true);
-    }, 5000);
-    
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
   }, [uri]);
 
-  return (
-    <View style={styles.container}>
-      {!loaded && !errored && (
-        <View style={styles.loading}>
-          <ActivityIndicator />
-        </View>
-      )}
-      {!errored ? (
-        <WebView
-          source={{ uri: displayUri }}
-          onLoadEnd={() => {
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-            }
-            setLoaded(true);
+  const openPdf = async () => {
+    if (isWeb) {
+      window.open(uri, '_blank');
+    } else {
+      // Opens in-app browser (Safari View Controller on iOS, Chrome Custom Tabs on Android)
+      await WebBrowser.openBrowserAsync(googleViewerUri);
+    }
+  };
+
+  // Web platform: use iframe with Google Docs viewer
+  if (isWeb) {
+    return (
+      <View style={styles.webContainer}>
+        <iframe
+          src={googleViewerUri}
+          style={{
+            flex: 1,
+            width: '100%',
+            height: '100%',
+            border: 'none',
           }}
-          onError={() => {
-            // Retry once without Google viewer; if already direct, surface error UI.
-            if (useGoogleViewer) {
-              setUseGoogleViewer(false);
-              setLoaded(false);
-            } else {
-              setErrored(true);
-              setLoaded(true);
-            }
-          }}
-          originWhitelist={['*']}
-          style={styles.webview}
-          scrollEnabled
-          allowsBackForwardNavigationGestures
+          title="PDF Viewer"
         />
-      ) : (
-        <View style={styles.errorBox}>
-          <Pressable onPress={() => Linking.openURL(uri)}>
-            <View style={styles.retry}>
-              <Text style={styles.errorText}>Open PDF in browser</Text>
-            </View>
-          </Pressable>
-        </View>
-      )}
-    </View>
+      </View>
+    );
+  }
+
+  // Native platforms (Expo Go compatible): show preview card with open button
+  return (
+    <Pressable onPress={openPdf} style={[styles.container, themedStyles.card]}>
+      <View style={themedStyles.iconContainer}>
+        <Ionicons name="document-text" size={48} color={palette.primary} />
+      </View>
+      <View style={styles.content}>
+        <ThemedText type="defaultSemiBold" style={themedStyles.title}>
+          PDF Document
+        </ThemedText>
+        <ThemedText tone="muted" style={styles.subtitle}>
+          Tap to view in browser
+        </ThemedText>
+      </View>
+      <View style={themedStyles.openButton}>
+        <Ionicons name="open-outline" size={20} color={palette.primary} />
+        <ThemedText type="defaultSemiBold" tone="primary">
+          Open
+        </ThemedText>
+      </View>
+    </Pressable>
   );
 };
 
+const createThemedStyles = (palette: typeof Colors.light) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
+    },
+    iconContainer: {
+      width: 72,
+      height: 72,
+      borderRadius: Radii.md,
+      backgroundColor: `${palette.primary}12`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    title: {
+      fontSize: 16,
+    },
+    openButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: Radii.md,
+      backgroundColor: `${palette.primary}12`,
+      borderWidth: 1,
+      borderColor: `${palette.primary}26`,
+    },
+  });
+
 const styles = StyleSheet.create({
   container: {
+    height: 100,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  webContainer: {
     height: 340,
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  webview: {
+  content: {
     flex: 1,
+    gap: 2,
   },
-  loading: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  errorBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    gap: 8,
-  },
-  retry: {
-    marginTop: 8,
-  },
-  errorText: {
-    color: '#0f172a',
-    fontWeight: '600',
+  subtitle: {
+    fontSize: 13,
   },
 });
 

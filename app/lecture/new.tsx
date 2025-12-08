@@ -227,24 +227,31 @@ export default function NewLectureScreen() {
 
       const embeddingsPromise = indexEmbeddings();
 
-        let studyPlanEntries: Awaited<ReturnType<typeof generateStudyPlan>> = [];
+        let studyPlanEntries: Awaited<ReturnType<typeof generateStudyPlan>>['entries'] = [];
+        let planCostUsd: number | undefined;
         try {
           if (extractionSucceeded) {
-            studyPlanEntries = await generateStudyPlan(extractedTexts, agentLanguage, {
+            const planResult = await generateStudyPlan(extractedTexts, agentLanguage, {
               additionalNotes: trimmedNotes || undefined,
               thresholds: { pass: 50, good: 70, ace: 80 },
+              lectureId,
             });
+            studyPlanEntries = planResult.entries;
+            planCostUsd = planResult.costUsd;
           } else {
             console.log('[lecture-new] PDF extraction failed, generating study plan from file names');
-            studyPlanEntries = await generateStudyPlan(
+            const planResult = await generateStudyPlan(
               files.map(f => ({ fileName: f.name, text: `File: ${f.name}`, isExam: Boolean(f.isExam) })),
               agentLanguage,
-              { additionalNotes: trimmedNotes || undefined, thresholds: { pass: 50, good: 70, ace: 80 } }
+              { additionalNotes: trimmedNotes || undefined, thresholds: { pass: 50, good: 70, ace: 80 }, lectureId }
             );
+            studyPlanEntries = planResult.entries;
+            planCostUsd = planResult.costUsd;
           }
           console.log('[lecture-new] study plan generation succeeded', {
             lectureId,
             entries: studyPlanEntries.length,
+            costUsd: planCostUsd,
             durationMs: Date.now() - generationStartedAt,
           });
 

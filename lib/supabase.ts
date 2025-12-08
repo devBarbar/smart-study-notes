@@ -1,10 +1,11 @@
-import { CanvasBounds, LanguageCode, Lecture, LectureFile, Material, PlanStatus, RoadmapStep, SectionStatus, StudyAnswerLink, StudyChatMessage, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
+import { CanvasBounds, CanvasPage, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 import { createClient, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const MATERIALS_BUCKET = 'materials';
 
 // Secure storage adapter for native platforms
 const ExpoSecureStoreAdapter = {
@@ -290,6 +291,7 @@ export const listSessions = async (): Promise<StudySession[]> => {
     status: row.status,
     lastQuestionId: row.last_question_id ?? undefined,
     canvasData: row.canvas_data ?? undefined,
+    canvasPages: (row.canvas_pages as CanvasPage[] | null) ?? undefined,
     notesText: row.notes_text ?? undefined,
     createdAt: row.created_at,
   }));
@@ -321,6 +323,7 @@ export const updateSession = async (sessionId: string, patch: Partial<StudySessi
   if (patch.lastQuestionId !== undefined) updateData.last_question_id = patch.lastQuestionId;
   if (patch.lectureId !== undefined) updateData.lecture_id = patch.lectureId;
   if (patch.canvasData !== undefined) updateData.canvas_data = patch.canvasData;
+  if (patch.canvasPages !== undefined) updateData.canvas_pages = patch.canvasPages;
   if (patch.notesText !== undefined) updateData.notes_text = patch.notesText;
   
   if (Object.keys(updateData).length === 0) return;
@@ -330,6 +333,27 @@ export const updateSession = async (sessionId: string, patch: Partial<StudySessi
 };
 
 export const getSupabase = () => supabase;
+
+const extractMaterialPath = (uri: string): string | null => {
+  if (!uri) return null;
+  if (uri.startsWith(`${MATERIALS_BUCKET}/`)) {
+    return uri.slice(MATERIALS_BUCKET.length + 1);
+  }
+
+  const marker = `/storage/v1/object/public/${MATERIALS_BUCKET}/`;
+  try {
+    const url = new URL(uri);
+    const idx = url.pathname.indexOf(marker);
+    if (idx >= 0) {
+      const path = url.pathname.slice(idx + marker.length);
+      return path || null;
+    }
+  } catch {
+    // uri is not a URL, ignore
+  }
+
+  return null;
+};
 
 export const listLectures = async (): Promise<Lecture[]> => {
   const client = ensureClient();
@@ -377,6 +401,13 @@ export const listLectures = async (): Promise<Lecture[]> => {
         status: (entry.status as SectionStatus | null) ?? 'not_started',
         statusScore: entry.status_score ?? undefined,
         statusUpdatedAt: entry.status_updated_at ?? undefined,
+        masteryScore: entry.mastery_score ?? undefined,
+        nextReviewAt: entry.next_review_at ?? undefined,
+        reviewCount: entry.review_count ?? undefined,
+        easeFactor: entry.ease_factor ?? undefined,
+        fromExamSource: entry.from_exam_source ?? false,
+        examRelevance: entry.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
+        mentionedInNotes: entry.mentioned_in_notes ?? false,
         createdAt: entry.created_at,
       }));
 
@@ -495,6 +526,33 @@ export const saveLectureFiles = async (lectureId: string, files: Omit<LectureFil
   if (error) throw error;
 };
 
+export const deleteLecture = async (lectureId: string, files?: LectureFile[]) => {
+  const client = ensureClient();
+  await requireUserId();
+
+  const { error } = await client.rpc('delete_lecture_cascade', { p_lecture_id: lectureId });
+  if (error) {
+    console.warn('[supabase] deleteLecture rpc failed', { message: error.message, code: error.code });
+    throw error;
+  }
+
+  const materialPaths = Array.from(
+    new Set(
+      (files ?? [])
+        .map((file) => extractMaterialPath(file.uri))
+        .filter((path): path is string => Boolean(path))
+    )
+  );
+
+  if (materialPaths.length > 0) {
+    const { error: storageError } = await client.storage.from(MATERIALS_BUCKET).remove(materialPaths);
+    if (storageError) {
+      console.warn('[supabase] storage delete failed', { message: storageError.message, paths: materialPaths });
+      throw storageError;
+    }
+  }
+};
+
 export const updateLectureFileText = async (fileId: string, extractedText: string) => {
   const client = ensureClient();
   const { error } = await client.from('lecture_files').update({
@@ -510,6 +568,7 @@ export const saveAnswerLink = async (link: Omit<StudyAnswerLink, 'createdAt'>) =
     id: link.id,
     session_id: link.sessionId,
     question_id: link.questionId,
+    page_id: link.pageId ?? null,
     answer_text: link.answerText ?? null,
     answer_image_uri: link.answerImageUri ?? null,
     canvas_bounds: link.canvasBounds ?? null,
@@ -526,6 +585,7 @@ export const listAnswerLinks = async (sessionId: string): Promise<StudyAnswerLin
     id: row.id,
     sessionId: row.session_id,
     questionId: row.question_id,
+    pageId: row.page_id ?? undefined,
     answerText: row.answer_text ?? undefined,
     answerImageUri: row.answer_image_uri ?? undefined,
     canvasBounds: row.canvas_bounds ?? undefined,
@@ -555,10 +615,17 @@ export const saveStudyPlanEntries = async (
       priority_score: entry.priorityScore ?? 0,
       status: entry.status ?? 'not_started',
       user_id: userId,
+      from_exam_source: entry.fromExamSource ?? false,
+      exam_relevance: entry.examRelevance ?? null,
+      mentioned_in_notes: entry.mentionedInNotes ?? false,
     };
 
     if (entry.statusScore !== undefined) record.status_score = entry.statusScore;
     if (entry.statusUpdatedAt !== undefined) record.status_updated_at = entry.statusUpdatedAt;
+    if (entry.masteryScore !== undefined) record.mastery_score = entry.masteryScore;
+    if (entry.nextReviewAt !== undefined) record.next_review_at = entry.nextReviewAt;
+    if (entry.reviewCount !== undefined) record.review_count = entry.reviewCount;
+    if (entry.easeFactor !== undefined) record.ease_factor = entry.easeFactor;
 
     return record;
   });
@@ -590,6 +657,13 @@ export const getStudyPlanEntries = async (lectureId: string): Promise<StudyPlanE
     status: (row.status as SectionStatus | null) ?? 'not_started',
     statusScore: row.status_score ?? undefined,
     statusUpdatedAt: row.status_updated_at ?? undefined,
+    masteryScore: row.mastery_score ?? undefined,
+    nextReviewAt: row.next_review_at ?? undefined,
+    reviewCount: row.review_count ?? undefined,
+    easeFactor: row.ease_factor ?? undefined,
+    fromExamSource: row.from_exam_source ?? false,
+    examRelevance: row.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
+    mentionedInNotes: row.mentioned_in_notes ?? false,
     createdAt: row.created_at,
   }));
 };
@@ -620,6 +694,13 @@ export const getStudyPlanEntry = async (entryId: string): Promise<StudyPlanEntry
     status: (data.status as SectionStatus | null) ?? 'not_started',
     statusScore: data.status_score ?? undefined,
     statusUpdatedAt: data.status_updated_at ?? undefined,
+    masteryScore: data.mastery_score ?? undefined,
+    nextReviewAt: data.next_review_at ?? undefined,
+    reviewCount: data.review_count ?? undefined,
+    easeFactor: data.ease_factor ?? undefined,
+    fromExamSource: data.from_exam_source ?? false,
+    examRelevance: data.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
+    mentionedInNotes: data.mentioned_in_notes ?? false,
     createdAt: data.created_at,
   };
 };
@@ -643,6 +724,106 @@ export const updateStudyPlanEntryStatus = async (
     .eq('id', entryId)
     .eq('user_id', userId);
 
+  if (error) throw error;
+};
+
+export const updateStudyPlanEntryMastery = async (
+  entryId: string,
+  update: Partial<MasteryData> & { status?: SectionStatus; statusScore?: number; statusUpdatedAt?: string }
+): Promise<void> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+
+  const patch: Record<string, unknown> = {};
+  if (update.masteryScore !== undefined) patch.mastery_score = update.masteryScore;
+  if (update.nextReviewAt !== undefined) patch.next_review_at = update.nextReviewAt;
+  if (update.reviewCount !== undefined) patch.review_count = update.reviewCount;
+  if (update.easeFactor !== undefined) patch.ease_factor = update.easeFactor;
+  if (update.status !== undefined) patch.status = update.status;
+  if (update.statusScore !== undefined) patch.status_score = update.statusScore;
+  if (update.statusUpdatedAt !== undefined) patch.status_updated_at = update.statusUpdatedAt ?? new Date().toISOString();
+
+  if (Object.keys(patch).length === 0) return;
+
+  const { error } = await client
+    .from('study_plan_entries')
+    .update(patch)
+    .eq('id', entryId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+};
+
+// Review history
+export const addReviewEvent = async (
+  event: Omit<ReviewEvent, 'id' | 'reviewedAt'> & { reviewedAt?: string }
+): Promise<void> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+
+  const { error } = await client.from('review_history').insert({
+    study_plan_entry_id: event.studyPlanEntryId,
+    user_id: userId,
+    score: event.score ?? null,
+    response_quality: event.responseQuality ?? null,
+    reviewed_at: event.reviewedAt ?? new Date().toISOString(),
+  });
+  if (error) throw error;
+};
+
+export const listReviewEvents = async (studyPlanEntryId: string, limit = 20): Promise<ReviewEvent[]> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('review_history')
+    .select()
+    .eq('study_plan_entry_id', studyPlanEntryId)
+    .order('reviewed_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    studyPlanEntryId: row.study_plan_entry_id,
+    score: row.score ?? undefined,
+    responseQuality: row.response_quality ?? undefined,
+    reviewedAt: row.reviewed_at,
+  }));
+};
+
+// Streaks
+export const getUserStreak = async (): Promise<StreakInfo> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const { data, error } = await client
+    .from('user_profiles')
+    .select('current_streak, longest_streak, last_review_date')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) throw error;
+
+  return {
+    current: data?.current_streak ?? 0,
+    longest: data?.longest_streak ?? 0,
+    lastReviewDate: data?.last_review_date ?? undefined,
+  };
+};
+
+export const updateUserStreak = async (patch: Partial<StreakInfo>): Promise<void> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const update: Record<string, unknown> = {};
+  if (patch.current !== undefined) update.current_streak = patch.current;
+  if (patch.longest !== undefined) update.longest_streak = patch.longest;
+  if (patch.lastReviewDate !== undefined) update.last_review_date = patch.lastReviewDate;
+
+  if (Object.keys(update).length === 0) return;
+
+  const { error } = await client
+    .from('user_profiles')
+    .update(update)
+    .eq('user_id', userId);
   if (error) throw error;
 };
 
@@ -692,6 +873,13 @@ export const getLectureWithFiles = async (lectureId: string): Promise<Lecture | 
     status: (entry.status as SectionStatus | null) ?? 'not_started',
     statusScore: entry.status_score ?? undefined,
     statusUpdatedAt: entry.status_updated_at ?? undefined,
+    masteryScore: entry.mastery_score ?? undefined,
+    nextReviewAt: entry.next_review_at ?? undefined,
+    reviewCount: entry.review_count ?? undefined,
+    easeFactor: entry.ease_factor ?? undefined,
+    fromExamSource: entry.from_exam_source ?? false,
+    examRelevance: entry.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
+    mentionedInNotes: entry.mentioned_in_notes ?? false,
     createdAt: entry.created_at,
   }));
   
@@ -719,16 +907,21 @@ export const saveSessionMessage = async (
 ) => {
   const client = ensureClient();
   const userId = await requireUserId();
-  const { error } = await client.from('session_messages').insert({
-    id: message.id,
-    session_id: sessionId,
-    role: message.role,
-    text: sanitizeText(message.text) ?? '',
-    question_id: message.questionId ?? null,
-    answer_link_id: message.answerLinkId ?? null,
-    citations: message.citations ?? null,
-    user_id: userId,
-  });
+  const { error } = await client
+    .from('session_messages')
+    .upsert(
+      {
+        id: message.id,
+        session_id: sessionId,
+        role: message.role,
+        text: sanitizeText(message.text) ?? '',
+        question_id: message.questionId ?? null,
+        answer_link_id: message.answerLinkId ?? null,
+        citations: message.citations ?? null,
+        user_id: userId,
+      },
+      { onConflict: 'id' }
+    );
   if (error) {
     console.warn('[supabase] saveSessionMessage error', { message: error.message, code: error.code });
     throw error;
@@ -857,10 +1050,131 @@ export const getSessionById = async (sessionId: string): Promise<StudySession | 
     status: data.status,
     lastQuestionId: data.last_question_id ?? undefined,
     canvasData: data.canvas_data ?? undefined,
+    canvasPages: (data.canvas_pages as CanvasPage[] | null) ?? undefined,
     notesText: data.notes_text ?? undefined,
     createdAt: data.created_at,
   };
 };
+
+// ============================================================================
+// Practice Exams
+// ============================================================================
+
+const mapPracticeExam = (row: any): PracticeExam => ({
+  id: row.id,
+  lectureId: row.lecture_id,
+  title: row.title,
+  status: (row.status as PracticeExamStatus) ?? 'pending',
+  questionCount: row.question_count ?? 0,
+  score: typeof row.score === 'number' ? row.score : row.score ? Number(row.score) : undefined,
+  error: row.error ?? undefined,
+  createdAt: row.created_at,
+  completedAt: row.completed_at ?? undefined,
+});
+
+export const listPracticeExams = async (lectureId: string): Promise<PracticeExam[]> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('practice_exams')
+    .select()
+    .eq('lecture_id', lectureId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map(mapPracticeExam);
+};
+
+export const getPracticeExam = async (examId: string): Promise<PracticeExam | null> => {
+  const client = ensureClient();
+  const { data, error } = await client.from('practice_exams').select().eq('id', examId).single();
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return mapPracticeExam(data);
+};
+
+export const getPracticeExamQuestions = async (examId: string): Promise<PracticeExamQuestion[]> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('practice_exam_questions')
+    .select()
+    .eq('practice_exam_id', examId)
+    .order('order_index', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    practiceExamId: row.practice_exam_id,
+    studyPlanEntryId: row.study_plan_entry_id ?? undefined,
+    orderIndex: row.order_index ?? 0,
+    prompt: row.prompt,
+    answerKey: row.answer_key ?? undefined,
+    sourceType: row.source_type ?? undefined,
+    sourceFileId: row.source_file_id ?? undefined,
+    createdAt: row.created_at,
+  }));
+};
+
+export const listPracticeExamResponses = async (examId: string): Promise<PracticeExamResponse[]> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('practice_exam_responses')
+    .select()
+    .eq('practice_exam_id', examId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    practiceExamId: row.practice_exam_id,
+    questionId: row.question_id,
+    userAnswer: row.user_answer ?? undefined,
+    feedback: row.feedback ?? undefined,
+    score: row.score ?? undefined,
+    createdAt: row.created_at,
+  }));
+};
+
+export const savePracticeExamResponse = async (
+  response: Omit<PracticeExamResponse, 'createdAt'> & { id?: string }
+): Promise<void> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const { error } = await client.from('practice_exam_responses').upsert(
+    {
+      id: response.id,
+      practice_exam_id: response.practiceExamId,
+      question_id: response.questionId,
+      user_answer: response.userAnswer ?? null,
+      feedback: response.feedback ?? null,
+      score: response.score ?? null,
+      user_id: userId,
+    },
+    { onConflict: 'question_id' }
+  );
+  if (error) throw error;
+};
+
+export const updatePracticeExamStatus = async (
+  examId: string,
+  patch: { status?: PracticeExamStatus; score?: number | null; completedAt?: string | null; error?: string | null }
+) => {
+  const client = ensureClient();
+  const updateData: Record<string, unknown> = {};
+  if (patch.status !== undefined) updateData.status = patch.status;
+  if (patch.score !== undefined) updateData.score = patch.score;
+  if (patch.completedAt !== undefined) updateData.completed_at = patch.completedAt;
+  if (patch.error !== undefined) updateData.error = sanitizeText(patch.error);
+
+  if (Object.keys(updateData).length === 0) return;
+
+  const { error } = await client.from('practice_exams').update(updateData).eq('id', examId);
+  if (error) throw error;
+};
+
 
 // ============================================================================
 // Authentication Functions
@@ -1021,6 +1335,48 @@ export const onAuthStateChange = (callback: (event: string, session: Session | n
     console.log('[supabase] auth state change', { event, hasSession: !!session });
     callback(event, session);
   });
+};
+
+// ============================================================================
+// AI Usage Cost Functions
+// ============================================================================
+
+/**
+ * Get total AI usage cost for the current user (lifetime)
+ */
+export const getUserTotalCost = async (): Promise<number> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const { data, error } = await client
+    .from('ai_usage_logs')
+    .select('cost_usd')
+    .eq('user_id', userId);
+
+  if (error) {
+    if (error.code === '42P01') return 0; // Table doesn't exist
+    throw error;
+  }
+
+  return (data ?? []).reduce((sum, row) => sum + (Number(row.cost_usd) || 0), 0);
+};
+
+/**
+ * Get total AI usage cost for a specific lecture
+ */
+export const getLectureTotalCost = async (lectureId: string): Promise<number> => {
+  const client = ensureClient();
+  await requireUserId();
+  const { data, error } = await client
+    .from('ai_usage_logs')
+    .select('cost_usd')
+    .eq('lecture_id', lectureId);
+
+  if (error) {
+    if (error.code === '42P01') return 0; // Table doesn't exist
+    throw error;
+  }
+
+  return (data ?? []).reduce((sum, row) => sum + (Number(row.cost_usd) || 0), 0);
 };
 
 export type { Session, User };

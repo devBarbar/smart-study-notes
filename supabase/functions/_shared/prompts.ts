@@ -14,7 +14,7 @@ export const gradingPrompt = (
 - correctness (one of: correct / partially correct / incorrect)
 - score 0-100
 - improvements (bullet list of 2-4 short tips)
-If answer is empty, say that no answer was provided. Answer in JSON. Respond in ${language} but keep JSON keys in English.`;
+If answer is empty, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Answer in JSON. Respond in ${language} but keep JSON keys in English.`;
 
 export const lectureMetadataPrompt = (
   fileSummaries: string,
@@ -50,17 +50,20 @@ export const studyPlanPrompt = (
 **Materials Content:**
 ${extractedContent}
 
-${options.examContent ? `**Past Exam Signals (high-yield):**\n${options.examContent}\n` : ""}
-${options.additionalNotes ? `**Instructor / Additional Notes:**\n${options.additionalNotes}\n` : ""}
+${options.examContent ? `**Past Exam Signals (VERY HIGH PRIORITY - these topics appeared on exams):**\n${options.examContent}\n` : ""}
+${options.additionalNotes ? `**Instructor / Additional Notes (HIGH PRIORITY - boost these topics by 15-25 points):**\n${options.additionalNotes}\n\nIMPORTANT: Topics mentioned in instructor notes should be marked as "mentionedInNotes": true and receive a significant priority boost (+15-25 points) as they likely indicate what the professor considers important.\n` : ""}
 ${options.passingScoreNote ??
     "Target: confidently exceed the passing threshold before adding stretch goals."}
 
 **Instructions:**
 1. Identify main topics/concepts and group them into syllabus-style categories/chapters.
 2. Use exam signals to mark must-pass items as **core**, recurring/high-yield as **high-yield**, and nice-to-have as **stretch**.
-3. Produce a minimal-first ordering: all core items first, then high-yield, then stretch.
-4. Each unit should be doable in one session (30-60 minutes) and list key concepts/terms.
-5. Assign a priorityScore (0-100) where higher means more critical for passing.
+3. Topics from past exam content should be marked with "fromExamSource": true and given "examRelevance": "high".
+4. Topics mentioned in instructor/additional notes should be marked "mentionedInNotes": true with boosted priority.
+5. Produce a minimal-first ordering: all core items first, then high-yield, then stretch.
+6. Each unit should be doable in one session (30-60 minutes) and list key concepts/terms.
+7. Assign a priorityScore (0-100) where higher means more critical for passing.
+8. Set "examRelevance" to "high" (directly from exam), "medium" (likely exam topic), or "low" (unlikely on exam).
 
 **Return a JSON array with this structure:**
 [
@@ -70,11 +73,52 @@ ${options.passingScoreNote ??
     "keyConcepts": ["concept1", "concept2", "concept3"],
     "category": "Syllabus category/chapter",
     "importanceTier": "core | high-yield | stretch",
-    "priorityScore": 0-100
+    "priorityScore": 0-100,
+    "fromExamSource": true/false,
+    "examRelevance": "high | medium | low",
+    "mentionedInNotes": true/false
   }
 ]
 
 Generate 6-12 study plan entries depending on breadth. Focus on what earns passing points first, then expand. Return ONLY valid JSON, no markdown or explanations. Respond in ${language} but keep JSON keys in English.`;
+
+type PracticeExamPromptInput = {
+  topics: string;
+  examText?: string;
+  worksheetText?: string;
+  questionCount: number;
+  language?: string;
+};
+
+export const practiceExamPrompt = ({
+  topics,
+  examText,
+  worksheetText,
+  questionCount,
+  language = "en",
+}: PracticeExamPromptInput) =>
+  `You are generating a practice exam ONLY from topics the student has already PASSED.
+
+Passed topics (focus on these only):
+${topics}
+
+Past exams (highest fidelity):${examText ? `\n${examText}` : "\nNone provided"}
+
+Worksheets / lecture materials (secondary):${worksheetText ? `\n${worksheetText}` : "\nNone provided"}
+
+Create ${questionCount} questions. Favor questions that mirror past exam patterns when exam text exists; otherwise use worksheets. For each question, include the matching topic title from the passed list.
+
+Return JSON array with:
+[
+  {
+    "prompt": "Question text (concise, unambiguous)",
+    "answer": "Short expected answer",
+    "topicTitle": "Exact title from passed topics",
+    "source": "exam | worksheet | material"
+  }
+]
+
+Keep answers brief but specific. Respond in ${language} but keep JSON keys in English.`;
 
 export const feynmanSystemPrompt = (
   materialContext: string,

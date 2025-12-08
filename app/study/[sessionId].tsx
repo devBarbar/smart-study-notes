@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import { useLocalSearchParams } from 'expo-router';
-import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, LayoutChangeEvent, Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, {
@@ -11,6 +10,8 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { v4 as uuid } from 'uuid';
+
+import { StreamingTTSPlayer, TTSPlayerState } from '@/lib/audio';
 
 import { CanvasToolbar } from '@/components/canvas-toolbar';
 import { CanvasMode, CanvasStroke, HandwritingCanvas, HandwritingCanvasHandle } from '@/components/handwriting-canvas';
@@ -23,18 +24,25 @@ import { useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLectures } from '@/hooks/use-lectures';
 import { useMaterials } from '@/hooks/use-materials';
-import { ChatMessage, embedQuery, evaluateAnswer, feynmanChat, generateQuestions } from '@/lib/openai';
+import { ChatMessage, embedQuery, evaluateAnswer, generateQuestions, streamFeynmanChat } from '@/lib/openai';
 import { feynmanWelcomeMessage } from '@/lib/prompts';
 import { uploadCanvasImage } from '@/lib/storage';
-import { LectureFileChunk, countLectureChunks, getSessionById, getStudyPlanEntry, listAnswerLinks, listSessionMessages, saveAnswerLink, saveSessionMessage, searchLectureChunks, updateSession, updateStudyPlanEntryStatus } from '@/lib/supabase';
-import { CanvasAnswerMarker, CanvasBounds, CanvasStrokeData, Lecture, Material, SectionStatus, StudyAnswerLink, StudyChatMessage, StudyCitation, StudyPlanEntry, StudyQuestion } from '@/types';
+import { LectureFileChunk, addReviewEvent, countLectureChunks, getSessionById, getStudyPlanEntry, getUserStreak, listAnswerLinks, listReviewEvents, listSessionMessages, saveAnswerLink, saveSessionMessage, searchLectureChunks, updateSession, updateStudyPlanEntryMastery, updateStudyPlanEntryStatus, updateUserStreak } from '@/lib/supabase';
+import { computeMasteryScore, computeNextReviewDate } from '@/lib/mastery';
+import { CanvasAnswerMarker, CanvasBounds, CanvasPage, CanvasStrokeData, Lecture, Material, ReviewQuality, SectionStatus, StudyAnswerLink, StudyChatMessage, StudyCitation, StudyPlanEntry, StudyQuestion } from '@/types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // Estimated height for chat messages for scrollToIndex
 const CHAT_ITEM_HEIGHT = 100;
-const CANVAS_WIDTH = 1400;
-const CANVAS_HEIGHT = 1200;
+
+// Initial canvas size (will grow as user draws near edges)
+const INITIAL_CANVAS_WIDTH = 1400;
+const INITIAL_CANVAS_HEIGHT = 1200;
+// How much to grow the canvas when user reaches the edge
+const CANVAS_GROW_CHUNK = 600;
+// Threshold from edge to trigger growth (px)
+const EDGE_THRESHOLD = 80;
 
 export default function StudySessionScreen() {
   const { sessionId, materialId, lectureId, studyPlanEntryId } = useLocalSearchParams<{ 
@@ -147,7 +155,19 @@ export default function StudySessionScreen() {
   const [grading, setGrading] = useState(false);
   const [isChatting, setIsChatting] = useState(false);
   const [answerLinks, setAnswerLinks] = useState<StudyAnswerLink[]>([]);
-  const [canvasStrokes, setCanvasStrokes] = useState<CanvasStrokeData[]>([]);
+  
+  // Multi-page canvas state
+  const [canvasPages, setCanvasPages] = useState<CanvasPage[]>([]);
+  const [activePageId, setActivePageId] = useState<string>('');
+  
+  // Get current page data
+  const activePage = useMemo(() => 
+    canvasPages.find(p => p.id === activePageId) || canvasPages[0],
+    [canvasPages, activePageId]
+  );
+  
+  // Canvas strokes for current page (derived from activePage)
+  const canvasStrokes = useMemo(() => activePage?.strokes || [], [activePage]);
   
   // Canvas state
   const [canvasMode, setCanvasMode] = useState<CanvasMode>('pen');
@@ -156,6 +176,10 @@ export default function StudySessionScreen() {
   // Voice/TTS state
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [captionsEnabled, setCaptionsEnabled] = useState(true);
+  const [currentCaption, setCurrentCaption] = useState<string | null>(null);
+  const [listeningMode, setListeningMode] = useState(false);
+  const ttsPlayerRef = useRef<StreamingTTSPlayer | null>(null);
   
   // Scroll control for stylus drawing
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -174,25 +198,57 @@ export default function StudySessionScreen() {
   const [highlightedBounds, setHighlightedBounds] = useState<CanvasBounds | null>(null);
   const [canvasLayout, setCanvasLayout] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   
+  // Canvas size derived from active page (auto-grows as user draws near edges)
+  const canvasSize = useMemo(() => ({
+    width: activePage?.width || INITIAL_CANVAS_WIDTH,
+    height: activePage?.height || INITIAL_CANVAS_HEIGHT,
+  }), [activePage]);
+  
   // Track if session messages have been loaded
   const [loadingMessages, setLoadingMessages] = useState(true);
   const hasLoadedMessagesRef = useRef(false);
   
-  // Initial canvas strokes to restore (loaded from session)
-  const [initialCanvasStrokes, setInitialCanvasStrokes] = useState<CanvasStrokeData[] | undefined>(undefined);
-
-  // Sync baseline when initial strokes load
-  useEffect(() => {
-    if (initialCanvasStrokes && initialCanvasStrokes.length > 0) {
-      setCanvasStrokes(initialCanvasStrokes);
-      canvasBaselineRef.current = initialCanvasStrokes.length;
-      hasInitializedCanvasRef.current = true;
-    }
-  }, [initialCanvasStrokes]);
+  // Initial canvas strokes to restore (loaded from session) - for current active page
+  const initialCanvasStrokes = useMemo(() => activePage?.strokes, [activePage]);
+  
+  // Title canvas ref for handwritten page titles
+  const titleCanvasRef = useRef<HandwritingCanvasHandle>(null);
   
   // Debounce timer for saving canvas data
   const saveCanvasDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Create a new blank page
+  const createNewPage = useCallback((): CanvasPage => ({
+    id: `page-${uuid()}`,
+    titleStrokes: [],
+    strokes: [],
+    width: INITIAL_CANVAS_WIDTH,
+    height: INITIAL_CANVAS_HEIGHT,
+  }), []);
+  
+  // Add a new page
+  const handleAddPage = useCallback(() => {
+    const newPage = createNewPage();
+    setCanvasPages(prev => [...prev, newPage]);
+    setActivePageId(newPage.id);
+    // Reset baseline for new page
+    canvasBaselineRef.current = 0;
+    hasInitializedCanvasRef.current = true;
+    // New blank page should hide any previous check button position/state
+    setHasDrawnAfterQuestion(false);
+    setLastDrawingPosition(null);
+  }, [createNewPage]);
+  
+  // Switch to a different page
+  const handleSelectPage = useCallback((pageId: string) => {
+    if (pageId === activePageId) return;
+    setActivePageId(pageId);
+    // Update baseline for the new page
+    const page = canvasPages.find(p => p.id === pageId);
+    canvasBaselineRef.current = page?.strokes.length || 0;
+    hasInitializedCanvasRef.current = true;
+  }, [activePageId, canvasPages]);
 
   const canvasRef = useRef<HandwritingCanvasHandle>(null);
   const pageScrollRef = useRef<ScrollView>(null);
@@ -221,6 +277,29 @@ export default function StudySessionScreen() {
     // Save the last drawing position
     if (lastPosition) {
       setLastDrawingPosition(lastPosition);
+      
+      // Auto-grow canvas if drawing near edges (per-page)
+      setCanvasPages(prev => prev.map(page => {
+        if (page.id !== activePageId) return page;
+        
+        let newWidth = page.width;
+        let newHeight = page.height;
+        
+        // Check right edge
+        if (lastPosition.x > page.width - EDGE_THRESHOLD) {
+          newWidth = page.width + CANVAS_GROW_CHUNK;
+        }
+        // Check bottom edge
+        if (lastPosition.y > page.height - EDGE_THRESHOLD) {
+          newHeight = page.height + CANVAS_GROW_CHUNK;
+        }
+        
+        // Only update if changed
+        if (newWidth !== page.width || newHeight !== page.height) {
+          return { ...page, width: newWidth, height: newHeight };
+        }
+        return page;
+      }));
     }
     
     // Show check button after drawing when there's conversation
@@ -228,7 +307,7 @@ export default function StudySessionScreen() {
     if (hasAiMessages) {
       setHasDrawnAfterQuestion(true);
     }
-  }, [messages]);
+  }, [messages, activePageId]);
   
   // Animate check button when drawing ends
   useEffect(() => {
@@ -298,11 +377,11 @@ export default function StudySessionScreen() {
 
     const paddedX = Math.max(minX - padding, 0);
     const paddedY = Math.max(minY - padding, 0);
-    const width = Math.min(maxX - minX + padding * 2, CANVAS_WIDTH - paddedX);
-    const height = Math.min(maxY - minY + padding * 2, CANVAS_HEIGHT - paddedY);
+    const width = Math.min(maxX - minX + padding * 2, canvasSize.width - paddedX);
+    const height = Math.min(maxY - minY + padding * 2, canvasSize.height - paddedY);
 
     return { x: paddedX, y: paddedY, width, height };
-  }, []);
+  }, [canvasSize.width, canvasSize.height]);
 
   const getNewStrokeBounds = useCallback((): CanvasBounds | null => {
     const newStrokes = canvasStrokes.slice(canvasBaselineRef.current);
@@ -330,10 +409,39 @@ export default function StudySessionScreen() {
         // Load session data (canvas + notes)
         const session = await getSessionById(sessionId);
         if (session) {
-          // Restore canvas strokes
-          if (session.canvasData && session.canvasData.length > 0) {
-            setInitialCanvasStrokes(session.canvasData);
-            console.log('[study] Restored canvas with', session.canvasData.length, 'strokes');
+          // Restore canvas pages (prefer new format, fallback to old canvasData)
+          if (session.canvasPages && session.canvasPages.length > 0) {
+            setCanvasPages(session.canvasPages);
+            setActivePageId(session.canvasPages[0].id);
+            canvasBaselineRef.current = session.canvasPages[0].strokes.length;
+            hasInitializedCanvasRef.current = true;
+            console.log('[study] Restored', session.canvasPages.length, 'canvas pages');
+          } else if (session.canvasData && session.canvasData.length > 0) {
+            // Migrate old canvasData to new pages format
+            const migratedPage: CanvasPage = {
+              id: 'page-1',
+              titleStrokes: [],
+              strokes: session.canvasData,
+              width: INITIAL_CANVAS_WIDTH,
+              height: INITIAL_CANVAS_HEIGHT,
+            };
+            setCanvasPages([migratedPage]);
+            setActivePageId('page-1');
+            canvasBaselineRef.current = session.canvasData.length;
+            hasInitializedCanvasRef.current = true;
+            console.log('[study] Migrated canvas with', session.canvasData.length, 'strokes to page format');
+          } else {
+            // Create initial blank page
+            const initialPage: CanvasPage = {
+              id: 'page-1',
+              titleStrokes: [],
+              strokes: [],
+              width: INITIAL_CANVAS_WIDTH,
+              height: INITIAL_CANVAS_HEIGHT,
+            };
+            setCanvasPages([initialPage]);
+            setActivePageId('page-1');
+            hasInitializedCanvasRef.current = true;
           }
           
           // Restore notes text
@@ -341,6 +449,18 @@ export default function StudySessionScreen() {
             setAnswerText(session.notesText);
             console.log('[study] Restored notes text');
           }
+        } else {
+          // No session found, create initial blank page
+          const initialPage: CanvasPage = {
+            id: 'page-1',
+            titleStrokes: [],
+            strokes: [],
+            width: INITIAL_CANVAS_WIDTH,
+            height: INITIAL_CANVAS_HEIGHT,
+          };
+          setCanvasPages([initialPage]);
+          setActivePageId('page-1');
+          hasInitializedCanvasRef.current = true;
         }
         
         // Load messages
@@ -422,6 +542,7 @@ export default function StudySessionScreen() {
           questionIndex: qIndex,
           messageId: msg.id,
           answerLinkId: msg.answerLinkId,
+          pageId: link?.pageId,
           canvasBounds: link?.canvasBounds,
         });
       }
@@ -449,38 +570,52 @@ export default function StudySessionScreen() {
     canvasRef.current?.setColor(color);
   }, []);
 
-  // Handle clear canvas
+  // Handle clear canvas (clears current page only)
   const handleClearCanvas = useCallback(() => {
     canvasRef.current?.clear();
-    setCanvasStrokes([]);
+    setCanvasPages(prev => prev.map(page => 
+      page.id === activePageId 
+        ? { ...page, strokes: [] }
+        : page
+    ));
     canvasBaselineRef.current = 0;
     hasInitializedCanvasRef.current = true;
-  }, []);
+  }, [activePageId]);
   
-  // Save canvas strokes to database (debounced)
+  // Save canvas strokes to database (debounced) - per-page
   const handleCanvasStrokesChange = useCallback((strokes: CanvasStroke[]) => {
-    setCanvasStrokes(strokes as CanvasStrokeData[]);
+    // Update strokes for the active page
+    setCanvasPages(prev => {
+      const updatedPages = prev.map(page => 
+        page.id === activePageId 
+          ? { ...page, strokes: strokes as CanvasStrokeData[] }
+          : page
+      );
+      
+      // Save to database (debounced)
+      if (sessionId) {
+        if (saveCanvasDebounceRef.current) {
+          clearTimeout(saveCanvasDebounceRef.current);
+        }
+        
+        saveCanvasDebounceRef.current = setTimeout(async () => {
+          try {
+            await updateSession(sessionId, { canvasPages: updatedPages });
+            console.log('[study] Canvas pages saved with', updatedPages.length, 'pages');
+          } catch (err) {
+            console.warn('[study] Failed to save canvas pages:', err);
+          }
+        }, 1000);
+      }
+      
+      return updatedPages;
+    });
+    
     if (!hasInitializedCanvasRef.current) {
       canvasBaselineRef.current = strokes.length;
       hasInitializedCanvasRef.current = true;
     }
-    if (!sessionId) return;
-    
-    // Clear any pending save
-    if (saveCanvasDebounceRef.current) {
-      clearTimeout(saveCanvasDebounceRef.current);
-    }
-    
-    // Debounce save to avoid too many database calls
-    saveCanvasDebounceRef.current = setTimeout(async () => {
-      try {
-        await updateSession(sessionId, { canvasData: strokes as CanvasStrokeData[] });
-        console.log('[study] Canvas saved with', strokes.length, 'strokes');
-      } catch (err) {
-        console.warn('[study] Failed to save canvas:', err);
-      }
-    }, 1000); // Save 1 second after last stroke
-  }, [sessionId]);
+  }, [sessionId, activePageId]);
   
   // Save notes text to database (debounced)
   const handleNotesChange = useCallback((text: string) => {
@@ -508,29 +643,85 @@ export default function StudySessionScreen() {
   const handleUndo = useCallback(() => {
     canvasRef.current?.undo();
   }, []);
+  
+  // Handle title strokes change (for handwritten page titles)
+  const handleTitleStrokesChange = useCallback((strokes: CanvasStroke[]) => {
+    setCanvasPages(prev => {
+      const updatedPages = prev.map(page => 
+        page.id === activePageId 
+          ? { ...page, titleStrokes: strokes as CanvasStrokeData[] }
+          : page
+      );
+      
+      // Save to database (debounced)
+      if (sessionId) {
+        if (saveCanvasDebounceRef.current) {
+          clearTimeout(saveCanvasDebounceRef.current);
+        }
+        
+        saveCanvasDebounceRef.current = setTimeout(async () => {
+          try {
+            await updateSession(sessionId, { canvasPages: updatedPages });
+            console.log('[study] Title strokes saved');
+          } catch (err) {
+            console.warn('[study] Failed to save title strokes:', err);
+          }
+        }, 1000);
+      }
+      
+      return updatedPages;
+    });
+  }, [sessionId, activePageId]);
+
+  // Initialize TTS player
+  useEffect(() => {
+    const handleStateChange = (state: TTSPlayerState) => {
+      setIsSpeaking(state.isPlaying || state.isLoading);
+      if (captionsEnabled && state.currentText) {
+        setCurrentCaption(state.currentText);
+      }
+      if (!state.isPlaying && !state.isLoading) {
+        // Delay clearing captions for readability
+        setTimeout(() => setCurrentCaption(null), 2000);
+      }
+    };
+
+    const player = new StreamingTTSPlayer({
+      onStateChange: handleStateChange,
+      onPlaybackEnd: () => {
+        // If listening mode is on, auto-rearm voice input after TTS completes
+        // This is handled by the voice-input component
+      },
+    });
+    player.setLanguage(agentLanguage);
+    ttsPlayerRef.current = player;
+
+    return () => {
+      player.stop();
+    };
+  }, [agentLanguage, captionsEnabled]);
+
+  // Update TTS player language when it changes
+  useEffect(() => {
+    ttsPlayerRef.current?.setLanguage(agentLanguage);
+  }, [agentLanguage]);
 
   // Text-to-Speech for AI responses
   const speakMessage = useCallback(async (text: string) => {
     if (!ttsEnabled) return;
     
-    // Stop any ongoing speech
-    await Speech.stop();
-    setIsSpeaking(true);
+    if (captionsEnabled) {
+      setCurrentCaption(text);
+    }
     
-    Speech.speak(text, {
-      language: speechLocale,
-      pitch: 1.0,
-      rate: 0.9,
-      onDone: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
-      onStopped: () => setIsSpeaking(false),
-    });
-  }, [speechLocale, ttsEnabled]);
+    await ttsPlayerRef.current?.speak(text);
+  }, [ttsEnabled, captionsEnabled]);
 
   // Stop speech
   const stopSpeaking = useCallback(async () => {
-    await Speech.stop();
+    await ttsPlayerRef.current?.stop();
     setIsSpeaking(false);
+    setCurrentCaption(null);
   }, []);
 
   const pushMessage = useCallback((message: StudyChatMessage, speak = true) => {
@@ -551,12 +742,24 @@ export default function StudySessionScreen() {
     }
   }, [speakMessage, sessionId]);
 
-  // Send message to Feynman AI with FULL material context
-  const sendToFeynmanAI = useCallback(async (userMessage: string) => {
+  // Update an existing message in the messages array (for streaming updates)
+  const updateMessage = useCallback((messageId: string, updates: Partial<StudyChatMessage>) => {
+    setMessages((prev) => prev.map((msg) => 
+      msg.id === messageId ? { ...msg, ...updates } : msg
+    ));
+  }, []);
+
+  // Send message to Feynman AI with FULL material context (streaming enabled)
+  const sendToFeynmanAI = useCallback(async (userMessage: string, transcriptionCostUsd?: number) => {
     if (!userMessage.trim()) return;
 
+    // Add transcription cost suffix if provided (from voice input)
+    const transcriptionCostSuffix = transcriptionCostUsd 
+      ? ` _${t('cost.label', { value: transcriptionCostUsd.toFixed(4) })}_`
+      : '';
+    
     const userMsgId = uuid();
-    pushMessage({ id: userMsgId, role: 'user', text: userMessage }, false);
+    pushMessage({ id: userMsgId, role: 'user', text: userMessage + transcriptionCostSuffix }, false);
 
     // Update chat history for context
     const newUserMessage: ChatMessage = { role: 'user', content: userMessage };
@@ -564,6 +767,11 @@ export default function StudySessionScreen() {
     setChatHistory(updatedHistory);
 
     setIsChatting(true);
+
+    // Create a placeholder AI message immediately for streaming
+    const aiMsgId = uuid();
+    pushMessage({ id: aiMsgId, role: 'ai', text: '' }, false);
+
     try {
       let retrievedChunks: LectureFileChunk[] = [];
       if (lectureId && lecture) {
@@ -593,7 +801,6 @@ export default function StudySessionScreen() {
               .join('\n\n')}`
           : fullMaterialContext;
 
-      const aiResponse = await feynmanChat(updatedHistory, contextBlock, agentLanguage);
       const citations: StudyCitation[] | undefined =
         retrievedChunks.length > 0
           ? retrievedChunks.slice(0, 6).map((chunk) => ({
@@ -604,23 +811,61 @@ export default function StudySessionScreen() {
               similarity: chunk.similarity,
             }))
           : undefined;
+
+      // Use streaming chat - update message as chunks arrive
+      const chatResult = await streamFeynmanChat(
+        updatedHistory,
+        contextBlock,
+        agentLanguage,
+        lectureId,
+        {
+          onChunk: (partialText) => {
+            // Update the AI message with the partial text
+            updateMessage(aiMsgId, { text: partialText });
+          },
+          onDone: (result) => {
+            // Add cost footer if available
+            const costSuffix = result.costUsd 
+              ? `\n\n_${t('cost.label', { value: result.costUsd.toFixed(4) })}_`
+              : '';
+            
+            // Final update with citations and cost
+            const finalMessage: StudyChatMessage = {
+              id: aiMsgId,
+              role: 'ai',
+              text: result.message + costSuffix,
+              citations,
+            };
+            updateMessage(aiMsgId, finalMessage);
+            
+            // Speak the final message
+            speakMessage(result.message);
+            
+            // Save the final message to database
+            if (sessionId) {
+              saveSessionMessage(sessionId, finalMessage).catch(err => {
+                console.warn('[study] Failed to save message:', err);
+              });
+            }
+          },
+        }
+      );
       
-      const aiMsgId = uuid();
-      pushMessage({ id: aiMsgId, role: 'ai', text: aiResponse, citations });
-      
-      // Add AI response to chat history
-      setChatHistory((prev) => [...prev, { role: 'assistant', content: aiResponse }]);
+      // Add AI response to chat history (without cost suffix)
+      setChatHistory((prev) => [...prev, { role: 'assistant', content: chatResult.message }]);
     } catch (error) {
       console.warn('Feynman chat error:', error);
-      pushMessage({ id: uuid(), role: 'ai', text: t('common.errorGeneric') });
+      // Update the placeholder message with error
+      updateMessage(aiMsgId, { text: t('common.errorGeneric') });
     } finally {
       setIsChatting(false);
     }
-  }, [agentLanguage, chatHistory, fullMaterialContext, lecture, lectureId, pushMessage, studyPlanEntry, t]);
+  }, [agentLanguage, chatHistory, fullMaterialContext, lecture, lectureId, pushMessage, updateMessage, speakMessage, studyPlanEntry, t, sessionId]);
 
   // Handle voice transcription
-  const handleVoiceTranscription = useCallback((text: string) => {
-    sendToFeynmanAI(text);
+  const handleVoiceTranscription = useCallback((text: string, transcriptionCostUsd?: number) => {
+    // Pass transcription cost to sendToFeynmanAI so it can display it with the user message
+    sendToFeynmanAI(text, transcriptionCostUsd);
   }, [sendToFeynmanAI]);
 
   const requestQuestions = async () => {
@@ -629,14 +874,12 @@ export default function StudySessionScreen() {
       // Use full context for generating relevant questions
       const generated = await generateQuestions(studyTitle, fullMaterialContext, 3, agentLanguage);
       setQuestions(generated);
-      setAnswerText('');
-      handleClearCanvas();
       setHasDrawnAfterQuestion(false); // Reset drawing detection
       questionIndexCounterRef.current = 0; // Reset question counter
 
       if (generated[0]) {
         pushMessage({
-          id: `q-${generated[0].id}`,
+          id: uuid(),
           role: 'ai',
           text: t('study.firstQuestionIntro', { question: generated[0].prompt }),
           questionId: generated[0].id,
@@ -655,11 +898,9 @@ export default function StudySessionScreen() {
     const idx = questions.findIndex((q) => q.id === currentQuestion.id);
     const next = questions[(idx + 1) % questions.length];
     setCurrentQuestion(next);
-    setAnswerText('');
-    handleClearCanvas();
     setHasDrawnAfterQuestion(false); // Reset drawing detection for new question
     pushMessage({
-      id: `q-${next.id}`,
+      id: uuid(),
       role: 'ai',
       text: t('study.nextQuestionIntro', { question: next.prompt }),
       questionId: next.id,
@@ -690,6 +931,7 @@ export default function StudySessionScreen() {
           question: questionToEvaluate,
           answerText,
           answerImageDataUrl: dataUrl,
+          lectureId,
         },
         agentLanguage
       );
@@ -707,6 +949,7 @@ export default function StudySessionScreen() {
         id: linkId,
         sessionId: sessionId as string,
         questionId: questionToEvaluate.id,
+        pageId: activePageId,
         answerText,
         answerImageUri: uploadedImageUri,
         canvasBounds: canvasBounds ?? undefined,
@@ -737,16 +980,84 @@ export default function StudySessionScreen() {
         } catch (err) {
           console.warn('[study] Failed to update section status', err);
         }
+
+        // Record review + update mastery schedule
+        try {
+          const responseQuality: ReviewQuality =
+            feedback.correctness === 'correct'
+              ? 'correct'
+              : feedback.correctness === 'incorrect'
+              ? 'incorrect'
+              : 'partial';
+
+          const reviewedAt = new Date().toISOString();
+          await addReviewEvent({
+            studyPlanEntryId,
+            score: feedback.score,
+            responseQuality,
+            reviewedAt,
+          });
+
+          const history = await listReviewEvents(studyPlanEntryId, 50);
+          const masteryScore = computeMasteryScore({ history });
+          const reviewCount = history?.length ?? 0;
+          const easeFactor = studyPlanEntry?.easeFactor ?? 2.5;
+          const nextReviewAt = computeNextReviewDate({
+            masteryScore,
+            easeFactor,
+            reviewCount,
+          });
+
+          await updateStudyPlanEntryMastery(studyPlanEntryId, {
+            masteryScore,
+            nextReviewAt,
+            reviewCount,
+            easeFactor,
+            status: nextStatus,
+            statusScore: feedback.score,
+          });
+
+          // Update streak
+          try {
+            const streak = await getUserStreak();
+            const today = new Date();
+            const todayDate = today.toISOString().slice(0, 10);
+            const last = streak.lastReviewDate;
+            let current = 1;
+            if (last === todayDate) {
+              current = streak.current;
+            } else if (last) {
+              const lastDate = new Date(last);
+              const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+              if (diffDays === 1) current = streak.current + 1;
+            }
+            const longest = Math.max(streak.longest, current);
+            await updateUserStreak({
+              current,
+              longest,
+              lastReviewDate: todayDate,
+            });
+          } catch (err) {
+            console.warn('[study] Failed to update streak', err);
+          }
+        } catch (err) {
+          console.warn('[study] Failed to update mastery schedule', err);
+        }
       }
       
       // Create answer marker for linking canvas to chat
       questionIndexCounterRef.current += 1;
-      const messageIdForMarker = currentQuestion ? `q-${currentQuestion.id}` : lastAiMessage?.id || '';
+      // Find the message ID by questionId, or fall back to lastAiMessage
+      const questionMessage = currentQuestion 
+        ? messages.find((m) => m.questionId === currentQuestion.id)
+        : null;
+      const messageIdForMarker = questionMessage?.id ?? lastAiMessage?.id ?? '';
       const newMarker: CanvasAnswerMarker = {
         questionId: questionToEvaluate.id,
         questionIndex: questionIndexCounterRef.current,
         messageId: messageIdForMarker,
         answerLinkId: linkId,
+        pageId: activePageId,
         canvasBounds: canvasBounds ?? undefined,
       };
       setAnswerMarkers((prev) => [...prev, newMarker]);
@@ -757,7 +1068,7 @@ export default function StudySessionScreen() {
       setLastDrawingPosition(null);
 
       pushMessage({
-        id: `answer-${linkId}`,
+        id: uuid(),
         role: 'user',
         text: answerText || t('study.handwrittenAnswerPlaceholder'),
         questionId: questionToEvaluate.id,
@@ -776,11 +1087,14 @@ export default function StudySessionScreen() {
         feedback.improvements && feedback.improvements.length
           ? `\n\n${t('study.feedback.improveIntro')}\n${feedback.improvements.map((i) => `• ${i}`).join('\n')}`
           : '';
+      const costText = feedback.costUsd 
+        ? `\n\n_${t('cost.label', { value: feedback.costUsd.toFixed(4) })}_`
+        : '';
 
-      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${improvementsText}\n\n${t('study.feedback.askExplain')}`;
+      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${improvementsText}\n\n${t('study.feedback.askExplain')}${costText}`;
       
       pushMessage({
-        id: `feedback-${linkId}`,
+        id: uuid(),
         role: 'ai',
         text: feedbackText,
         questionId: questionToEvaluate.id,
@@ -817,35 +1131,43 @@ export default function StudySessionScreen() {
   const scrollToCanvasAnswer = useCallback((answerLinkId: string) => {
     const link = answerLinks.find((l) => l.id === answerLinkId);
 
+    // Switch to the correct page if needed
+    if (link?.pageId && link.pageId !== activePageId) {
+      handleSelectPage(link.pageId);
+    }
+
     // Bring canvas section into view
     pageScrollRef.current?.scrollTo({ y: 0, animated: true });
 
-    if (link?.canvasBounds) {
-      const pad = 24;
-      const targetX = Math.max(link.canvasBounds.x - pad, 0);
-      const targetY = Math.max(link.canvasBounds.y - pad, 0);
-
-      canvasHScrollRef.current?.scrollTo({ x: targetX, animated: true });
-      canvasScrollRef.current?.scrollTo({ y: targetY, animated: true });
-
-      setHighlightedBounds({
-        x: targetX,
-        y: targetY,
-        width: Math.min(link.canvasBounds.width + pad * 2, CANVAS_WIDTH - targetX),
-        height: Math.min(link.canvasBounds.height + pad * 2, CANVAS_HEIGHT - targetY),
-      });
-    } else {
-      // Fallback: scroll to top of canvas and highlight whole area
-      canvasScrollRef.current?.scrollTo({ y: 0, animated: true });
-      setHighlightedBounds(null);
-    }
-
-    setHighlightedAnswerLinkId(answerLinkId);
+    // Use a small delay to allow page switch to complete
     setTimeout(() => {
-      setHighlightedAnswerLinkId(null);
-      setHighlightedBounds(null);
-    }, 2500);
-  }, [answerLinks]);
+      if (link?.canvasBounds) {
+        const pad = 24;
+        const targetX = Math.max(link.canvasBounds.x - pad, 0);
+        const targetY = Math.max(link.canvasBounds.y - pad, 0);
+
+        canvasHScrollRef.current?.scrollTo({ x: targetX, animated: true });
+        canvasScrollRef.current?.scrollTo({ y: targetY, animated: true });
+
+        setHighlightedBounds({
+          x: targetX,
+          y: targetY,
+          width: Math.min(link.canvasBounds.width + pad * 2, canvasSize.width - targetX),
+          height: Math.min(link.canvasBounds.height + pad * 2, canvasSize.height - targetY),
+        });
+      } else {
+        // Fallback: scroll to top of canvas and highlight whole area
+        canvasScrollRef.current?.scrollTo({ y: 0, animated: true });
+        setHighlightedBounds(null);
+      }
+
+      setHighlightedAnswerLinkId(answerLinkId);
+      setTimeout(() => {
+        setHighlightedAnswerLinkId(null);
+        setHighlightedBounds(null);
+      }, 2500);
+    }, link?.pageId && link.pageId !== activePageId ? 100 : 0);
+  }, [answerLinks, canvasSize.width, canvasSize.height, activePageId, handleSelectPage]);
   
   const openCitationSource = useCallback((citation: StudyCitation) => {
     if (!lecture) return;
@@ -893,7 +1215,7 @@ export default function StudySessionScreen() {
           {/* Show topic focus badge if studying specific entry */}
           {studyPlanEntry && (
             <View style={styles.topicFocusBadge}>
-              <Ionicons name="target" size={14} color="#10b981" />
+              <Ionicons name="locate" size={14} color="#10b981" />
               <ThemedText style={styles.topicFocusText}>
                 {t('study.focusBadge', {
                   concepts: studyPlanEntry.keyConcepts?.slice(0, 3).join(', ') || t('study.focusConceptsFallback'),
@@ -907,6 +1229,64 @@ export default function StudySessionScreen() {
           <ThemedText type="defaultSemiBold" style={{ marginTop: 12, marginBottom: 8 }}>
             {t('study.canvasTitle')}
           </ThemedText>
+          
+          {/* Page Navigation */}
+          <View style={styles.pageNavContainer}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pageTabsContent}
+            >
+              {canvasPages.map((page, index) => (
+                <Pressable
+                  key={page.id}
+                  style={[
+                    styles.pageTab,
+                    page.id === activePageId && styles.pageTabActive,
+                  ]}
+                  onPress={() => handleSelectPage(page.id)}
+                >
+                  {page.titleStrokes.length > 0 ? (
+                    <View style={styles.pageTitlePreview}>
+                      <HandwritingCanvas
+                        width={60}
+                        height={20}
+                        initialStrokes={page.titleStrokes}
+                        mode="pen"
+                      />
+                    </View>
+                  ) : (
+                    <ThemedText style={[
+                      styles.pageTabText,
+                      page.id === activePageId && styles.pageTabTextActive,
+                    ]}>
+                      {t('study.pageLabel', { number: index + 1 })}
+                    </ThemedText>
+                  )}
+                </Pressable>
+              ))}
+              <Pressable style={styles.addPageButton} onPress={handleAddPage}>
+                <Ionicons name="add" size={20} color="#10b981" />
+              </Pressable>
+            </ScrollView>
+          </View>
+          
+          {/* Page Title (Handwritten) */}
+          <View style={styles.pageTitleContainer}>
+            <ThemedText style={styles.pageTitleLabel}>{t('study.pageTitleLabel')}</ThemedText>
+            <View style={styles.pageTitleCanvasWrapper}>
+              <HandwritingCanvas
+                key={activePage?.id ? `${activePage.id}-title` : 'title-default'}
+                ref={titleCanvasRef}
+                width={300}
+                height={40}
+                strokeColor={canvasColor}
+                strokeWidth={2}
+                initialStrokes={activePage?.titleStrokes}
+                onStrokesChange={handleTitleStrokesChange}
+              />
+            </View>
+          </View>
           
           <CanvasToolbar
             mode={canvasMode}
@@ -932,7 +1312,7 @@ export default function StudySessionScreen() {
                 contentContainerStyle={styles.canvasInnerVertical}
               >
                 <View
-                  style={styles.canvasWrapper}
+                  style={[styles.canvasWrapper, { width: canvasSize.width, height: canvasSize.height }]}
                   onLayout={handleCanvasLayout}
                 >
                   {highlightedAnswerLinkId && (
@@ -953,8 +1333,10 @@ export default function StudySessionScreen() {
                     />
                   )}
                   <HandwritingCanvas 
+                    key={activePage?.id || 'canvas-default'}
                     ref={canvasRef} 
-                    height={CANVAS_HEIGHT} 
+                    width={canvasSize.width}
+                    height={canvasSize.height} 
                     strokeColor={canvasColor}
                     onDrawingStart={handleDrawingStart}
                     onDrawingEnd={handleDrawingEnd}
@@ -1034,41 +1416,131 @@ export default function StudySessionScreen() {
         <View style={styles.chatHeader}>
           <View style={styles.chatTitleRow}>
             <ThemedText type="title" style={{ color: '#fff' }}>{t('study.aiTutor')}</ThemedText>
-            <Pressable
-              style={[styles.ttsToggle, ttsEnabled && styles.ttsToggleActive]}
-              onPress={() => {
-                if (isSpeaking) {
-                  stopSpeaking();
-                }
-                setTtsEnabled(!ttsEnabled);
-              }}
-            >
-              <Ionicons 
-                name={ttsEnabled ? 'volume-high' : 'volume-mute'} 
-                size={18} 
-                color={ttsEnabled ? '#10b981' : '#64748b'} 
-              />
-            </Pressable>
+            <View style={styles.voiceControlsRow}>
+              <Pressable
+                style={[styles.ttsToggle, ttsEnabled && styles.ttsToggleActive]}
+                onPress={() => {
+                  if (isSpeaking) {
+                    stopSpeaking();
+                  }
+                  setTtsEnabled(!ttsEnabled);
+                }}
+                accessibilityLabel={ttsEnabled ? t('voice.disableTts') : t('voice.enableTts')}
+                accessibilityRole="button"
+              >
+                <Ionicons 
+                  name={ttsEnabled ? 'volume-high' : 'volume-mute'} 
+                  size={20} 
+                  color={ttsEnabled ? '#10b981' : '#64748b'} 
+                />
+              </Pressable>
+              <Pressable
+                style={[styles.ttsToggle, captionsEnabled && styles.ttsToggleActive]}
+                onPress={() => setCaptionsEnabled(!captionsEnabled)}
+                accessibilityLabel={captionsEnabled ? t('voice.disableCaptions') : t('voice.enableCaptions')}
+                accessibilityRole="button"
+              >
+                <Ionicons 
+                  name={captionsEnabled ? 'text' : 'text-outline'} 
+                  size={18} 
+                  color={captionsEnabled ? '#10b981' : '#64748b'} 
+                />
+              </Pressable>
+              <Pressable
+                style={[styles.ttsToggle, listeningMode && styles.listeningModeActive]}
+                onPress={() => setListeningMode(!listeningMode)}
+                accessibilityLabel={listeningMode ? t('voice.disableListening') : t('voice.enableListening')}
+                accessibilityRole="button"
+              >
+                <Ionicons 
+                  name={listeningMode ? 'ear' : 'ear-outline'} 
+                  size={18} 
+                  color={listeningMode ? '#f59e0b' : '#64748b'} 
+                />
+              </Pressable>
+            </View>
           </View>
           <ThemedText style={{ color: '#94a3b8', fontSize: 13 }}>
             {studyPlanEntry 
               ? t('study.focusedOn', { title: studyPlanEntry.title })
               : t('study.aiSubtitle')}
           </ThemedText>
-          <View style={styles.chatButtons}>
-            <Pressable style={styles.explainButton} onPress={requestExplanation} disabled={isChatting}>
-              <Ionicons name="bulb-outline" size={16} color="#f59e0b" />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.chatToolbarScroll}
+            contentContainerStyle={styles.chatToolbarContent}
+          >
+            <Pressable 
+              style={styles.explainButton} 
+              onPress={requestExplanation} 
+              disabled={isChatting}
+              accessibilityRole="button"
+              accessibilityLabel={t('study.explainThis')}
+              accessibilityState={{ disabled: isChatting }}
+            >
+              <Ionicons name="bulb-outline" size={18} color="#f59e0b" />
               <ThemedText style={styles.explainButtonText}>{t('study.explainThis')}</ThemedText>
             </Pressable>
-            <Pressable style={styles.primaryButton} onPress={requestQuestions} disabled={loadingQuestions}>
+            <Pressable 
+              style={styles.primaryButton} 
+              onPress={requestQuestions} 
+              disabled={loadingQuestions}
+              accessibilityRole="button"
+              accessibilityLabel={t('study.quizMe')}
+              accessibilityState={{ disabled: loadingQuestions, busy: loadingQuestions }}
+            >
               {loadingQuestions ? <ActivityIndicator color="#fff" size="small" /> : <ThemedText style={styles.primaryButtonText}>{t('study.quizMe')}</ThemedText>}
             </Pressable>
+            <Pressable 
+              style={styles.secondaryButton} 
+              onPress={handleAddPage}
+              accessibilityRole="button"
+              accessibilityLabel="Start a new blank page without deleting notes"
+            >
+              <ThemedText style={styles.secondaryButtonText}>New blank page</ThemedText>
+            </Pressable>
             {currentQuestion && (
-              <Pressable style={styles.secondaryButton} onPress={nextQuestion}>
+              <Pressable 
+                style={styles.secondaryButton} 
+                onPress={nextQuestion}
+                accessibilityRole="button"
+                accessibilityLabel={t('study.nextQuestion')}
+              >
                 <ThemedText style={styles.secondaryButtonText}>{t('study.nextQuestion')}</ThemedText>
               </Pressable>
             )}
-          </View>
+
+            <View style={styles.toolbarDivider} />
+
+            <Pressable 
+              style={styles.quickActionChip} 
+              onPress={() => sendToFeynmanAI(t('voice.quickSimpler'))}
+              disabled={isChatting}
+              accessibilityLabel={t('voice.quickSimpler')}
+            >
+              <Ionicons name="sparkles-outline" size={14} color="#a5b4fc" />
+              <ThemedText style={styles.quickActionText}>{t('voice.simpler')}</ThemedText>
+            </Pressable>
+            <Pressable 
+              style={styles.quickActionChip} 
+              onPress={() => sendToFeynmanAI(t('voice.quickAnalogy'))}
+              disabled={isChatting}
+              accessibilityLabel={t('voice.quickAnalogy')}
+            >
+              <Ionicons name="swap-horizontal-outline" size={14} color="#a5b4fc" />
+              <ThemedText style={styles.quickActionText}>{t('voice.analogy')}</ThemedText>
+            </Pressable>
+            <Pressable 
+              style={styles.quickActionChip} 
+              onPress={() => sendToFeynmanAI(t('voice.quickFormula'))}
+              disabled={isChatting}
+              accessibilityLabel={t('voice.quickFormula')}
+            >
+              <Ionicons name="calculator-outline" size={14} color="#a5b4fc" />
+              <ThemedText style={styles.quickActionText}>{t('voice.formula')}</ThemedText>
+            </Pressable>
+          </ScrollView>
         </View>
 
         <FlatList
@@ -1092,8 +1564,14 @@ export default function StudySessionScreen() {
                     )}
                   </View>
                   {item.role === 'ai' && ttsEnabled && (
-                    <Pressable onPress={() => speakMessage(item.text)} style={styles.replayButton}>
-                      <Ionicons name="play" size={12} color="#94a3b8" />
+                    <Pressable 
+                      onPress={() => speakMessage(item.text)} 
+                      style={styles.replayButton}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('voice.enableTts')}
+                      accessibilityHint={t('study.speaking')}
+                    >
+                      <Ionicons name="play-circle" size={24} color="#94a3b8" />
                     </Pressable>
                   )}
                 </View>
@@ -1140,17 +1618,40 @@ export default function StudySessionScreen() {
           }}
         />
 
+        {/* Caption Overlay */}
+        {captionsEnabled && currentCaption && (
+          <View style={styles.captionOverlay}>
+            <Pressable onPress={stopSpeaking} style={styles.captionStopButton}>
+              <Ionicons name="stop-circle" size={20} color="#ef4444" />
+            </Pressable>
+            <ScrollView style={styles.captionScroll} showsVerticalScrollIndicator={false}>
+              <ThemedText style={styles.captionText} numberOfLines={4}>
+                {currentCaption}
+              </ThemedText>
+            </ScrollView>
+          </View>
+        )}
+
         <View style={styles.inputArea}>
           <View style={styles.voiceRow}>
             <VoiceInput 
               onTranscription={handleVoiceTranscription} 
               disabled={isChatting}
+              listeningMode={listeningMode}
+              onListeningModeEnd={() => setListeningMode(false)}
+              ttsFinished={!isSpeaking && listeningMode}
             />
             {isChatting && (
               <View style={styles.thinkingIndicator}>
                 <ActivityIndicator color="#10b981" size="small" />
                 <ThemedText style={{ color: '#94a3b8', fontSize: 12 }}>{t('study.thinking')}</ThemedText>
               </View>
+            )}
+            {isSpeaking && (
+              <Pressable onPress={stopSpeaking} style={styles.stopSpeakingButton}>
+                <Ionicons name="stop-circle" size={24} color="#ef4444" />
+                <ThemedText style={styles.stopSpeakingText}>{t('study.stopSpeaking')}</ThemedText>
+              </Pressable>
             )}
           </View>
           
@@ -1213,6 +1714,70 @@ const createStyles = (palette: typeof Colors.light) =>
       padding: Spacing.md,
       gap: Spacing.sm,
     },
+    pageNavContainer: {
+      marginBottom: Spacing.sm,
+    },
+    pageTabsContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingVertical: 4,
+    },
+    pageTab: {
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: Radii.md,
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      minWidth: 70,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pageTabActive: {
+      backgroundColor: `${palette.primary}12`,
+      borderColor: palette.primary,
+    },
+    pageTabText: {
+      fontSize: 13,
+      color: palette.textMuted,
+      fontWeight: '500',
+    },
+    pageTabTextActive: {
+      color: palette.primary,
+      fontWeight: '600',
+    },
+    pageTitlePreview: {
+      overflow: 'hidden',
+      borderRadius: 4,
+    },
+    addPageButton: {
+      padding: 10,
+      borderRadius: Radii.md,
+      backgroundColor: `${palette.success}12`,
+      borderWidth: 1,
+      borderColor: `${palette.success}33`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pageTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+    pageTitleLabel: {
+      fontSize: 13,
+      color: palette.textMuted,
+      fontWeight: '500',
+    },
+    pageTitleCanvasWrapper: {
+      borderRadius: Radii.md,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: '#f8fafc',
+      overflow: 'hidden',
+    },
     canvasScrollShell: {
       marginTop: 8,
     },
@@ -1221,8 +1786,7 @@ const createStyles = (palette: typeof Colors.light) =>
     },
     canvasWrapper: {
       position: 'relative',
-      width: CANVAS_WIDTH,
-      height: CANVAS_HEIGHT,
+      // width and height are set dynamically via inline style
     },
     chatHeader: {
       gap: Spacing.xs,
@@ -1232,61 +1796,145 @@ const createStyles = (palette: typeof Colors.light) =>
       alignItems: 'center',
       justifyContent: 'space-between',
     },
+    voiceControlsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    chatToolbarScroll: {
+      marginHorizontal: -Spacing.xs,
+    },
+    chatToolbarContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingHorizontal: Spacing.xs,
+      paddingVertical: 4,
+    },
     ttsToggle: {
-      padding: Spacing.xs,
+      padding: Spacing.sm,
       borderRadius: Radii.md,
       backgroundColor: palette.muted,
       borderWidth: 1,
       borderColor: palette.border,
+      minWidth: 44,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     ttsToggleActive: {
       backgroundColor: `${palette.success}1a`,
       borderColor: `${palette.success}33`,
     },
-    chatButtons: {
+    listeningModeActive: {
+      backgroundColor: `${palette.warning}1a`,
+      borderColor: `${palette.warning}33`,
+    },
+    toolbarDivider: {
+      width: 1,
+      height: 32,
+      backgroundColor: palette.border,
+      opacity: 0.6,
+      marginHorizontal: 4,
+    },
+    quickActionChip: {
       flexDirection: 'row',
-      gap: Spacing.sm,
-      marginTop: 4,
-      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: `${palette.primary}12`,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: Radii.pill,
+      borderWidth: 1,
+      borderColor: `${palette.primary}33`,
+    },
+    quickActionText: {
+      color: palette.primary,
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    captionOverlay: {
+      backgroundColor: `${palette.surfaceAlt}f5`,
+      borderRadius: Radii.md,
+      padding: Spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.xs,
+      borderWidth: 1,
+      borderColor: `${palette.success}44`,
+      maxHeight: 100,
+    },
+    captionStopButton: {
+      padding: 4,
+    },
+    captionScroll: {
+      flex: 1,
+    },
+    captionText: {
+      color: palette.text,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    stopSpeakingButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      backgroundColor: `${palette.danger}12`,
+      borderRadius: Radii.md,
+      borderWidth: 1,
+      borderColor: `${palette.danger}44`,
+    },
+    stopSpeakingText: {
+      color: palette.danger,
+      fontSize: 12,
+      fontWeight: '600',
     },
     explainButton: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.xs,
       backgroundColor: `${palette.warning}12`,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderRadius: Radii.md,
       borderWidth: 1,
       borderColor: `${palette.warning}66`,
+      minHeight: 44,
     },
     explainButtonText: {
       color: palette.warning,
       fontWeight: '600',
+      fontSize: 15,
     },
     primaryButton: {
       backgroundColor: palette.primary,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderRadius: Radii.md,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
+      minHeight: 44,
     },
     primaryButtonText: {
       color: palette.textOnPrimary,
       fontWeight: '600',
+      fontSize: 15,
     },
     secondaryButton: {
       borderRadius: Radii.md,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderWidth: 1,
       borderColor: palette.border,
       backgroundColor: palette.surface,
+      minHeight: 44,
     },
     secondaryButtonText: {
       color: palette.text,
+      fontSize: 15,
     },
     chatList: {
       flex: 1,
@@ -1305,7 +1953,11 @@ const createStyles = (palette: typeof Colors.light) =>
       justifyContent: 'space-between',
     },
     replayButton: {
-      padding: 4,
+      padding: 8,
+      minWidth: 44,
+      minHeight: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     chatAI: {
       backgroundColor: palette.surfaceAlt,

@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -6,11 +7,12 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '@/contexts/auth-context';
 import { availableLanguages, useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getUserTotalCost } from '@/lib/supabase';
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const { signOut, isLoading: authLoading } = useAuth();
+  const { signOut, isLoading: authLoading, user } = useAuth();
   const {
     appLanguage,
     agentLanguage,
@@ -19,6 +21,26 @@ export default function SettingsScreen() {
     t,
     isSaving,
   } = useLanguage();
+
+  const [totalCost, setTotalCost] = useState<number | null>(null);
+  const [loadingCost, setLoadingCost] = useState(false);
+
+  const fetchTotalCost = useCallback(async () => {
+    if (!user) return;
+    setLoadingCost(true);
+    try {
+      const cost = await getUserTotalCost();
+      setTotalCost(cost);
+    } catch (err) {
+      console.warn('[settings] failed to fetch total cost', err);
+    } finally {
+      setLoadingCost(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchTotalCost();
+  }, [fetchTotalCost]);
 
   const renderLanguageOptions = (
     selected: string,
@@ -68,6 +90,20 @@ export default function SettingsScreen() {
         <ThemedText type="defaultSemiBold">{t('settings.agentLanguage')}</ThemedText>
         <ThemedText style={styles.hint}>{t('settings.agentLanguageHint')}</ThemedText>
         {renderLanguageOptions(agentLanguage, setAgentLanguage)}
+      </ThemedView>
+
+      <ThemedView style={styles.card}>
+        <ThemedText type="defaultSemiBold">{t('settings.aiUsageTitle')}</ThemedText>
+        <View style={styles.costRow}>
+          <ThemedText style={styles.costLabel}>{t('settings.totalCost')}</ThemedText>
+          {loadingCost ? (
+            <ThemedText style={styles.costValue}>{t('settings.loadingCost')}</ThemedText>
+          ) : (
+            <ThemedText type="defaultSemiBold" style={styles.costValue}>
+              {t('settings.totalCostValue', { value: (totalCost ?? 0).toFixed(4) })}
+            </ThemedText>
+          )}
+        </View>
       </ThemedView>
 
       <ThemedView style={styles.footerRow}>
@@ -146,6 +182,18 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     color: '#fff',
+  },
+  costRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  costLabel: {
+    color: '#64748b',
+  },
+  costValue: {
+    fontSize: 16,
   },
 });
 

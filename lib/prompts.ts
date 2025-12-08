@@ -1,10 +1,10 @@
 import { StudyQuestion } from '@/types';
 
 export const questionPrompt = (materialTitle: string, outline: string, count: number, language = 'en') =>
-  `You are a tutor using the Feynman technique. Generate ${count} short, concrete questions to test understanding of the material titled "${materialTitle}". Use the following outline or text:\n${outline}\nReturn each question as a numbered item with no explanations. Keep them concise. Respond in ${language}.`;
+  `You are a tutor using the Feynman technique. Generate ${count} short, concrete questions to test understanding of the material titled "${materialTitle}". Use the following outline or text:\n${outline}\nReturn each question as a numbered item with no explanations. Keep them concise. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when questions involve formulas or equations. Respond in ${language}.`;
 
 export const gradingPrompt = (question: StudyQuestion, answerText?: string, language = 'en') =>
-  `You are grading a student's response for the question "${question.prompt}". Evaluate correctness and gaps. Return:\n- summary (1-2 sentences)\n- correctness (one of: correct / partially correct / incorrect)\n- score 0-100\n- improvements (bullet list of 2-4 short tips)\nIf answer is empty, say that no answer was provided. Answer in JSON. Respond in ${language} but keep JSON keys in English.`;
+  `You are grading a student's response for the question "${question.prompt}". Evaluate correctness and gaps. Return:\n- summary (1-2 sentences)\n- correctness (one of: correct / partially correct / incorrect)\n- score 0-100\n- improvements (bullet list of 2-4 short tips)\nIf answer is empty, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Answer in JSON. Respond in ${language} but keep JSON keys in English.`;
 
 export const lectureMetadataPrompt = (fileSummaries: string, language = 'en') =>
   `You are organizing lecture materials. Based on these PDF hints:\n${fileSummaries}\nProduce a short JSON object with:\n{\n  "title": "<concise lecture title>",\n  "description": "<1-2 sentence summary>"\n}\nKeep it compact and factual. Respond in ${language} but keep JSON keys in English.`;
@@ -57,6 +57,44 @@ ${options.passingScoreNote ?? 'Target: confidently exceed the passing threshold 
 ]
 
 Generate 6-12 study plan entries depending on breadth. Focus on what earns passing points first, then expand. Return ONLY valid JSON, no markdown or explanations. Respond in ${language} but keep JSON keys in English.`;
+
+type PracticeExamPromptInput = {
+  topics: string;
+  examText?: string;
+  worksheetText?: string;
+  questionCount: number;
+  language?: string;
+};
+
+export const practiceExamPrompt = ({
+  topics,
+  examText,
+  worksheetText,
+  questionCount,
+  language = 'en',
+}: PracticeExamPromptInput) =>
+  `You are generating a practice exam ONLY from topics the student has already PASSED.
+
+Passed topics (focus on these only):
+${topics}
+
+Past exams (highest fidelity):${examText ? `\n${examText}` : '\nNone provided'}
+
+Worksheets / lecture materials (secondary):${worksheetText ? `\n${worksheetText}` : '\nNone provided'}
+
+Create ${questionCount} questions. Favor questions that mirror past exam patterns when exam text exists; otherwise use worksheets. For each question, include the matching topic title from the passed list.
+
+Return JSON array with:
+[
+  {
+    "prompt": "Question text (concise, unambiguous)",
+    "answer": "Short expected answer",
+    "topicTitle": "Exact title from passed topics",
+    "source": "exam | worksheet | material"
+  }
+]
+
+Keep answers brief but specific. Respond in ${language} but keep JSON keys in English.`;
 
 /**
  * System prompt for Feynman-style tutoring conversations

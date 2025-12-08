@@ -11,6 +11,7 @@ const allowedTypes = new Set([
   "transcribe",
   "metadata",
   "embed",
+  "practice_exam",
 ]);
 
 Deno.serve(async (req: Request) => {
