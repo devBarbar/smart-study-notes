@@ -25,6 +25,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLectures } from '@/hooks/use-lectures';
 import { useMaterials } from '@/hooks/use-materials';
 import { ChatMessage, embedQuery, evaluateAnswer, generateQuestions, streamFeynmanChat } from '@/lib/openai';
+import { textToStrokes } from '@/lib/handwriting-font';
 import { feynmanWelcomeMessage } from '@/lib/prompts';
 import { uploadCanvasImage } from '@/lib/storage';
 import { LectureFileChunk, addReviewEvent, countLectureChunks, getSessionById, getStudyPlanEntry, getUserStreak, listAnswerLinks, listReviewEvents, listSessionMessages, saveAnswerLink, saveSessionMessage, searchLectureChunks, updateSession, updateStudyPlanEntryMastery, updateStudyPlanEntryStatus, updateUserStreak } from '@/lib/supabase';
@@ -192,6 +193,9 @@ export default function StudySessionScreen() {
   // Answer markers for linking canvas to chat
   const [answerMarkers, setAnswerMarkers] = useState<CanvasAnswerMarker[]>([]);
   const questionIndexCounterRef = useRef(0);
+  const canvasQuestionCounterRef = useRef(0);
+  const writtenQuestionIdsRef = useRef<Set<string>>(new Set());
+  const hasSeededQuestionWritesRef = useRef(false);
   
   // Highlight state for canvas area when clicking "View Notes" in chat
   const [highlightedAnswerLinkId, setHighlightedAnswerLinkId] = useState<string | null>(null);
@@ -355,6 +359,18 @@ export default function StudySessionScreen() {
     setCanvasLayout({ width, height });
   }, []);
 
+  const getMaxYFromStrokes = useCallback((strokes: CanvasStrokeData[]) => {
+    let maxY = 0;
+    strokes.forEach((stroke) => {
+      stroke.points.forEach((p) => {
+        if (p.y > maxY) {
+          maxY = p.y;
+        }
+      });
+    });
+    return maxY;
+  }, []);
+
   // Calculate bounds for a set of strokes
   const computeBounds = useCallback((strokes: CanvasStrokeData[], padding = 16): CanvasBounds | null => {
     let minX = Number.POSITIVE_INFINITY;
@@ -397,6 +413,106 @@ export default function StudySessionScreen() {
 
     return computeBounds(canvasStrokes);
   }, [canvasStrokes, computeBounds, lastDrawingPosition]);
+
+  const getQuestionTextForMessage = useCallback((message: StudyChatMessage): string | null => {
+    if (message.questionId) {
+      const matched = questions.find((q) => q.id === message.questionId);
+      if (matched?.prompt) {
+        return matched.prompt.trim();
+      }
+    }
+
+    const cleaned = message.text.replace(/_[^_]+_$/g, '').trim();
+    const lineQuestions = cleaned
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.endsWith('?'));
+
+    if (lineQuestions.length > 0) {
+      return lineQuestions[lineQuestions.length - 1];
+    }
+
+    const match = cleaned.match(/([^?]+?\?)(?!.*\?)/s);
+    return match ? match[1].trim() : null;
+  }, [questions]);
+
+  const writeQuestionToCanvas = useCallback(
+    (questionText: string) => {
+      if (!activePage) return;
+
+      const padding = 32;
+      const baseY = getMaxYFromStrokes(canvasStrokes) + 40;
+      const availableWidth = Math.max((activePage.width || canvasSize.width) - padding * 2, 220);
+
+      const questionNumber = canvasQuestionCounterRef.current + 1;
+      canvasQuestionCounterRef.current = questionNumber;
+
+      const { strokes: generatedStrokes, width: textWidth, height: textHeight } = textToStrokes(
+        `Q${questionNumber}: ${questionText}`,
+        padding,
+        baseY,
+        {
+          color: canvasColor,
+          strokeWidth: 3,
+          charWidth: 18,
+          charSpacing: 4,
+          wordSpacing: 10,
+          lineHeight: 30,
+          maxWidth: availableWidth,
+          jitter: 1,
+        }
+      );
+
+      if (generatedStrokes.length === 0) return;
+
+      const updatedStrokes = [...canvasStrokes, ...generatedStrokes];
+      canvasRef.current?.setStrokes(updatedStrokes as CanvasStroke[]);
+
+      setCanvasPages((prev) => {
+        const updatedPages = prev.map((page) => {
+          if (page.id !== activePageId) return page;
+          const nextHeight = Math.max(page.height, baseY + textHeight + 48);
+          const nextWidth = Math.max(page.width, padding + textWidth + 48);
+          return { ...page, strokes: updatedStrokes, height: nextHeight, width: nextWidth };
+        });
+
+        if (sessionId) {
+          if (saveCanvasDebounceRef.current) {
+            clearTimeout(saveCanvasDebounceRef.current);
+          }
+          saveCanvasDebounceRef.current = setTimeout(async () => {
+            try {
+              await updateSession(sessionId, { canvasPages: updatedPages });
+              console.log('[study] Canvas pages saved with', updatedPages.length, 'pages (auto question)');
+            } catch (err) {
+              console.warn('[study] Failed to save canvas pages (auto question):', err);
+            }
+          }, 800);
+        }
+
+        return updatedPages;
+      });
+
+      canvasBaselineRef.current = updatedStrokes.length;
+      hasInitializedCanvasRef.current = true;
+
+      setTimeout(() => {
+        const scrollY = Math.max(baseY - 24, 0);
+        canvasScrollRef.current?.scrollTo({ y: scrollY, animated: true });
+        canvasHScrollRef.current?.scrollTo({ x: 0, animated: true });
+      }, 150);
+    },
+    [
+      activePage,
+      activePageId,
+      canvasColor,
+      canvasSize.width,
+      canvasStrokes,
+      getMaxYFromStrokes,
+      sessionId,
+      setCanvasPages,
+    ]
+  );
 
   // Load existing session data (messages, canvas, notes) from database
   useEffect(() => {
@@ -557,6 +673,36 @@ export default function StudySessionScreen() {
       setCurrentQuestion(questions[0]);
     }
   }, [questions]);
+
+  // Seed existing AI messages to avoid rewriting old questions into the canvas
+  useEffect(() => {
+    if (loadingMessages || hasSeededQuestionWritesRef.current) return;
+    if (messages.length > 0) {
+      const aiIds = messages.filter((m) => m.role === 'ai').map((m) => m.id);
+      writtenQuestionIdsRef.current = new Set(aiIds);
+    }
+    hasSeededQuestionWritesRef.current = true;
+  }, [loadingMessages, messages]);
+
+  // When the AI asks a question, write it on the canvas as a handwritten note
+  useEffect(() => {
+    if (loadingMessages) return;
+
+    messages.forEach((msg) => {
+      if (msg.role !== 'ai') return;
+      if (writtenQuestionIdsRef.current.has(msg.id)) return;
+
+      const questionText = getQuestionTextForMessage(msg);
+      if (!questionText) return;
+
+      const trimmed = questionText.trim();
+      const isLikelyQuestion = trimmed.endsWith('?') || Boolean(msg.questionId);
+      if (!isLikelyQuestion) return;
+
+      writtenQuestionIdsRef.current.add(msg.id);
+      writeQuestionToCanvas(trimmed);
+    });
+  }, [messages, loadingMessages, getQuestionTextForMessage, writeQuestionToCanvas]);
 
   // Handle canvas mode change
   const handleCanvasModeChange = useCallback((mode: CanvasMode) => {
