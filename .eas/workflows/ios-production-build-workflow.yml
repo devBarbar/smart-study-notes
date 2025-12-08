@@ -1,0 +1,20 @@
+name: Build on Branch Push
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build_ios_production:
+    type: build
+    params:
+      platform: ios
+      profile: production
+  testflight:
+    name: Distribute to TestFlight
+    type: testflight
+    needs: [build_ios_production]
+    params:
+      build_id: ${{ needs.build_ios_production.outputs.build_id }}
+      changelog: "${{ github.commit_message || 'Bug fixes' }}"
