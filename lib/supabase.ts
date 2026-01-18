@@ -1070,6 +1070,7 @@ const mapPracticeExam = (row: any): PracticeExam => ({
   error: row.error ?? undefined,
   createdAt: row.created_at,
   completedAt: row.completed_at ?? undefined,
+  category: row.category ?? undefined,
 });
 
 export const listPracticeExams = async (lectureId: string): Promise<PracticeExam[]> => {
@@ -1082,6 +1083,40 @@ export const listPracticeExams = async (lectureId: string): Promise<PracticeExam
 
   if (error) throw error;
   return (data ?? []).map(mapPracticeExam);
+};
+
+/**
+ * List cluster quizzes (practice exams with a category) for a specific lecture
+ */
+export const listClusterQuizzes = async (lectureId: string): Promise<PracticeExam[]> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('practice_exams')
+    .select()
+    .eq('lecture_id', lectureId)
+    .not('category', 'is', null)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map(mapPracticeExam);
+};
+
+/**
+ * Get the most recent cluster quiz for a specific category
+ */
+export const getClusterQuizForCategory = async (lectureId: string, category: string): Promise<PracticeExam | null> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('practice_exams')
+    .select()
+    .eq('lecture_id', lectureId)
+    .eq('category', category)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapPracticeExam(data) : null;
 };
 
 export const getPracticeExam = async (examId: string): Promise<PracticeExam | null> => {

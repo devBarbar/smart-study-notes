@@ -1,6 +1,51 @@
-import { ReviewEvent, ReviewQuality, StudyPlanEntry } from '@/types';
+import { GermanGrade, ReviewEvent, ReviewQuality, StudyPlanEntry } from '@/types';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+/**
+ * German university grading scale thresholds
+ * Maps percentage ranges to grades (1.0 is best, 4.0 is minimum pass, Failed is below 45%)
+ */
+export const GRADE_THRESHOLDS: { min: number; grade: GermanGrade; label: string; color: string }[] = [
+  { min: 85.5, grade: '1.0', label: 'Excellent', color: '#10b981' },
+  { min: 81, grade: '1.3', label: 'Very Good', color: '#22c55e' },
+  { min: 76.5, grade: '1.7', label: 'Very Good', color: '#34d399' },
+  { min: 72, grade: '2.0', label: 'Good', color: '#84cc16' },
+  { min: 67.5, grade: '2.3', label: 'Good', color: '#a3e635' },
+  { min: 63, grade: '2.7', label: 'Satisfactory', color: '#eab308' },
+  { min: 58.5, grade: '3.0', label: 'Satisfactory', color: '#f59e0b' },
+  { min: 54, grade: '3.3', label: 'Sufficient', color: '#f97316' },
+  { min: 49.5, grade: '3.7', label: 'Sufficient', color: '#fb923c' },
+  { min: 45, grade: '4.0', label: 'Adequate', color: '#ef4444' },
+  { min: 0, grade: 'Failed', label: 'Failed', color: '#dc2626' },
+];
+
+/**
+ * Convert a percentage (0-100) to a German grade
+ */
+export const percentageToGrade = (percentage: number): GermanGrade => {
+  const clamped = Math.max(0, Math.min(100, percentage));
+  const threshold = GRADE_THRESHOLDS.find((t) => clamped >= t.min);
+  return threshold?.grade ?? 'Failed';
+};
+
+/**
+ * Get the color associated with a percentage/grade
+ */
+export const getGradeColor = (percentage: number): string => {
+  const clamped = Math.max(0, Math.min(100, percentage));
+  const threshold = GRADE_THRESHOLDS.find((t) => clamped >= t.min);
+  return threshold?.color ?? '#dc2626';
+};
+
+/**
+ * Get the label associated with a percentage/grade
+ */
+export const getGradeLabel = (percentage: number): string => {
+  const clamped = Math.max(0, Math.min(100, percentage));
+  const threshold = GRADE_THRESHOLDS.find((t) => clamped >= t.min);
+  return threshold?.label ?? 'Failed';
+};
 
 type MasteryInputs = {
   history: ReviewEvent[];

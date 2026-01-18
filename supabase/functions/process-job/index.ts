@@ -91,9 +91,7 @@ const handlePlan = async (payload: any): Promise<JobRunResult> => {
   const chunks = chunkText(combinedContent);
   const allEntries: any[] = [];
   const seenTitles = new Set<string>();
-  const passingScoreNote = options.thresholds
-    ? `Target readiness: pass at ${options.thresholds.pass}% confidence, solid at ${options.thresholds.good}%, ace at ${options.thresholds.ace}%.`
-    : "Target: confidently exceed the passing threshold before adding stretch goals.";
+  const passingScoreNote = "Target: confidently exceed the passing threshold (45%) before adding stretch goals. Use the German grading scale (1.0 best, 4.0 minimum pass, below 45% = failed).";
 
   const tierOrder: Record<string, number> = { core: 0, "high-yield": 1, stretch: 2 };
   const defaultPriority: Record<string, number> = { core: 90, "high-yield": 70, stretch: 40 };
@@ -253,11 +251,13 @@ const handlePracticeExam = async (
   supabase: ReturnType<typeof createClient>,
   userId: string | null,
 ): Promise<JobRunResult> => {
-  const { practiceExamId, lectureId, questionCount = 5, language = "en" } = payload ?? {};
+  const { practiceExamId, lectureId, questionCount = 5, language = "en", category = null } = payload ?? {};
   if (!practiceExamId || !lectureId) {
     throw new Error("practiceExamId and lectureId are required");
   }
   if (!userId) throw new Error("User context required for practice exam generation");
+
+  const isClusterQuiz = Boolean(category);
 
   const { data: examRow, error: examError } = await supabase
     .from("practice_exams")
@@ -269,15 +269,25 @@ const handlePracticeExam = async (
   if (examError) throw examError;
   if (!examRow) throw new Error("Practice exam not found");
 
-  const { data: passedEntries, error: passedError } = await supabase
+  // For cluster quizzes: get ALL entries in the category (to assess full cluster mastery)
+  // For regular practice exams: get only passed entries (to reinforce learned material)
+  let entriesQuery = supabase
     .from("study_plan_entries")
-    .select("id,title,key_concepts,description,status,order_index")
+    .select("id,title,key_concepts,description,status,order_index,category")
     .eq("lecture_id", lectureId)
-    .eq("user_id", userId)
-    .eq("status", "passed")
-    .order("order_index", { ascending: true });
+    .eq("user_id", userId);
 
-  if (passedError) throw passedError;
+  if (isClusterQuiz) {
+    // For cluster quiz: filter by category, include all entries regardless of status
+    entriesQuery = entriesQuery.eq("category", category);
+  } else {
+    // For regular practice exam: only passed entries
+    entriesQuery = entriesQuery.eq("status", "passed");
+  }
+
+  const { data: entries, error: entriesError } = await entriesQuery.order("order_index", { ascending: true });
+
+  if (entriesError) throw entriesError;
 
   const { data: files, error: filesError } = await supabase
     .from("lecture_files")
@@ -288,12 +298,13 @@ const handlePracticeExam = async (
   if (filesError) throw filesError;
 
   const topicSummary =
-    (passedEntries ?? [])
+    (entries ?? [])
       .map((entry: any, idx: number) => {
         const concepts = Array.isArray(entry.key_concepts) ? ` — ${entry.key_concepts.slice(0, 4).join(", ")}` : "";
-        return `${idx + 1}. ${entry.title}${concepts}`;
+        const statusNote = isClusterQuiz ? ` [${entry.status ?? "not_started"}]` : "";
+        return `${idx + 1}. ${entry.title}${concepts}${statusNote}`;
       })
-      .join("\n") || "No passed topics available.";
+      .join("\n") || (isClusterQuiz ? "No topics in this cluster." : "No passed topics available.");
 
   const examText = (files ?? [])
     .filter((f: any) => f.is_exam)
@@ -311,6 +322,7 @@ const handlePracticeExam = async (
     examText: examText ? truncateToTokenLimit(examText, 6000) : undefined,
     worksheetText: worksheetText ? truncateToTokenLimit(worksheetText, 4000) : undefined,
     language,
+    categoryName: isClusterQuiz ? category : undefined,
   });
 
   const chat = await callChat([{ type: "text", text: prompt }]);
@@ -329,9 +341,11 @@ const handlePracticeExam = async (
   if (parsed.length === 0) {
     parsed = [
       {
-        prompt: "Summarize one key concept from the passed topics.",
+        prompt: isClusterQuiz 
+          ? `Summarize one key concept from the "${category}" cluster.`
+          : "Summarize one key concept from the passed topics.",
         answer: "Student provides a concise summary.",
-        topicTitle: passedEntries?.[0]?.title ?? "Review",
+        topicTitle: entries?.[0]?.title ?? "Review",
         source: "worksheet",
       },
     ];
@@ -342,7 +356,7 @@ const handlePracticeExam = async (
   const questions = trimmed.map((item, idx) => {
     const normalizedTopic = (item.topicTitle ?? "").toLowerCase().trim();
     const matchedEntry =
-      (passedEntries ?? []).find((e: any) => (e.title ?? "").toLowerCase().trim() === normalizedTopic) ?? null;
+      (entries ?? []).find((e: any) => (e.title ?? "").toLowerCase().trim() === normalizedTopic) ?? null;
 
     const normalizedSource = (() => {
       const s = (item.source ?? "").toLowerCase().trim();
@@ -379,16 +393,16 @@ const handlePracticeExam = async (
   if (updateError) throw updateError;
 
   return {
-    result: { practiceExamId, questionCount: questions.length },
+    result: { practiceExamId, questionCount: questions.length, category },
     usage: {
-      feature: "practice_exam",
+      feature: isClusterQuiz ? "cluster_quiz" : "practice_exam",
       model: chat.model ?? null,
       usage: chat.usage,
       costUsd: chat.costUsd,
       inputCostUsd: chat.inputCostUsd,
       outputCostUsd: chat.outputCostUsd,
       lectureId: lectureId ?? null,
-      metadata: { questions: questions.length },
+      metadata: { questions: questions.length, category },
     },
   };
 };

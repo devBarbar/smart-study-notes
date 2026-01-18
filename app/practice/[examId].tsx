@@ -319,6 +319,14 @@ export default function PracticeExamScreen() {
             <ThemedText>{t('practiceExam.back')}</ThemedText>
           </Pressable>
           <ThemedText type="title">{exam.title}</ThemedText>
+          {exam.category && (
+            <View style={styles.clusterBadge}>
+              <Ionicons name="folder" size={14} color={palette.primary} />
+              <ThemedText style={styles.clusterBadgeText}>
+                {t('clusterQuiz.clusterLabel', { category: exam.category })}
+              </ThemedText>
+            </View>
+          )}
           <ThemedText style={styles.metaText}>
             {t('practiceExam.metaDetail', {
               status: t(`practiceExam.status.${exam.status}`),
@@ -665,6 +673,23 @@ const createStyles = (palette: typeof Colors.light) =>
     secondaryButtonText: {
       color: palette.text,
       fontWeight: '600',
+    },
+    clusterBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: Radii.pill,
+      backgroundColor: `${palette.primary}14`,
+      borderWidth: 1,
+      borderColor: `${palette.primary}33`,
+      alignSelf: 'flex-start',
+    },
+    clusterBadgeText: {
+      color: palette.primary,
+      fontSize: 13,
+      fontWeight: '500',
     },
   });
 

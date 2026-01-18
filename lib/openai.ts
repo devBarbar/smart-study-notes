@@ -1,4 +1,5 @@
 import { LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness } from '@/types';
+import { percentageToGrade } from './mastery';
 import { questionPrompt } from './prompts';
 import { getSupabase } from './supabase';
 
@@ -603,7 +604,6 @@ export const extractPdfText = async (pdfUrl: string): Promise<ExtractedPdfResult
 type StudyPlanSource = { fileName: string; text: string; isExam?: boolean };
 type StudyPlanOptions = {
   additionalNotes?: string;
-  thresholds?: { pass: number; good: number; ace: number };
   lectureId?: string;
 };
 
@@ -625,35 +625,54 @@ export const generateStudyPlan = async (
   return { entries: data?.entries ?? [], costUsd: data?.costUsd };
 };
 
+type ClusterQuizResult = {
+  category: string;
+  score: number;
+  passed: boolean;
+  questionCount: number;
+};
+
 type RoadmapRequest = {
   planEntries: StudyPlanEntry[];
   additionalNotes?: string;
-  thresholds: { pass: number; good: number; ace: number };
   progress: { passed: number; inProgress: number; notStarted: number; failed: number };
   language?: LanguageCode;
+  /** Cluster quiz results to factor into readiness calculation */
+  clusterQuizResults?: ClusterQuizResult[];
 };
 
 export const generateReadinessAndRoadmap = async (
-  { planEntries, additionalNotes, thresholds, progress, language = 'en' }: RoadmapRequest
+  { planEntries, additionalNotes, progress, language = 'en', clusterQuizResults = [] }: RoadmapRequest
 ): Promise<{ readiness: StudyReadiness; roadmap: RoadmapStep[] }> => {
   const total = Math.max(planEntries.length, 1);
-  const completionRatio =
+  
+  // Factor in cluster quiz results - passed quizzes boost confidence
+  const passedClusters = clusterQuizResults.filter(q => q.passed).length;
+  const totalClusters = clusterQuizResults.length;
+  const avgQuizScore = clusterQuizResults.length > 0 
+    ? clusterQuizResults.reduce((sum, q) => sum + q.score, 0) / clusterQuizResults.length 
+    : 0;
+  
+  // Boost completion ratio based on cluster quiz performance
+  const baseCompletionRatio =
     (progress.passed + progress.inProgress * 0.6 + progress.failed * 0.3) / total;
-  const fallbackPass = Math.max(5, Math.min(95, Math.round(30 + completionRatio * 60)));
-  const fallbackGood = Math.max(10, Math.min(98, Math.round(40 + completionRatio * 55)));
-  const fallbackAce = Math.max(12, Math.min(99, Math.round(50 + completionRatio * 50)));
-
-  const planSummary = planEntries
-    .map((entry, idx) => {
-      const status = (entry.status ?? 'not_started').replace('_', ' ');
-      return `${idx + 1}. ${entry.title} [${entry.importanceTier ?? 'core'} | priority ${
-        entry.priorityScore ?? 0
-      } | status ${status}${entry.category ? ` | ${entry.category}` : ''}]`;
-    })
-    .join('\n');
+  const clusterBonus = totalClusters > 0 ? (passedClusters / totalClusters) * 0.15 : 0;
+  const completionRatio = Math.min(1, baseCompletionRatio + clusterBonus);
+  
+  // Calculate fallback readiness percentage
+  const fallbackPercentage = Math.max(0, Math.min(100, Math.round(20 + completionRatio * 70)));
 
   const notesBlock = additionalNotes
     ? `Instructor / additional notes (HIGH PRIORITY - topics mentioned here should be prioritized):\n${truncateToTokenLimit(additionalNotes, 2000)}\n`
+    : '';
+  
+  // Build cluster quiz results block
+  const clusterQuizBlock = clusterQuizResults.length > 0
+    ? `Cluster Quiz Results (IMPORTANT - these demonstrate actual test performance on topic clusters):\n${
+        clusterQuizResults.map(q => 
+          `- ${q.category}: ${q.score}% (${q.passed ? 'PASSED' : 'FAILED'}) - ${q.questionCount} questions`
+        ).join('\n')
+      }\n\nAverage quiz score: ${Math.round(avgQuizScore)}% | Clusters passed: ${passedClusters}/${totalClusters}\n`
     : '';
 
   // Build enhanced plan summary with exam info
@@ -668,12 +687,20 @@ export const generateReadinessAndRoadmap = async (
     })
     .join('\n');
 
-  const prompt = `You are an exam readiness coach. Given a study plan with progress, produce an updated probability of achieving three goals and a focused roadmap that maximizes passing first, then solid (good), then ace.
+  const prompt = `You are an exam readiness coach. Given a study plan with progress and cluster quiz results, estimate a single readiness percentage (0-100) that maps to a German university grade and create a focused roadmap.
 
-Goals (confidence targets):
-- Pass: ${thresholds.pass}%
-- Good: ${thresholds.good}%
-- Ace: ${thresholds.ace}%
+German Grading Scale (for reference):
+- 85.5-100%: Grade 1.0 (Excellent)
+- 81-85.4%: Grade 1.3 (Very Good)
+- 76.5-80.9%: Grade 1.7 (Very Good)
+- 72-76.4%: Grade 2.0 (Good)
+- 67.5-71.9%: Grade 2.3 (Good)
+- 63-67.4%: Grade 2.7 (Satisfactory)
+- 58.5-62.9%: Grade 3.0 (Satisfactory)
+- 54-58.4%: Grade 3.3 (Sufficient)
+- 49.5-53.9%: Grade 3.7 (Sufficient)
+- 45-49.4%: Grade 4.0 (Adequate - minimum pass)
+- Below 45%: Failed
 
 Progress counts:
 - Passed: ${progress.passed}
@@ -685,25 +712,25 @@ Progress counts:
 Study plan entries (note: [EXAM TOPIC] = from past exam, [LIKELY EXAM] = high exam relevance, [PROF FOCUS] = mentioned in instructor notes):
 ${enhancedPlanSummary || 'No plan entries provided.'}
 
-${notesBlock}
+${clusterQuizBlock}${notesBlock}
 
-IMPORTANT: 
-- Probabilities must satisfy: pass >= good >= ace (you can't ace without passing)
-- Items marked [EXAM TOPIC], [LIKELY EXAM], or [PROF FOCUS] should be given HIGHEST priority in the roadmap
-- Instructor notes indicate what the professor considers important - prioritize these heavily
+IMPORTANT:
+- Estimate a realistic readiness percentage based on progress, quiz scores, and topic coverage
+- Items marked [EXAM TOPIC], [LIKELY EXAM], or [PROF FOCUS] are critical for exam success
+- CLUSTER QUIZ RESULTS are strong indicators of actual exam performance
+- Be conservative - only give high percentages when most topics are passed
 
 Return JSON ONLY with this shape:
 {
-  "probabilities": { "pass": 0-100, "good": 0-100, "ace": 0-100 },
-  "summary": "1-2 sentence overview",
-  "priorityExplanation": "2-3 sentences explaining WHY items are ordered this way, what factors drove the prioritization (exam topics, instructor notes, importance tier, etc.)",
+  "readinessPercentage": 0-100,
+  "summary": "1-2 sentence overview of exam readiness",
+  "priorityExplanation": "2-3 sentences explaining WHY items are ordered this way, what factors drove the prioritization",
   "focusAreas": ["short bullets to improve next"],
   "roadmap": [
     {
       "order": 1,
       "title": "Topic or cluster",
       "action": "Specific next actions (1-2 sentences)",
-      "target": "pass | good | ace",
       "reason": "Why this specific topic is prioritized at this position",
       "category": "Category name",
       "estimatedMinutes": 20-90,
@@ -713,8 +740,9 @@ Return JSON ONLY with this shape:
 }
 
 Rules:
-- Put pass-critical items first, then steps toward good, then ace polish.
+- Put critical/weak topics first, then reinforcement, then polish.
 - Prioritize items from past exams and instructor notes FIRST.
+- Clusters with FAILED quizzes need extra focus in the roadmap.
 - Keep roadmap to 5-8 steps max.
 - Each roadmap item's "reason" should explain why it's at that priority position.`;
 
@@ -735,20 +763,12 @@ Rules:
     return fallback;
   };
 
-  // Parse probabilities first
-  let pass = clampPercent(parsed?.probabilities?.pass, fallbackPass);
-  let good = clampPercent(parsed?.probabilities?.good, fallbackGood);
-  let ace = clampPercent(parsed?.probabilities?.ace, fallbackAce);
-
-  // Enforce logical constraint: pass >= good >= ace
-  // (You can't ace if you can't pass; you can't do well if you can't pass)
-  good = Math.min(good, pass);
-  ace = Math.min(ace, good);
+  // Parse readiness percentage
+  const readinessPercentage = clampPercent(parsed?.readinessPercentage, fallbackPercentage);
 
   const readiness: StudyReadiness = {
-    pass,
-    good,
-    ace,
+    percentage: readinessPercentage,
+    predictedGrade: percentageToGrade(readinessPercentage),
     summary: parsed?.summary || 'AI-estimated readiness based on current progress.',
     focusAreas: Array.isArray(parsed?.focusAreas)
       ? parsed.focusAreas.filter(Boolean).map((f: any) => String(f))
@@ -764,7 +784,6 @@ Rules:
       order: idx + 1,
       title: entry.title,
       action: entry.description || 'Study this topic and practice 2-3 questions.',
-      target: entry.importanceTier === 'stretch' ? 'ace' : entry.importanceTier === 'high-yield' ? 'good' : 'pass',
       reason: 'Derived from study plan priority.',
       category: entry.category,
       estimatedMinutes: 45,
@@ -776,10 +795,6 @@ Rules:
           order: typeof step.order === 'number' ? step.order : idx + 1,
           title: step.title || `Step ${idx + 1}`,
           action: step.action || step.next || 'Review and practice.',
-          target:
-            step.target === 'good' || step.target === 'ace'
-              ? step.target
-              : 'pass',
           reason: step.reason || step.rationale || undefined,
           category: step.category || step.section || undefined,
           estimatedMinutes: Number.isFinite(Number(step.estimatedMinutes))
@@ -799,17 +814,20 @@ export const generatePracticeExam = async (params: {
   questionCount?: number;
   language?: LanguageCode;
   title?: string;
+  /** When set, creates a cluster quiz scoped to this category */
+  category?: string;
 }) => {
-  const { lectureId, questionCount = 5, language = 'en', title } = params;
+  const { lectureId, questionCount = 5, language = 'en', title, category } = params;
   const { practiceExamId, jobId } = await callSupabaseFunction<{
     practiceExamId: string;
     jobId: string;
-  }>('generate-practice-exam', { lectureId, questionCount, language, title });
+  }>('generate-practice-exam', { lectureId, questionCount, language, title, category });
 
-  const result = await waitForJobResult<{ practiceExamId: string; questionCount: number }>(jobId);
+  const result = await waitForJobResult<{ practiceExamId: string; questionCount: number; category?: string }>(jobId);
   return {
     practiceExamId: result?.practiceExamId ?? practiceExamId,
     questionCount: result?.questionCount ?? questionCount,
+    category: result?.category ?? category,
     jobId,
   };
 };

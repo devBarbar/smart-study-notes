@@ -11,7 +11,6 @@ import { studyPlanPrompt } from "../_shared/prompts.ts";
 type StudyPlanSource = { fileName: string; text: string; isExam?: boolean };
 type StudyPlanOptions = {
   additionalNotes?: string;
-  thresholds?: { pass: number; good: number; ace: number };
 };
 
 type ExamRelevance = "high" | "medium" | "low";
@@ -101,9 +100,7 @@ Deno.serve(async (req: Request) => {
     const chunks = chunkText(combinedContent);
     const allEntries: StudyPlanEntry[] = [];
     const seenTitles = new Set<string>();
-    const passingScoreNote = options.thresholds
-      ? `Target readiness: pass at ${options.thresholds.pass}% confidence, solid at ${options.thresholds.good}%, ace at ${options.thresholds.ace}%.`
-      : "Target: confidently exceed the passing threshold before adding stretch goals.";
+    const passingScoreNote = "Target: confidently exceed the passing threshold (45%) before adding stretch goals. Use the German grading scale (1.0 best, 4.0 minimum pass, below 45% = failed).";
 
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];

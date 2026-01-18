@@ -27,23 +27,23 @@ export type ImportanceTier = 'core' | 'high-yield' | 'stretch';
 
 export type SectionStatus = 'not_started' | 'in_progress' | 'passed' | 'failed';
 
-export type RoadmapTarget = 'pass' | 'good' | 'ace';
-
 export type RoadmapStep = {
   order: number;
   title: string;
   action: string;
-  target: RoadmapTarget;
   reason?: string;
   category?: string;
   estimatedMinutes?: number;
   examTopics?: string[];
 };
 
+export type GermanGrade = '1.0' | '1.3' | '1.7' | '2.0' | '2.3' | '2.7' | '3.0' | '3.3' | '3.7' | '4.0' | 'Failed';
+
 export type StudyReadiness = {
-  pass: number;
-  good: number;
-  ace: number;
+  /** Overall readiness percentage (0-100) */
+  percentage: number;
+  /** Predicted grade based on percentage */
+  predictedGrade: GermanGrade;
   summary?: string;
   focusAreas?: string[];
   priorityExplanation?: string;
@@ -175,6 +175,8 @@ export type PracticeExam = {
   error?: string;
   createdAt: string;
   completedAt?: string;
+  /** When set, this is a cluster quiz scoped to a specific topic category */
+  category?: string;
 };
 
 export type PracticeExamQuestion = {

@@ -36,7 +36,11 @@ Deno.serve(async (req: Request) => {
     const requestedCount = Number(body?.questionCount ?? 5);
     const questionCount = Number.isFinite(requestedCount) ? Math.max(1, Math.min(20, requestedCount)) : 5;
     const language = (body?.language ?? "en") as string;
-    const title = (body?.title ?? "").toString().trim() || `Practice Exam - ${new Date().toISOString().slice(0, 10)}`;
+    const category = (body?.category ?? "").toString().trim() || null;
+    const defaultTitle = category 
+      ? `${category} - Cluster Quiz`
+      : `Practice Exam - ${new Date().toISOString().slice(0, 10)}`;
+    const title = (body?.title ?? "").toString().trim() || defaultTitle;
 
     if (!lectureId) {
       return new Response(
@@ -53,6 +57,7 @@ Deno.serve(async (req: Request) => {
         title,
         status: "pending",
         question_count: questionCount,
+        category,
       })
       .select("id")
       .single();
@@ -66,6 +71,7 @@ Deno.serve(async (req: Request) => {
       lectureId,
       questionCount,
       language,
+      category,
     };
 
     const { data: job, error: jobError } = await supabase

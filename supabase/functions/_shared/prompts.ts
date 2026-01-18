@@ -88,6 +88,8 @@ type PracticeExamPromptInput = {
   worksheetText?: string;
   questionCount: number;
   language?: string;
+  /** When set, this is a cluster quiz for a specific category */
+  categoryName?: string;
 };
 
 export const practiceExamPrompt = ({
@@ -96,29 +98,45 @@ export const practiceExamPrompt = ({
   worksheetText,
   questionCount,
   language = "en",
-}: PracticeExamPromptInput) =>
-  `You are generating a practice exam ONLY from topics the student has already PASSED.
+  categoryName,
+}: PracticeExamPromptInput) => {
+  const isClusterQuiz = Boolean(categoryName);
+  
+  const intro = isClusterQuiz
+    ? `You are generating a CLUSTER ASSESSMENT for the "${categoryName}" topic cluster. This quiz tests the student's mastery of ALL topics in this cluster to determine if they are ready to move on.`
+    : `You are generating a practice exam ONLY from topics the student has already PASSED.`;
 
-Passed topics (focus on these only):
+  const topicsLabel = isClusterQuiz
+    ? `Topics in the "${categoryName}" cluster (test ALL of these):`
+    : `Passed topics (focus on these only):`;
+
+  const questionGuidance = isClusterQuiz
+    ? `Create ${questionCount} questions that comprehensively assess the student's understanding of the "${categoryName}" cluster. Include questions from multiple topics within the cluster. A score of 70% or higher indicates cluster mastery.`
+    : `Create ${questionCount} questions. Favor questions that mirror past exam patterns when exam text exists; otherwise use worksheets. For each question, include the matching topic title from the passed list.`;
+
+  return `${intro}
+
+${topicsLabel}
 ${topics}
 
 Past exams (highest fidelity):${examText ? `\n${examText}` : "\nNone provided"}
 
 Worksheets / lecture materials (secondary):${worksheetText ? `\n${worksheetText}` : "\nNone provided"}
 
-Create ${questionCount} questions. Favor questions that mirror past exam patterns when exam text exists; otherwise use worksheets. For each question, include the matching topic title from the passed list.
+${questionGuidance}
 
 Return JSON array with:
 [
   {
     "prompt": "Question text (concise, unambiguous)",
     "answer": "Short expected answer",
-    "topicTitle": "Exact title from passed topics",
+    "topicTitle": "Exact title from topics list",
     "source": "exam | worksheet | material"
   }
 ]
 
 Keep answers brief but specific. Respond in ${language} but keep JSON keys in English.`;
+};
 
 export const feynmanSystemPrompt = (
   materialContext: string,
