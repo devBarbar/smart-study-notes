@@ -12,14 +12,20 @@ supabase secrets set OPENAI_API_KEY=sk-... OPENAI_MODEL=gpt-5.1 OPENAI_EMBED_MOD
 
 ## Deploy checklist
 1) Install deps: `npm install` (for any shared deps you add later)  
-2) Deploy functions (including queue + worker):
+2) Deploy functions (including queue + worker + TTS):
 ```
-supabase functions deploy extract-pdf-text enqueue-job process-job
+supabase functions deploy extract-pdf-text enqueue-job process-job stream-tts
 ```
 3) (Optional) keep legacy direct endpoints deployed if still needed:
 ```
 supabase functions deploy embed-texts generate-lecture-metadata generate-study-plan feynman-chat evaluate-answer transcribe-audio
 ```
+
+## Troubleshooting TTS (Text-to-Speech)
+If the AI tutor voice sounds robotic, it's falling back to expo-speech. To use natural OpenAI voices:
+1. Ensure `stream-tts` is deployed: `supabase functions deploy stream-tts`
+2. Verify OPENAI_API_KEY is set: `supabase secrets list`
+3. Check function logs: `supabase functions logs stream-tts --project-ref <ref>`
 4) Confirm logs: `supabase functions list` and `supabase functions logs --project-ref <ref>`
 
 ## Local testing

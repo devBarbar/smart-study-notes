@@ -3,7 +3,7 @@ import { questionPrompt } from './prompts';
 import { getSupabase } from './supabase';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL ?? 'gpt-5.1';
+const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL ?? 'gpt-5.2';
 
 type ChatCompletionContent = {
   type: 'text' | 'image_url';

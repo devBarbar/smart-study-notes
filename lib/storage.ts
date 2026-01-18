@@ -1,5 +1,5 @@
 import { decode } from 'base64-arraybuffer';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { v4 as uuid } from 'uuid';
 
 import { getSupabase } from './supabase';
@@ -22,7 +22,7 @@ export const uploadToStorage = async (bucket: string, uri: string, contentType: 
     }
   }
 
-  const fileBase64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  const fileBase64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
   const fileBytes = new Uint8Array(decode(fileBase64));
   const path = `${uuid()}`;
   const { data, error } = await supabase.storage.from(bucket).upload(path, fileBytes, {
@@ -30,7 +30,7 @@ export const uploadToStorage = async (bucket: string, uri: string, contentType: 
     upsert: false,
   });
   if (error) {
-    console.warn('[storage] upload error', { message: error.message, status: error.statusCode, bucket, path });
+    console.warn('[storage] upload error', { message: error.message, status: error, bucket, path });
     throw error;
   }
 

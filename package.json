@@ -13,6 +13,7 @@
     "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' node --require ts-node/register tests/prompts.test.ts"
   },
   "dependencies": {
+    "@clerk/clerk-expo": "^2.19.18",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
@@ -21,6 +22,7 @@
     "@tanstack/react-query": "^5.62.9",
     "base64-arraybuffer": "^1.0.2",
     "buffer": "^6.0.3",
+    "convex": "^1.31.5",
     "expo": "~54.0.27",
     "expo-apple-authentication": "~8.0.8",
     "expo-av": "~16.0.8",
