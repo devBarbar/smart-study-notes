@@ -3,7 +3,9 @@ name: Build on Branch Push
 on:
   push:
     branches:
-      - 'main'
+      - "main"
+  paths:
+    - ".release"
 
 jobs:
   build_ios_production:

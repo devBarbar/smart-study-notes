@@ -25,6 +25,7 @@
     "convex": "^1.31.5",
     "expo": "~54.0.32",
     "expo-apple-authentication": "~8.0.8",
+    "expo-auth-session": "~7.0.10",
     "expo-av": "~16.0.8",
     "expo-constants": "~18.0.11",
     "expo-document-picker": "~14.0.8",
