@@ -107,10 +107,83 @@ export type CanvasStrokeData = {
   width: number;
 };
 
+// Canvas Visual Block Types for AI-generated diagrams and visual content
+
+export type DiagramNodeShape = 'box' | 'circle' | 'diamond' | 'ellipse';
+
+export type DiagramNode = {
+  id: string;
+  label: string;
+  shape?: DiagramNodeShape;
+  color?: string;
+  /** Grid position for layout (0-indexed) */
+  row?: number;
+  col?: number;
+};
+
+export type DiagramEdgeStyle = 'solid' | 'dashed' | 'dotted';
+
+export type DiagramEdge = {
+  from: string;
+  to: string;
+  label?: string;
+  style?: DiagramEdgeStyle;
+};
+
+export type DiagramLayout = 'vertical' | 'horizontal' | 'tree';
+
+export type DiagramData = {
+  title?: string;
+  nodes: DiagramNode[];
+  edges: DiagramEdge[];
+  layout?: DiagramLayout;
+};
+
+export type BulletItem = {
+  text: string;
+  indent?: number;
+  icon?: 'bullet' | 'check' | 'arrow' | 'number';
+};
+
+export type BulletData = {
+  title?: string;
+  items: BulletItem[];
+};
+
+export type DefinitionData = {
+  term: string;
+  definition: string;
+  example?: string;
+};
+
+export type StepData = {
+  title?: string;
+  steps: {
+    number: number;
+    title: string;
+    description?: string;
+  }[];
+};
+
+export type VisualBlockType = 'diagram' | 'bullets' | 'definition' | 'steps';
+
+export type VisualBlockData = DiagramData | BulletData | DefinitionData | StepData;
+
+export type CanvasVisualBlock = {
+  id: string;
+  type: VisualBlockType;
+  position: { x: number; y: number };
+  size?: { width: number; height: number };
+  data: VisualBlockData;
+  messageId: string; // Links back to chat message
+  createdAt: string;
+};
+
 export type CanvasPage = {
   id: string;
   titleStrokes: CanvasStrokeData[];
   strokes: CanvasStrokeData[];
+  visualBlocks?: CanvasVisualBlock[];
   width: number;
   height: number;
 };
@@ -161,6 +234,8 @@ export type StudyChatMessage = {
   questionId?: string;
   answerLinkId?: string;
   citations?: StudyCitation[];
+  /** IDs of visual blocks rendered on canvas for this message */
+  visualBlockIds?: string[];
 };
 
 export type PracticeExamStatus = 'pending' | 'ready' | 'in_progress' | 'completed' | 'failed';
@@ -240,5 +315,24 @@ export type StreakInfo = {
   current: number;
   longest: number;
   lastReviewDate?: string;
+};
+
+export type FlashcardDifficulty = 'easy' | 'medium' | 'hard';
+
+export type Flashcard = {
+  id: string;
+  lectureId: string;
+  sessionId?: string;
+  studyPlanEntryId?: string;
+  questionText: string;
+  answerText?: string;
+  answerImageUri?: string;
+  aiExplanation?: string;
+  visualBlocks?: CanvasVisualBlock[];
+  masteryScore: number;
+  nextReviewAt?: string;
+  reviewCount: number;
+  easeFactor: number;
+  createdAt: string;
 };
 

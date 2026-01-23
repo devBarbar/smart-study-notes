@@ -14,6 +14,7 @@ import { v4 as uuid } from 'uuid';
 import { StreamingTTSPlayer, TTSPlayerState } from '@/lib/audio';
 
 import { CanvasToolbar } from '@/components/canvas-toolbar';
+import { CanvasVisualBlock } from '@/components/canvas-visual-block';
 import { CanvasMode, CanvasStroke, HandwritingCanvas, HandwritingCanvasHandle } from '@/components/handwriting-canvas';
 import { MarkdownText } from '@/components/markdown-text';
 import { ThemedText } from '@/components/themed-text';
@@ -26,11 +27,12 @@ import { useLectures } from '@/hooks/use-lectures';
 import { useMaterials } from '@/hooks/use-materials';
 import { ChatMessage, embedQuery, evaluateAnswer, generateQuestions, streamFeynmanChat } from '@/lib/openai';
 import { textToStrokes } from '@/lib/handwriting-font';
+import { createCanvasVisualBlock, estimateVisualBlockSize, parseAIResponse } from '@/lib/parse-visual-response';
 import { feynmanWelcomeMessage } from '@/lib/prompts';
 import { uploadCanvasImage } from '@/lib/storage';
-import { LectureFileChunk, addReviewEvent, countLectureChunks, getSessionById, getStudyPlanEntry, getUserStreak, listAnswerLinks, listReviewEvents, listSessionMessages, saveAnswerLink, saveSessionMessage, searchLectureChunks, updateSession, updateStudyPlanEntryMastery, updateStudyPlanEntryStatus, updateUserStreak } from '@/lib/supabase';
+import { LectureFileChunk, addReviewEvent, countLectureChunks, getSessionById, getStudyPlanEntry, getUserStreak, listAnswerLinks, listReviewEvents, listSessionMessages, saveAnswerLink, saveFlashcard, saveSessionMessage, searchLectureChunks, updateSession, updateStudyPlanEntryMastery, updateStudyPlanEntryStatus, updateUserStreak } from '@/lib/supabase';
 import { computeMasteryScore, computeNextReviewDate } from '@/lib/mastery';
-import { CanvasAnswerMarker, CanvasBounds, CanvasPage, CanvasStrokeData, Lecture, Material, ReviewQuality, SectionStatus, StudyAnswerLink, StudyChatMessage, StudyCitation, StudyPlanEntry, StudyQuestion } from '@/types';
+import { CanvasAnswerMarker, CanvasBounds, CanvasPage, CanvasStrokeData, CanvasVisualBlock as CanvasVisualBlockType, Lecture, Material, ReviewQuality, SectionStatus, StudyAnswerLink, StudyChatMessage, StudyCitation, StudyPlanEntry, StudyQuestion } from '@/types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -202,6 +204,15 @@ export default function StudySessionScreen() {
   const [highlightedBounds, setHighlightedBounds] = useState<CanvasBounds | null>(null);
   const [canvasLayout, setCanvasLayout] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   
+  // Visual blocks highlight state
+  const [highlightedVisualBlockId, setHighlightedVisualBlockId] = useState<string | null>(null);
+  
+  // AI Tutor collapse state
+  const [tutorCollapsed, setTutorCollapsed] = useState(false);
+  
+  // Flashcard added notification state
+  const [flashcardAdded, setFlashcardAdded] = useState(false);
+  
   // Canvas size derived from active page (auto-grows as user draws near edges)
   const canvasSize = useMemo(() => ({
     width: activePage?.width || INITIAL_CANVAS_WIDTH,
@@ -215,12 +226,45 @@ export default function StudySessionScreen() {
   // Initial canvas strokes to restore (loaded from session) - for current active page
   const initialCanvasStrokes = useMemo(() => activePage?.strokes, [activePage]);
   
+  // Visual blocks for the current active page
+  const activeVisualBlocks = useMemo(() => activePage?.visualBlocks || [], [activePage]);
+  
   // Title canvas ref for handwritten page titles
   const titleCanvasRef = useRef<HandwritingCanvasHandle>(null);
   
   // Debounce timer for saving canvas data
   const saveCanvasDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveNotesDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Ref to track latest canvas pages for unmount save
+  const canvasPagesRef = useRef<CanvasPage[]>([]);
+  
+  // Keep ref in sync with state
+  useEffect(() => {
+    canvasPagesRef.current = canvasPages;
+  }, [canvasPages]);
+  
+  // Save on unmount - flush any pending saves
+  useEffect(() => {
+    return () => {
+      // Clear pending debounced saves
+      if (saveCanvasDebounceRef.current) {
+        clearTimeout(saveCanvasDebounceRef.current);
+      }
+      if (saveNotesDebounceRef.current) {
+        clearTimeout(saveNotesDebounceRef.current);
+      }
+      
+      // Save canvas pages immediately on unmount
+      if (sessionId && canvasPagesRef.current.length > 0) {
+        // Use sync-like save (fire and forget since component is unmounting)
+        updateSession(sessionId, { canvasPages: canvasPagesRef.current }).catch(err => {
+          console.warn('[study] Failed to save canvas on unmount:', err);
+        });
+        console.log('[study] Saving canvas pages on unmount');
+      }
+    };
+  }, [sessionId]);
   
   // Create a new blank page
   const createNewPage = useCallback((): CanvasPage => ({
@@ -371,6 +415,93 @@ export default function StudySessionScreen() {
     return maxY;
   }, []);
 
+  // Get maximum Y position including visual blocks
+  const getMaxYWithVisualBlocks = useCallback((strokes: CanvasStrokeData[], visualBlocks: CanvasVisualBlockType[]) => {
+    let maxY = getMaxYFromStrokes(strokes);
+    
+    // Include visual blocks in the calculation
+    visualBlocks.forEach((block) => {
+      const blockBottom = block.position.y + (block.size?.height || 200);
+      if (blockBottom > maxY) {
+        maxY = blockBottom;
+      }
+    });
+    
+    return maxY;
+  }, [getMaxYFromStrokes]);
+
+  // Add a visual block to the current canvas page
+  const addVisualBlockToCanvas = useCallback((
+    partialBlock: Omit<CanvasVisualBlockType, 'position' | 'messageId' | 'createdAt'>,
+    messageId: string
+  ) => {
+    if (!activePage) return;
+
+    // Get current strokes directly from canvas ref (more reliable than state)
+    const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
+    
+    // Calculate position - place below existing content
+    const currentMaxY = getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks);
+    const padding = 40;
+    const position = { x: padding, y: currentMaxY + padding };
+
+    // Estimate the size of the visual block
+    const estimatedSize = estimateVisualBlockSize(partialBlock);
+
+    // Create the full visual block
+    const fullBlock = createCanvasVisualBlock(partialBlock, position, messageId);
+    fullBlock.size = estimatedSize;
+
+    // Update canvas pages with the new visual block
+    setCanvasPages((prev) => {
+      const updatedPages = prev.map((page) => {
+        if (page.id !== activePageId) return page;
+
+        const existingBlocks = page.visualBlocks || [];
+        const newBlocks = [...existingBlocks, fullBlock];
+
+        // Grow canvas if needed to fit the new block
+        const requiredHeight = position.y + estimatedSize.height + padding;
+        const requiredWidth = position.x + estimatedSize.width + padding;
+        const newHeight = Math.max(page.height, requiredHeight);
+        const newWidth = Math.max(page.width, requiredWidth);
+
+        return {
+          ...page,
+          visualBlocks: newBlocks,
+          height: newHeight,
+          width: newWidth,
+        };
+      });
+
+      // Save to database IMMEDIATELY for visual blocks (they're important and infrequent)
+      if (sessionId) {
+        // Clear any pending debounced save to avoid conflicts
+        if (saveCanvasDebounceRef.current) {
+          clearTimeout(saveCanvasDebounceRef.current);
+          saveCanvasDebounceRef.current = null;
+        }
+        // Save immediately
+        updateSession(sessionId, { canvasPages: updatedPages })
+          .then(() => console.log('[study] Canvas pages saved with visual block'))
+          .catch(err => console.warn('[study] Failed to save canvas pages with visual block:', err));
+      }
+
+      return updatedPages;
+    });
+
+    // Scroll canvas to show the new visual block
+    setTimeout(() => {
+      const scrollY = Math.max(position.y - 24, 0);
+      canvasScrollRef.current?.scrollTo({ y: scrollY, animated: true });
+      canvasHScrollRef.current?.scrollTo({ x: 0, animated: true });
+    }, 150);
+
+    console.log('[study] Added visual block to canvas:', fullBlock.type, fullBlock.id);
+    
+    return fullBlock.id;
+  }, [activePage, activePageId, activeVisualBlocks, canvasStrokes, getMaxYWithVisualBlocks, sessionId]);
+
   // Calculate bounds for a set of strokes
   const computeBounds = useCallback((strokes: CanvasStrokeData[], padding = 16): CanvasBounds | null => {
     let minX = Number.POSITIVE_INFINITY;
@@ -441,7 +572,9 @@ export default function StudySessionScreen() {
       if (!activePage) return;
 
       const padding = 32;
-      const baseY = getMaxYFromStrokes(canvasStrokes) + 40;
+      // Get fresh strokes from canvas ref and account for visual blocks
+      const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
+      const baseY = getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 40;
       const availableWidth = Math.max((activePage.width || canvasSize.width) - padding * 2, 220);
 
       const questionNumber = canvasQuestionCounterRef.current + 1;
@@ -505,10 +638,11 @@ export default function StudySessionScreen() {
     [
       activePage,
       activePageId,
+      activeVisualBlocks,
       canvasColor,
       canvasSize.width,
       canvasStrokes,
-      getMaxYFromStrokes,
+      getMaxYWithVisualBlocks,
       sessionId,
       setCanvasPages,
     ]
@@ -970,22 +1104,40 @@ export default function StudySessionScreen() {
             updateMessage(aiMsgId, { text: partialText });
           },
           onDone: (result) => {
+            // Parse the response for visual blocks
+            const parsed = parseAIResponse(result.message);
+            
             // Add cost footer if available
             const costSuffix = result.costUsd 
               ? `\n\n_${t('cost.label', { value: result.costUsd.toFixed(4) })}_`
               : '';
             
-            // Final update with citations and cost
+            // Track visual block IDs added for this message
+            const visualBlockIds: string[] = [];
+            
+            // Add visual blocks to canvas if present
+            if (parsed.hasVisuals) {
+              for (const partialBlock of parsed.visualBlocks) {
+                const blockId = addVisualBlockToCanvas(partialBlock, aiMsgId);
+                if (blockId) {
+                  visualBlockIds.push(blockId);
+                }
+              }
+              console.log('[study] Added', parsed.visualBlocks.length, 'visual blocks from AI response');
+            }
+            
+            // Final update with citations, cost, and visual block references
             const finalMessage: StudyChatMessage = {
               id: aiMsgId,
               role: 'ai',
-              text: result.message + costSuffix,
+              text: parsed.text + costSuffix, // Use cleaned text without visual blocks
               citations,
+              visualBlockIds: visualBlockIds.length > 0 ? visualBlockIds : undefined,
             };
             updateMessage(aiMsgId, finalMessage);
             
-            // Speak the final message
-            speakMessage(result.message);
+            // Speak the cleaned message (without visual block JSON)
+            speakMessage(parsed.text);
             
             // Save the final message to database
             if (sessionId) {
@@ -1006,7 +1158,7 @@ export default function StudySessionScreen() {
     } finally {
       setIsChatting(false);
     }
-  }, [agentLanguage, chatHistory, fullMaterialContext, lecture, lectureId, pushMessage, updateMessage, speakMessage, studyPlanEntry, t, sessionId]);
+  }, [agentLanguage, chatHistory, fullMaterialContext, lecture, lectureId, pushMessage, updateMessage, speakMessage, studyPlanEntry, t, sessionId, addVisualBlockToCanvas]);
 
   // Handle voice transcription
   const handleVoiceTranscription = useCallback((text: string, transcriptionCostUsd?: number) => {
@@ -1213,6 +1365,45 @@ export default function StudySessionScreen() {
       setHasDrawnAfterQuestion(false);
       setLastDrawingPosition(null);
 
+      // Create flashcard if the answer was correct/passed
+      const isPassed = (feedback.score !== undefined && feedback.score >= 70) || feedback.correctness === 'correct';
+      if (isPassed && lectureId) {
+        try {
+          // Collect AI explanation from previous messages (up to 3 messages before the question)
+          const questionMsgIndex = messages.findIndex((m) => m.id === lastAiMessage?.id);
+          const explanationMessages = messages
+            .slice(Math.max(0, questionMsgIndex - 3), questionMsgIndex)
+            .filter((m) => m.role === 'ai');
+          const aiExplanation = explanationMessages.map((m) => m.text).join('\n\n');
+          
+          // Collect visual blocks from explanation messages
+          const visualBlockIds = explanationMessages.flatMap((m) => m.visualBlockIds || []);
+          const collectedVisualBlocks = activeVisualBlocks.filter((b) => visualBlockIds.includes(b.id));
+          
+          // Extract the actual question text
+          const questionText = questionToEvaluate.prompt || lastAiMessage?.text || '';
+          
+          await saveFlashcard({
+            lectureId,
+            sessionId: sessionId as string,
+            studyPlanEntryId: studyPlanEntryId ?? undefined,
+            questionText,
+            answerText: answerText || undefined,
+            answerImageUri: uploadedImageUri,
+            aiExplanation: aiExplanation || undefined,
+            visualBlocks: collectedVisualBlocks.length > 0 ? collectedVisualBlocks : undefined,
+          });
+          
+          // Show notification
+          setFlashcardAdded(true);
+          setTimeout(() => setFlashcardAdded(false), 3000);
+          
+          console.log('[study] Flashcard created for passed question');
+        } catch (err) {
+          console.warn('[study] Failed to create flashcard:', err);
+        }
+      }
+
       pushMessage({
         id: uuid(),
         role: 'user',
@@ -1253,11 +1444,13 @@ export default function StudySessionScreen() {
     }
   };
 
-  // Request explanation
+  // Request explanation with visual diagram
   const requestExplanation = () => {
+    const visualInstruction = 'IMPORTANT: Include a visual diagram on the canvas showing how the concepts connect (use the ```visual block format). This helps me understand the relationships visually.';
+    
     const topicFocus = studyPlanEntry 
-      ? `Give me a concise (1-2 short paragraphs) explanation of the first key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(', ') || 'the main ideas'}, cover one step only, and end with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply—I will answer on the canvas.`
-      : 'Give me a concise (1-2 short paragraphs) explanation of the first key idea in this topic. Cover one step only, then end with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.';
+      ? `Give me a concise (1-2 short paragraphs) explanation of the first key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(', ') || 'the main ideas'}, cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply—I will answer on the canvas.`
+      : `Give me a concise (1-2 short paragraphs) explanation of the first key idea in this topic. Cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
     sendToFeynmanAI(topicFocus);
   };
   
@@ -1347,16 +1540,38 @@ export default function StudySessionScreen() {
     );
   }
 
+  // Toggle AI tutor visibility
+  const toggleTutor = useCallback(() => {
+    setTutorCollapsed(prev => !prev);
+  }, []);
+
   return (
     <ThemedView style={styles.shell}>
-      <View style={styles.canvasColumn}>
+      <View style={[styles.canvasColumn, tutorCollapsed && styles.canvasColumnFullscreen]}>
         <ScrollView
           ref={pageScrollRef}
           contentContainerStyle={styles.canvasArea}
           scrollEnabled={scrollEnabled}
           showsVerticalScrollIndicator
         >
-          <ThemedText type="title">{studyTitle}</ThemedText>
+          <View style={styles.canvasHeader}>
+            <ThemedText type="title" style={styles.canvasTitle}>{studyTitle}</ThemedText>
+            <Pressable 
+              style={[styles.tutorToggleButton, tutorCollapsed && styles.tutorToggleButtonCollapsed]}
+              onPress={toggleTutor}
+              accessibilityLabel={tutorCollapsed ? t('study.showTutor') : t('study.hideTutor')}
+              accessibilityRole="button"
+            >
+              <Ionicons 
+                name={tutorCollapsed ? 'chatbubbles' : 'chevron-forward'} 
+                size={20} 
+                color={tutorCollapsed ? '#10b981' : palette.textMuted} 
+              />
+              {tutorCollapsed && (
+                <ThemedText style={styles.tutorToggleText}>{t('study.showTutor')}</ThemedText>
+              )}
+            </Pressable>
+          </View>
           
           {/* Show topic focus badge if studying specific entry */}
           {studyPlanEntry && (
@@ -1490,6 +1705,20 @@ export default function StudySessionScreen() {
                     onStrokesChange={handleCanvasStrokesChange}
                   />
                   
+                  {/* AI Visual Blocks rendered on canvas */}
+                  {activeVisualBlocks.map((block) => (
+                    <CanvasVisualBlock
+                      key={block.id}
+                      block={block}
+                      highlighted={highlightedVisualBlockId === block.id}
+                      onPress={(blockId) => {
+                        // Highlight the block briefly
+                        setHighlightedVisualBlockId(blockId);
+                        setTimeout(() => setHighlightedVisualBlockId(null), 2000);
+                      }}
+                    />
+                  ))}
+                  
                   {/* Animated Check Answer button - appears right after where user stopped writing */}
                   {lastDrawingPosition && (
                     <AnimatedPressable
@@ -1558,10 +1787,75 @@ export default function StudySessionScreen() {
         </ScrollView>
       </View>
 
-      <View style={styles.chatColumn}>
-        <View style={styles.chatHeader}>
-          <View style={styles.chatTitleRow}>
-            <ThemedText type="title" style={{ color: '#fff' }}>{t('study.aiTutor')}</ThemedText>
+      {tutorCollapsed ? (
+        <View style={styles.chatColumnCollapsed}>
+          {/* Expand button with message badge */}
+          <Pressable
+            style={styles.expandTutorButton}
+            onPress={toggleTutor}
+            accessibilityLabel={t('study.showTutor')}
+            accessibilityRole="button"
+          >
+            <Ionicons name="chatbubbles" size={24} color="#10b981" />
+            {messages.length > 0 && (
+              <View style={styles.messageBadge}>
+                <ThemedText style={styles.messageBadgeText}>{messages.length}</ThemedText>
+              </View>
+            )}
+          </Pressable>
+          
+          {/* Quick action buttons */}
+          <View style={styles.collapsedQuickActions}>
+            <Pressable
+              style={styles.collapsedActionButton}
+              onPress={requestExplanation}
+              disabled={isChatting}
+              accessibilityLabel={t('study.explainThis')}
+            >
+              <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
+            </Pressable>
+            <Pressable
+              style={styles.collapsedActionButton}
+              onPress={requestQuestions}
+              disabled={loadingQuestions}
+              accessibilityLabel={t('study.quizMe')}
+            >
+              <Ionicons name="help-circle-outline" size={20} color="#818cf8" />
+            </Pressable>
+          </View>
+          
+          {/* Collapsed voice input */}
+          <View style={styles.collapsedVoiceInput}>
+            <VoiceInput
+              onTranscription={handleVoiceTranscription}
+              disabled={isChatting}
+              listeningMode={listeningMode}
+              onListeningModeEnd={() => setListeningMode(false)}
+              ttsFinished={!isSpeaking && listeningMode}
+            />
+          </View>
+          
+          {/* Status indicator */}
+          {isChatting && (
+            <View style={styles.collapsedThinking}>
+              <ActivityIndicator color="#10b981" size="small" />
+            </View>
+          )}
+        </View>
+      ) : (
+        <View style={styles.chatColumn}>
+          <View style={styles.chatHeader}>
+            <View style={styles.chatTitleRow}>
+              <ThemedText type="title" style={{ color: '#fff' }}>{t('study.aiTutor')}</ThemedText>
+              <Pressable 
+                style={styles.collapseTutorButton}
+                onPress={toggleTutor}
+                accessibilityLabel={t('study.hideTutor')}
+                accessibilityRole="button"
+              >
+                <Ionicons name="chevron-forward" size={20} color="#64748b" />
+              </Pressable>
+            </View>
             <View style={styles.voiceControlsRow}>
               <Pressable
                 style={[styles.ttsToggle, ttsEnabled && styles.ttsToggleActive]}
@@ -1687,7 +1981,6 @@ export default function StudySessionScreen() {
               <ThemedText style={styles.quickActionText}>{t('voice.formula')}</ThemedText>
             </Pressable>
           </ScrollView>
-        </View>
 
         <FlatList
           ref={chatListRef}
@@ -1749,6 +2042,29 @@ export default function StudySessionScreen() {
                   >
                     <Ionicons name="document-text-outline" size={14} color="#60a5fa" />
                     <ThemedText style={styles.viewNotesText}>{t('study.viewNotes')}</ThemedText>
+                  </Pressable>
+                )}
+                {item.visualBlockIds && item.visualBlockIds.length > 0 && (
+                  <Pressable 
+                    style={styles.viewDiagramButton}
+                    onPress={() => {
+                      // Scroll to first visual block and highlight it
+                      const blockId = item.visualBlockIds![0];
+                      const block = activeVisualBlocks.find(b => b.id === blockId);
+                      if (block) {
+                        // Scroll canvas to the visual block
+                        pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+                        setTimeout(() => {
+                          canvasScrollRef.current?.scrollTo({ y: Math.max(block.position.y - 24, 0), animated: true });
+                          canvasHScrollRef.current?.scrollTo({ x: Math.max(block.position.x - 24, 0), animated: true });
+                          setHighlightedVisualBlockId(blockId);
+                          setTimeout(() => setHighlightedVisualBlockId(null), 2500);
+                        }, 100);
+                      }
+                    }}
+                  >
+                    <Ionicons name="git-network-outline" size={14} color="#10b981" />
+                    <ThemedText style={styles.viewDiagramText}>{t('study.viewDiagram')}</ThemedText>
                   </Pressable>
                 )}
               </ThemedView>
@@ -1824,6 +2140,17 @@ export default function StudySessionScreen() {
           )}
         </View>
       </View>
+      )}
+
+      {/* Flashcard Added Notification */}
+      {flashcardAdded && (
+        <View style={styles.flashcardNotification}>
+          <Ionicons name="layers" size={18} color="#fff" />
+          <ThemedText style={styles.flashcardNotificationText}>
+            {t('flashcards.added')}
+          </ThemedText>
+        </View>
+      )}
     </ThemedView>
   );
 }
@@ -1846,6 +2173,43 @@ const createStyles = (palette: typeof Colors.light) =>
       borderColor: palette.border,
       ...Shadows.sm,
     },
+    canvasColumnFullscreen: {
+      flex: 1,
+    },
+    canvasHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: Spacing.md,
+    },
+    canvasTitle: {
+      flex: 1,
+    },
+    tutorToggleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: Radii.md,
+      backgroundColor: palette.surfaceAlt,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    tutorToggleButtonCollapsed: {
+      backgroundColor: `${palette.success}12`,
+      borderColor: `${palette.success}33`,
+    },
+    tutorToggleText: {
+      color: palette.success,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    collapseTutorButton: {
+      padding: 8,
+      borderRadius: Radii.md,
+      backgroundColor: palette.muted,
+    },
     chatColumn: {
       flex: 1.5,
       backgroundColor: palette.surfaceAlt,
@@ -1855,6 +2219,67 @@ const createStyles = (palette: typeof Colors.light) =>
       borderWidth: 1,
       borderColor: palette.border,
       ...Shadows.sm,
+    },
+    chatColumnCollapsed: {
+      width: 60,
+      backgroundColor: palette.surfaceAlt,
+      borderRadius: Radii.lg,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.sm,
+      gap: Spacing.md,
+      borderWidth: 1,
+      borderColor: palette.border,
+      alignItems: 'center',
+      ...Shadows.sm,
+    },
+    expandTutorButton: {
+      width: 44,
+      height: 44,
+      borderRadius: Radii.md,
+      backgroundColor: `${palette.success}12`,
+      borderWidth: 1,
+      borderColor: `${palette.success}33`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    },
+    messageBadge: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: palette.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+    },
+    messageBadgeText: {
+      color: palette.textOnPrimary,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    collapsedQuickActions: {
+      gap: Spacing.xs,
+      alignItems: 'center',
+    },
+    collapsedActionButton: {
+      width: 40,
+      height: 40,
+      borderRadius: Radii.md,
+      backgroundColor: palette.muted,
+      borderWidth: 1,
+      borderColor: palette.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    collapsedVoiceInput: {
+      marginTop: 'auto',
+      alignItems: 'center',
+    },
+    collapsedThinking: {
+      padding: Spacing.xs,
     },
     canvasArea: {
       padding: Spacing.md,
@@ -2289,6 +2714,24 @@ const createStyles = (palette: typeof Colors.light) =>
       fontSize: 12,
       fontWeight: '600',
     },
+    viewDiagramButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      marginTop: 8,
+      alignSelf: 'flex-start',
+      backgroundColor: `${palette.success}12`,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+      borderRadius: Radii.md,
+      borderWidth: 1,
+      borderColor: `${palette.success}33`,
+    },
+    viewDiagramText: {
+      color: palette.success,
+      fontSize: 12,
+      fontWeight: '600',
+    },
     citationRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -2310,5 +2753,24 @@ const createStyles = (palette: typeof Colors.light) =>
       color: palette.primary,
       fontSize: 12,
       fontWeight: '600',
+    },
+    flashcardNotification: {
+      position: 'absolute',
+      bottom: Spacing.lg,
+      left: '50%',
+      transform: [{ translateX: -100 }],
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      backgroundColor: palette.success,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      borderRadius: Radii.pill,
+      ...Shadows.md,
+    },
+    flashcardNotificationText: {
+      color: '#fff',
+      fontWeight: '600',
+      fontSize: 14,
     },
   });

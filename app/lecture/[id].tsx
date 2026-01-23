@@ -7,6 +7,7 @@ import { v4 as uuid } from 'uuid';
 
 import { CircularReadinessGraph } from '@/components/circular-readiness-graph';
 import { EntryActionSheet } from '@/components/entry-action-sheet';
+import { FlashcardDeck } from '@/components/flashcard-deck';
 import { LinearProgressBar } from '@/components/linear-progress-bar';
 import { PdfWebView } from '@/components/pdf-webview';
 import { SkeletonCard, SkeletonEntryCard, SkeletonHeader } from '@/components/skeleton-loader';
@@ -15,6 +16,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useFlashcardCount } from '@/hooks/use-flashcards';
 import { useLectures } from '@/hooks/use-lectures';
 import { usePracticeExams } from '@/hooks/use-practice-exams';
 import { useSessions } from '@/hooks/use-sessions';
@@ -27,13 +29,14 @@ const stripCodeFences = (text: string) => {
   return fenceMatch ? fenceMatch[1].trim() : text;
 };
 
-type TabKey = 'overview' | 'studyPlan' | 'practice' | 'materials';
+type TabKey = 'overview' | 'studyPlan' | 'flashcards' | 'practice' | 'materials';
 
 export default function LectureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: lectures = [], isFetching, refetch } = useLectures();
   const { data: sessions = [], refetch: refetchSessions } = useSessions();
   const { data: practiceExams = [], refetch: refetchPracticeExams, isFetching: loadingPracticeExams } = usePracticeExams(id);
+  const { data: flashcardCount = 0, refetch: refetchFlashcardCount } = useFlashcardCount(id);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { t, agentLanguage } = useLanguage();
@@ -177,11 +180,12 @@ export default function LectureDetailScreen() {
         refetch(),
         refetchSessions(),
         refetchPracticeExams(),
+        refetchFlashcardCount(),
       ]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetch, refetchSessions, refetchPracticeExams]);
+  }, [refetch, refetchSessions, refetchPracticeExams, refetchFlashcardCount]);
 
   const startSession = async (studyPlanEntry?: StudyPlanEntry, forceNew = false) => {
     if (!lecture) return;
@@ -822,9 +826,10 @@ export default function LectureDetailScreen() {
   const roadmapItems = roadmap ?? [];
 
   // Tab rendering
-  const tabs: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  const tabs: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; badge?: number }[] = [
     { key: 'overview', label: t('lectureDetail.tabs.overview'), icon: 'home' },
     { key: 'studyPlan', label: t('lectureDetail.tabs.studyPlan'), icon: 'list' },
+    { key: 'flashcards', label: t('lectureDetail.tabs.flashcards'), icon: 'layers', badge: flashcardCount > 0 ? flashcardCount : undefined },
     { key: 'practice', label: t('lectureDetail.tabs.practice'), icon: 'clipboard' },
     { key: 'materials', label: t('lectureDetail.tabs.materials'), icon: 'documents' },
   ];
@@ -1356,6 +1361,12 @@ export default function LectureDetailScreen() {
     </View>
   );
 
+  const renderFlashcardsTab = () => (
+    <View style={styles.tabContent}>
+      <FlashcardDeck lectureId={lecture.id} />
+    </View>
+  );
+
   return (
     <>
       <ScrollView
@@ -1415,11 +1426,20 @@ export default function LectureDetailScreen() {
               style={[styles.tab, activeTab === tab.key && styles.tabActive]}
               onPress={() => setActiveTab(tab.key)}
             >
-              <Ionicons
-                name={tab.icon}
-                size={18}
-                color={activeTab === tab.key ? palette.primary : palette.textMuted}
-              />
+              <View style={styles.tabIconContainer}>
+                <Ionicons
+                  name={tab.icon}
+                  size={18}
+                  color={activeTab === tab.key ? palette.primary : palette.textMuted}
+                />
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <View style={styles.tabBadge}>
+                    <ThemedText style={styles.tabBadgeText}>
+                      {tab.badge > 99 ? '99+' : tab.badge}
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
               <ThemedText
                 style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}
               >
@@ -1432,6 +1452,7 @@ export default function LectureDetailScreen() {
         {/* Tab Content */}
         {activeTab === 'overview' && renderOverviewTab()}
         {activeTab === 'studyPlan' && renderStudyPlanTab()}
+        {activeTab === 'flashcards' && renderFlashcardsTab()}
         {activeTab === 'practice' && renderPracticeTab()}
         {activeTab === 'materials' && renderMaterialsTab()}
       </ScrollView>
@@ -1553,6 +1574,26 @@ const createStyles = (palette: typeof Colors.light) =>
     tabTextActive: {
       color: palette.primary,
       fontWeight: '600',
+    },
+    tabIconContainer: {
+      position: 'relative',
+    },
+    tabBadge: {
+      position: 'absolute',
+      top: -6,
+      right: -10,
+      minWidth: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: palette.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+    },
+    tabBadgeText: {
+      color: palette.textOnPrimary,
+      fontSize: 9,
+      fontWeight: '700',
     },
     
     // Tab Content

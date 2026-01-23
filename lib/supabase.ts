@@ -1,4 +1,4 @@
-import { CanvasBounds, CanvasPage, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
+import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 import { createClient, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
@@ -1412,6 +1412,225 @@ export const getLectureTotalCost = async (lectureId: string): Promise<number> =>
   }
 
   return (data ?? []).reduce((sum, row) => sum + (Number(row.cost_usd) || 0), 0);
+};
+
+// ============================================================================
+// Flashcard Functions
+// ============================================================================
+
+export type NewFlashcardInput = Omit<Flashcard, 'id' | 'createdAt' | 'masteryScore' | 'reviewCount' | 'easeFactor'> & {
+  masteryScore?: number;
+  reviewCount?: number;
+  easeFactor?: number;
+};
+
+/**
+ * Save a new flashcard
+ */
+export const saveFlashcard = async (flashcard: NewFlashcardInput): Promise<string> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  
+  const payload = {
+    user_id: userId,
+    lecture_id: flashcard.lectureId,
+    session_id: flashcard.sessionId ?? null,
+    study_plan_entry_id: flashcard.studyPlanEntryId ?? null,
+    question_text: sanitizeText(flashcard.questionText) ?? '',
+    answer_text: sanitizeText(flashcard.answerText) ?? null,
+    answer_image_uri: flashcard.answerImageUri ?? null,
+    ai_explanation: sanitizeText(flashcard.aiExplanation) ?? null,
+    visual_blocks: flashcard.visualBlocks ?? null,
+    mastery_score: flashcard.masteryScore ?? 0,
+    next_review_at: flashcard.nextReviewAt ?? new Date().toISOString(),
+    review_count: flashcard.reviewCount ?? 0,
+    ease_factor: flashcard.easeFactor ?? 2.5,
+  };
+
+  const { data, error } = await client
+    .from('flashcards')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (error) {
+    console.warn('[supabase] saveFlashcard error', { message: error.message, code: error.code });
+    throw error;
+  }
+
+  return data.id;
+};
+
+/**
+ * List flashcards for a lecture
+ */
+export const listFlashcards = async (lectureId: string): Promise<Flashcard[]> => {
+  const client = ensureClient();
+  await requireUserId();
+  
+  const { data, error } = await client
+    .from('flashcards')
+    .select()
+    .eq('lecture_id', lectureId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    if (error.code === '42P01') return []; // Table doesn't exist
+    throw error;
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    lectureId: row.lecture_id,
+    sessionId: row.session_id ?? undefined,
+    studyPlanEntryId: row.study_plan_entry_id ?? undefined,
+    questionText: row.question_text,
+    answerText: row.answer_text ?? undefined,
+    answerImageUri: row.answer_image_uri ?? undefined,
+    aiExplanation: row.ai_explanation ?? undefined,
+    visualBlocks: (row.visual_blocks as CanvasVisualBlock[] | null) ?? undefined,
+    masteryScore: row.mastery_score ?? 0,
+    nextReviewAt: row.next_review_at ?? undefined,
+    reviewCount: row.review_count ?? 0,
+    easeFactor: row.ease_factor ?? 2.5,
+    createdAt: row.created_at,
+  }));
+};
+
+/**
+ * List flashcards due for review (across all lectures)
+ */
+export const listDueFlashcards = async (limit = 20): Promise<Flashcard[]> => {
+  const client = ensureClient();
+  await requireUserId();
+  
+  const now = new Date().toISOString();
+  
+  const { data, error } = await client
+    .from('flashcards')
+    .select()
+    .lte('next_review_at', now)
+    .order('next_review_at', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    if (error.code === '42P01') return []; // Table doesn't exist
+    throw error;
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    lectureId: row.lecture_id,
+    sessionId: row.session_id ?? undefined,
+    studyPlanEntryId: row.study_plan_entry_id ?? undefined,
+    questionText: row.question_text,
+    answerText: row.answer_text ?? undefined,
+    answerImageUri: row.answer_image_uri ?? undefined,
+    aiExplanation: row.ai_explanation ?? undefined,
+    visualBlocks: (row.visual_blocks as CanvasVisualBlock[] | null) ?? undefined,
+    masteryScore: row.mastery_score ?? 0,
+    nextReviewAt: row.next_review_at ?? undefined,
+    reviewCount: row.review_count ?? 0,
+    easeFactor: row.ease_factor ?? 2.5,
+    createdAt: row.created_at,
+  }));
+};
+
+/**
+ * Update flashcard mastery after review
+ */
+export const updateFlashcardMastery = async (
+  flashcardId: string,
+  difficulty: FlashcardDifficulty
+): Promise<void> => {
+  const client = ensureClient();
+  await requireUserId();
+
+  // First, get current flashcard data
+  const { data: current, error: fetchError } = await client
+    .from('flashcards')
+    .select('mastery_score, review_count, ease_factor')
+    .eq('id', flashcardId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const currentMastery = current.mastery_score ?? 0;
+  const currentReviewCount = current.review_count ?? 0;
+  const currentEaseFactor = current.ease_factor ?? 2.5;
+
+  // Calculate new values based on difficulty (SM-2 inspired)
+  let newEaseFactor = currentEaseFactor;
+  let newMastery = currentMastery;
+  let intervalDays = 1;
+
+  switch (difficulty) {
+    case 'easy':
+      newEaseFactor = Math.min(currentEaseFactor + 0.15, 3.0);
+      newMastery = Math.min(currentMastery + 20, 100);
+      intervalDays = Math.max(1, currentReviewCount) * newEaseFactor * 2;
+      break;
+    case 'medium':
+      // Ease factor stays the same
+      newMastery = Math.min(currentMastery + 10, 100);
+      intervalDays = Math.max(1, currentReviewCount) * newEaseFactor;
+      break;
+    case 'hard':
+      newEaseFactor = Math.max(currentEaseFactor - 0.2, 1.3);
+      newMastery = Math.max(currentMastery - 10, 0);
+      intervalDays = Math.max(1, currentReviewCount * 0.5) * newEaseFactor * 0.5;
+      break;
+  }
+
+  const nextReviewAt = new Date();
+  nextReviewAt.setDate(nextReviewAt.getDate() + Math.ceil(intervalDays));
+
+  const { error } = await client
+    .from('flashcards')
+    .update({
+      mastery_score: Math.round(newMastery),
+      review_count: currentReviewCount + 1,
+      ease_factor: newEaseFactor,
+      next_review_at: nextReviewAt.toISOString(),
+    })
+    .eq('id', flashcardId);
+
+  if (error) throw error;
+};
+
+/**
+ * Delete a flashcard
+ */
+export const deleteFlashcard = async (flashcardId: string): Promise<void> => {
+  const client = ensureClient();
+  await requireUserId();
+
+  const { error } = await client
+    .from('flashcards')
+    .delete()
+    .eq('id', flashcardId);
+
+  if (error) throw error;
+};
+
+/**
+ * Get flashcard count for a lecture
+ */
+export const getFlashcardCount = async (lectureId: string): Promise<number> => {
+  const client = ensureClient();
+  await requireUserId();
+
+  const { count, error } = await client
+    .from('flashcards')
+    .select('id', { count: 'exact', head: true })
+    .eq('lecture_id', lectureId);
+
+  if (error) {
+    if (error.code === '42P01') return 0; // Table doesn't exist
+    throw error;
+  }
+
+  return count ?? 0;
 };
 
 export type { Session, User };
