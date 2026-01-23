@@ -34,8 +34,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-gradient.png",
-          "imageWidth": 240,
+          "image": "./assets/splashscreen.png",
           "resizeMode": "cover",
           "backgroundColor": "#0f172a",
           "dark": {
@@ -46,6 +45,11 @@
       "expo-secure-store",
       "expo-apple-authentication"
     ],
+    "splash": {
+      "image": "./assets/splashscreen.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#0f172a"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
