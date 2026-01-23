@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - "main"
-  paths:
-    - .release
+    paths:
+      - .release
 
 jobs:
   build_ios_production:

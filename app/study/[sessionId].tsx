@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -7,13 +6,9 @@ import {
   FlatList,
   LayoutChangeEvent,
   Linking,
-  Pressable,
   ScrollView,
-  StyleSheet,
-  TextInput,
-  View,
 } from "react-native";
-import Animated, {
+import {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -23,19 +18,19 @@ import { v4 as uuid } from "uuid";
 
 import { StreamingTTSPlayer, TTSPlayerState } from "@/lib/audio";
 
-import { CanvasToolbar } from "@/components/canvas-toolbar";
-import { CanvasVisualBlock } from "@/components/canvas-visual-block";
 import {
   CanvasMode,
   CanvasStroke,
-  HandwritingCanvas,
   HandwritingCanvasHandle,
 } from "@/components/handwriting-canvas";
-import { MarkdownText } from "@/components/markdown-text";
+import { StudyCanvasPanel } from "@/components/study/study-canvas-panel";
+import { StudyChatCollapsed } from "@/components/study/study-chat-collapsed";
+import { StudyChatPanel } from "@/components/study/study-chat-panel";
+import { StudyFlashcardToast } from "@/components/study/study-flashcard-toast";
+import { createStudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { VoiceInput } from "@/components/voice-input";
-import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
+import { Colors } from "@/constants/theme";
 import { useLanguage } from "@/contexts/language-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLectures } from "@/hooks/use-lectures";
@@ -54,7 +49,6 @@ import {
   estimateVisualBlockSize,
   parseAIResponse,
 } from "@/lib/parse-visual-response";
-import { feynmanWelcomeMessage } from "@/lib/prompts";
 import { uploadCanvasImage } from "@/lib/storage";
 import {
   LectureFileChunk,
@@ -92,8 +86,6 @@ import {
   StudyQuestion,
 } from "@/types";
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 // Estimated height for chat messages for scrollToIndex
 const CHAT_ITEM_HEIGHT = 100;
 
@@ -115,10 +107,10 @@ export default function StudySessionScreen() {
     }>();
   const { data: materials = [], isFetching: loadingMaterials } = useMaterials();
   const { data: lectures = [], isFetching: loadingLectures } = useLectures();
-  const { t, agentLanguage, speechLocale } = useLanguage();
+  const { t, agentLanguage } = useLanguage();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? "light"];
-  const styles = useMemo(() => createStyles(palette), [palette]);
+  const styles = useMemo(() => createStudyStyles(palette), [palette]);
 
   const material = useMemo<Material | undefined>(
     () => materials.find((m) => m.id === materialId),
@@ -254,10 +246,12 @@ export default function StudySessionScreen() {
   // Voice/TTS state
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [captionsEnabled, setCaptionsEnabled] = useState(true);
-  const [currentCaption, setCurrentCaption] = useState<string | null>(null);
+  const [activeTtsMessageId, setActiveTtsMessageId] = useState<string | null>(
+    null,
+  );
   const [listeningMode, setListeningMode] = useState(false);
   const ttsPlayerRef = useRef<StreamingTTSPlayer | null>(null);
+  const pendingTtsMessageIdRef = useRef<string | null>(null);
 
   // Scroll control for stylus drawing
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -311,6 +305,10 @@ export default function StudySessionScreen() {
   // Track if session messages have been loaded
   const [loadingMessages, setLoadingMessages] = useState(true);
   const hasLoadedMessagesRef = useRef(false);
+
+  // Track if we should auto-explain on first load (new session with no messages)
+  const shouldAutoExplainRef = useRef(false);
+  const hasTriggeredAutoExplainRef = useRef(false);
 
   // Initial canvas strokes to restore (loaded from session) - for current active page
   const initialCanvasStrokes = useMemo(() => activePage?.strokes, [activePage]);
@@ -761,11 +759,11 @@ export default function StudySessionScreen() {
         height: textHeight,
       } = textToStrokes(`Q${questionNumber}: ${questionText}`, padding, baseY, {
         color: canvasColor,
-        strokeWidth: 3,
-        charWidth: 18,
-        charSpacing: 4,
-        wordSpacing: 10,
-        lineHeight: 30,
+        strokeWidth: 2,
+        charWidth: 12,
+        charSpacing: 3,
+        wordSpacing: 8,
+        lineHeight: 12,
         maxWidth: availableWidth,
         jitter: 1,
       });
@@ -939,37 +937,19 @@ export default function StudySessionScreen() {
     loadSessionData();
   }, [sessionId]);
 
-  // Initialize with Feynman welcome message (only if no saved messages)
+  // Mark that we should auto-explain when starting a new session (no saved messages)
   useEffect(() => {
     if (
       studyTitle &&
       messages.length === 0 &&
       !loadingEntry &&
-      !loadingMessages
+      !loadingMessages &&
+      !hasTriggeredAutoExplainRef.current
     ) {
-      const welcomeText = feynmanWelcomeMessage(studyTitle, agentLanguage);
-      const welcomeMsg: StudyChatMessage = {
-        id: "welcome",
-        role: "ai",
-        text: welcomeText,
-      };
-      setMessages([welcomeMsg]);
-
-      // Save welcome message to database
-      if (sessionId) {
-        saveSessionMessage(sessionId, welcomeMsg).catch((err) => {
-          console.warn("[study] Failed to save welcome message:", err);
-        });
-      }
+      // Flag that we need to auto-explain once sendToFeynmanAI is ready
+      shouldAutoExplainRef.current = true;
     }
-  }, [
-    agentLanguage,
-    studyTitle,
-    messages.length,
-    loadingEntry,
-    loadingMessages,
-    sessionId,
-  ]);
+  }, [studyTitle, messages.length, loadingEntry, loadingMessages]);
 
   useEffect(() => {
     const loadLinks = async () => {
@@ -1188,13 +1168,15 @@ export default function StudySessionScreen() {
   // Initialize TTS player
   useEffect(() => {
     const handleStateChange = (state: TTSPlayerState) => {
-      setIsSpeaking(state.isPlaying || state.isLoading);
-      if (captionsEnabled && state.currentText) {
-        setCurrentCaption(state.currentText);
+      const speaking = state.isPlaying || state.isLoading;
+      setIsSpeaking(speaking);
+      if (speaking && pendingTtsMessageIdRef.current) {
+        setActiveTtsMessageId(pendingTtsMessageIdRef.current);
+        pendingTtsMessageIdRef.current = null;
+        return;
       }
-      if (!state.isPlaying && !state.isLoading) {
-        // Delay clearing captions for readability
-        setTimeout(() => setCurrentCaption(null), 2000);
+      if (!speaking && !pendingTtsMessageIdRef.current) {
+        setActiveTtsMessageId(null);
       }
     };
 
@@ -1211,7 +1193,7 @@ export default function StudySessionScreen() {
     return () => {
       player.stop();
     };
-  }, [agentLanguage, captionsEnabled]);
+  }, [agentLanguage]);
 
   // Update TTS player language when it changes
   useEffect(() => {
@@ -1220,30 +1202,29 @@ export default function StudySessionScreen() {
 
   // Text-to-Speech for AI responses
   const speakMessage = useCallback(
-    async (text: string) => {
+    async (text: string, messageId?: string) => {
       if (!ttsEnabled) return;
-
-      if (captionsEnabled) {
-        setCurrentCaption(text);
+      if (messageId) {
+        pendingTtsMessageIdRef.current = messageId;
       }
-
       await ttsPlayerRef.current?.speak(text);
     },
-    [ttsEnabled, captionsEnabled],
+    [ttsEnabled],
   );
 
   // Stop speech
   const stopSpeaking = useCallback(async () => {
     await ttsPlayerRef.current?.stop();
     setIsSpeaking(false);
-    setCurrentCaption(null);
+    setActiveTtsMessageId(null);
+    pendingTtsMessageIdRef.current = null;
   }, []);
 
   const pushMessage = useCallback(
     (message: StudyChatMessage, speak = true) => {
       setMessages((prev) => [...prev, message]);
       if (speak && message.role === "ai") {
-        speakMessage(message.text);
+        speakMessage(message.text, message.id);
       }
       // Scroll to bottom
       setTimeout(() => {
@@ -1409,7 +1390,7 @@ export default function StudySessionScreen() {
               updateMessage(aiMsgId, finalMessage);
 
               // Speak the cleaned message (without visual block JSON)
-              speakMessage(parsed.text);
+              speakMessage(parsed.text, aiMsgId);
 
               // Save the final message to database
               if (sessionId) {
@@ -1784,6 +1765,23 @@ export default function StudySessionScreen() {
     sendToFeynmanAI(topicFocus);
   };
 
+  // Auto-trigger explanation when starting a new session
+  useEffect(() => {
+    if (
+      shouldAutoExplainRef.current &&
+      !hasTriggeredAutoExplainRef.current &&
+      !loadingMessages &&
+      !loadingEntry &&
+      studyTitle &&
+      messages.length === 0
+    ) {
+      hasTriggeredAutoExplainRef.current = true;
+      shouldAutoExplainRef.current = false;
+      // Trigger the explanation automatically
+      requestExplanation();
+    }
+  }, [loadingMessages, loadingEntry, studyTitle, messages.length]);
+
   // Scroll chat to specific question message (called from canvas markers)
   const scrollToQuestionMessage = useCallback(
     (messageId: string) => {
@@ -1859,6 +1857,28 @@ export default function StudySessionScreen() {
     ],
   );
 
+  const handleViewDiagram = useCallback(
+    (blockId: string) => {
+      const block = activeVisualBlocks.find((b) => b.id === blockId);
+      if (!block) return;
+
+      pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+      setTimeout(() => {
+        canvasScrollRef.current?.scrollTo({
+          y: Math.max(block.position.y - 24, 0),
+          animated: true,
+        });
+        canvasHScrollRef.current?.scrollTo({
+          x: Math.max(block.position.x - 24, 0),
+          animated: true,
+        });
+        setHighlightedVisualBlockId(blockId);
+        setTimeout(() => setHighlightedVisualBlockId(null), 2500);
+      }, 100);
+    },
+    [activeVisualBlocks],
+  );
+
   const openCitationSource = useCallback(
     (citation: StudyCitation) => {
       if (!lecture) return;
@@ -1910,1409 +1930,121 @@ export default function StudySessionScreen() {
     setTutorCollapsed((prev) => !prev);
   }, []);
 
+  const handleToggleTts = useCallback(() => {
+    if (isSpeaking) {
+      stopSpeaking();
+    }
+    setTtsEnabled((prev) => !prev);
+  }, [isSpeaking, stopSpeaking]);
+
+  const handleToggleListening = useCallback(() => {
+    setListeningMode((prev) => !prev);
+  }, []);
+
   return (
     <ThemedView style={styles.shell}>
-      <View
-        style={[
-          styles.canvasColumn,
-          tutorCollapsed && styles.canvasColumnFullscreen,
-        ]}
-      >
-        <ScrollView
-          ref={pageScrollRef}
-          contentContainerStyle={styles.canvasArea}
-          scrollEnabled={scrollEnabled}
-          showsVerticalScrollIndicator
-        >
-          <View style={styles.canvasHeader}>
-            <ThemedText type="title" style={styles.canvasTitle}>
-              {studyTitle}
-            </ThemedText>
-            <Pressable
-              style={[
-                styles.tutorToggleButton,
-                tutorCollapsed && styles.tutorToggleButtonCollapsed,
-              ]}
-              onPress={toggleTutor}
-              accessibilityLabel={
-                tutorCollapsed ? t("study.showTutor") : t("study.hideTutor")
-              }
-              accessibilityRole="button"
-            >
-              <Ionicons
-                name={tutorCollapsed ? "chatbubbles" : "chevron-forward"}
-                size={20}
-                color={tutorCollapsed ? "#10b981" : palette.textMuted}
-              />
-              {tutorCollapsed && (
-                <ThemedText style={styles.tutorToggleText}>
-                  {t("study.showTutor")}
-                </ThemedText>
-              )}
-            </Pressable>
-          </View>
-
-          {/* Show topic focus badge if studying specific entry */}
-          {studyPlanEntry && (
-            <View style={styles.topicFocusBadge}>
-              <Ionicons name="locate" size={14} color="#10b981" />
-              <ThemedText style={styles.topicFocusText}>
-                {t("study.focusBadge", {
-                  concepts:
-                    studyPlanEntry.keyConcepts?.slice(0, 3).join(", ") ||
-                    t("study.focusConceptsFallback"),
-                })}
-              </ThemedText>
-            </View>
-          )}
-
-          <ThemedText style={{ marginBottom: 8, color: "#64748b" }}>
-            {studyOutline}
-          </ThemedText>
-
-          <ThemedText
-            type="defaultSemiBold"
-            style={{ marginTop: 12, marginBottom: 8 }}
-          >
-            {t("study.canvasTitle")}
-          </ThemedText>
-
-          {/* Page Navigation */}
-          <View style={styles.pageNavContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.pageTabsContent}
-            >
-              {canvasPages.map((page, index) => (
-                <Pressable
-                  key={page.id}
-                  style={[
-                    styles.pageTab,
-                    page.id === activePageId && styles.pageTabActive,
-                  ]}
-                  onPress={() => handleSelectPage(page.id)}
-                >
-                  {page.titleStrokes.length > 0 ? (
-                    <View style={styles.pageTitlePreview}>
-                      <HandwritingCanvas
-                        width={60}
-                        height={20}
-                        initialStrokes={page.titleStrokes}
-                        mode="pen"
-                      />
-                    </View>
-                  ) : (
-                    <ThemedText
-                      style={[
-                        styles.pageTabText,
-                        page.id === activePageId && styles.pageTabTextActive,
-                      ]}
-                    >
-                      {t("study.pageLabel", { number: index + 1 })}
-                    </ThemedText>
-                  )}
-                </Pressable>
-              ))}
-              <Pressable style={styles.addPageButton} onPress={handleAddPage}>
-                <Ionicons name="add" size={20} color="#10b981" />
-              </Pressable>
-            </ScrollView>
-          </View>
-
-          {/* Page Title (Handwritten) */}
-          <View style={styles.pageTitleContainer}>
-            <ThemedText style={styles.pageTitleLabel}>
-              {t("study.pageTitleLabel")}
-            </ThemedText>
-            <View style={styles.pageTitleCanvasWrapper}>
-              <HandwritingCanvas
-                key={
-                  activePage?.id ? `${activePage.id}-title` : "title-default"
-                }
-                ref={titleCanvasRef}
-                width={300}
-                height={40}
-                strokeColor={canvasColor}
-                strokeWidth={2}
-                initialStrokes={activePage?.titleStrokes}
-                onStrokesChange={handleTitleStrokesChange}
-              />
-            </View>
-          </View>
-
-          <CanvasToolbar
-            mode={canvasMode}
-            color={canvasColor}
-            onModeChange={handleCanvasModeChange}
-            onColorChange={handleCanvasColorChange}
-            onClear={handleClearCanvas}
-            onUndo={handleUndo}
-          />
-
-          <View style={styles.canvasScrollShell}>
-            <ScrollView
-              ref={canvasHScrollRef}
-              horizontal
-              scrollEnabled={scrollEnabled}
-              showsHorizontalScrollIndicator
-              contentContainerStyle={{ paddingBottom: 4 }}
-            >
-              <ScrollView
-                ref={canvasScrollRef}
-                scrollEnabled={scrollEnabled}
-                showsVerticalScrollIndicator
-                contentContainerStyle={styles.canvasInnerVertical}
-              >
-                <View
-                  style={[
-                    styles.canvasWrapper,
-                    { width: canvasSize.width, height: canvasSize.height },
-                  ]}
-                  onLayout={handleCanvasLayout}
-                >
-                  {highlightedAnswerLinkId && (
-                    <View
-                      style={[
-                        styles.canvasHighlight,
-                        highlightedBounds
-                          ? {
-                              top: highlightedBounds.y,
-                              left: highlightedBounds.x,
-                              width: highlightedBounds.width,
-                              height: highlightedBounds.height,
-                            }
-                          : styles.canvasHighlightFull,
-                        styles.canvasHighlightActive,
-                      ]}
-                      pointerEvents="none"
-                    />
-                  )}
-                  <HandwritingCanvas
-                    key={activePage?.id || "canvas-default"}
-                    ref={canvasRef}
-                    width={canvasSize.width}
-                    height={canvasSize.height}
-                    strokeColor={canvasColor}
-                    onDrawingStart={handleDrawingStart}
-                    onDrawingEnd={handleDrawingEnd}
-                    initialStrokes={initialCanvasStrokes}
-                    onStrokesChange={handleCanvasStrokesChange}
-                  />
-
-                  {/* AI Visual Blocks rendered on canvas */}
-                  {activeVisualBlocks.map((block) => (
-                    <CanvasVisualBlock
-                      key={block.id}
-                      block={block}
-                      highlighted={highlightedVisualBlockId === block.id}
-                      onPress={(blockId) => {
-                        // Highlight the block briefly
-                        setHighlightedVisualBlockId(blockId);
-                        setTimeout(
-                          () => setHighlightedVisualBlockId(null),
-                          2000,
-                        );
-                      }}
-                    />
-                  ))}
-
-                  {/* Animated Check Answer button - appears right after where user stopped writing */}
-                  {lastDrawingPosition && (
-                    <AnimatedPressable
-                      style={[
-                        styles.checkAnswerButton,
-                        checkButtonAnimatedStyle,
-                        checkButtonPosition && {
-                          // Position below and further to the right of where user stopped writing
-                          top: checkButtonPosition.top,
-                          left: checkButtonPosition.left,
-                        },
-                      ]}
-                      onPress={submitAnswer}
-                      disabled={grading}
-                    >
-                      {grading ? (
-                        <ActivityIndicator color="#fff" size="small" />
-                      ) : (
-                        <>
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={20}
-                            color="#fff"
-                          />
-                          <ThemedText style={styles.checkAnswerButtonText}>
-                            {t("study.checkAnswer")}
-                          </ThemedText>
-                        </>
-                      )}
-                    </AnimatedPressable>
-                  )}
-                </View>
-              </ScrollView>
-            </ScrollView>
-          </View>
-
-          {/* Answer markers - links to chat questions */}
-          {answerMarkers.length > 0 && (
-            <View style={styles.answerMarkersContainer}>
-              <ThemedText type="defaultSemiBold" style={styles.markersTitle}>
-                {t("study.answerSectionTitle")}
-              </ThemedText>
-              <View style={styles.markersList}>
-                {answerMarkers.map((marker) => (
-                  <Pressable
-                    key={`${marker.answerLinkId}-${marker.messageId}`}
-                    style={[
-                      styles.markerBadge,
-                      highlightedAnswerLinkId === marker.answerLinkId &&
-                        styles.markerBadgeHighlighted,
-                    ]}
-                    onPress={() => scrollToQuestionMessage(marker.messageId)}
-                  >
-                    <ThemedText style={styles.markerBadgeText}>
-                      Q{marker.questionIndex}
-                    </ThemedText>
-                    <Ionicons
-                      name="chatbubble-outline"
-                      size={12}
-                      color="#10b981"
-                    />
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          )}
-
-          <ThemedText type="defaultSemiBold" style={{ marginTop: 16 }}>
-            {t("study.typedNotes")}
-          </ThemedText>
-          <TextInput
-            style={styles.input}
-            placeholder={t("study.notesPlaceholder")}
-            placeholderTextColor="#94a3b8"
-            multiline
-            value={answerText}
-            onChangeText={handleNotesChange}
-          />
-        </ScrollView>
-      </View>
+      <StudyCanvasPanel
+        styles={styles}
+        palette={palette}
+        t={t}
+        tutorCollapsed={tutorCollapsed}
+        toggleTutor={toggleTutor}
+        studyTitle={studyTitle}
+        studyOutline={studyOutline}
+        studyPlanEntry={studyPlanEntry}
+        canvasPages={canvasPages}
+        activePageId={activePageId}
+        activePage={activePage}
+        canvasSize={canvasSize}
+        canvasMode={canvasMode}
+        canvasColor={canvasColor}
+        onCanvasModeChange={handleCanvasModeChange}
+        onCanvasColorChange={handleCanvasColorChange}
+        onClearCanvas={handleClearCanvas}
+        onUndo={handleUndo}
+        onAddPage={handleAddPage}
+        onSelectPage={handleSelectPage}
+        onTitleStrokesChange={handleTitleStrokesChange}
+        titleCanvasRef={titleCanvasRef}
+        canvasRef={canvasRef}
+        pageScrollRef={pageScrollRef}
+        canvasScrollRef={canvasScrollRef}
+        canvasHScrollRef={canvasHScrollRef}
+        scrollEnabled={scrollEnabled}
+        onDrawingStart={handleDrawingStart}
+        onDrawingEnd={handleDrawingEnd}
+        initialCanvasStrokes={initialCanvasStrokes}
+        onCanvasStrokesChange={handleCanvasStrokesChange}
+        activeVisualBlocks={activeVisualBlocks}
+        highlightedVisualBlockId={highlightedVisualBlockId}
+        onHighlightVisualBlock={setHighlightedVisualBlockId}
+        highlightedAnswerLinkId={highlightedAnswerLinkId}
+        highlightedBounds={highlightedBounds}
+        onCanvasLayout={handleCanvasLayout}
+        checkButtonPosition={checkButtonPosition}
+        checkButtonAnimatedStyle={checkButtonAnimatedStyle}
+        lastDrawingPosition={lastDrawingPosition}
+        onSubmitAnswer={submitAnswer}
+        grading={grading}
+        answerMarkers={answerMarkers}
+        onMarkerPress={scrollToQuestionMessage}
+        answerText={answerText}
+        onNotesChange={handleNotesChange}
+      />
 
       {tutorCollapsed ? (
-        <View style={styles.chatColumnCollapsed}>
-          {/* Expand button with message badge */}
-          <Pressable
-            style={styles.expandTutorButton}
-            onPress={toggleTutor}
-            accessibilityLabel={t("study.showTutor")}
-            accessibilityRole="button"
-          >
-            <Ionicons name="chatbubbles" size={24} color="#10b981" />
-            {messages.length > 0 && (
-              <View style={styles.messageBadge}>
-                <ThemedText style={styles.messageBadgeText}>
-                  {messages.length}
-                </ThemedText>
-              </View>
-            )}
-          </Pressable>
-
-          {/* Quick action buttons */}
-          <View style={styles.collapsedQuickActions}>
-            <Pressable
-              style={styles.collapsedActionButton}
-              onPress={requestExplanation}
-              disabled={isChatting}
-              accessibilityLabel={t("study.explainThis")}
-            >
-              <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
-            </Pressable>
-            <Pressable
-              style={styles.collapsedActionButton}
-              onPress={requestQuestions}
-              disabled={loadingQuestions}
-              accessibilityLabel={t("study.quizMe")}
-            >
-              <Ionicons name="help-circle-outline" size={20} color="#818cf8" />
-            </Pressable>
-          </View>
-
-          {/* Collapsed voice input */}
-          <View style={styles.collapsedVoiceInput}>
-            <VoiceInput
-              onTranscription={handleVoiceTranscription}
-              disabled={isChatting}
-              listeningMode={listeningMode}
-              onListeningModeEnd={() => setListeningMode(false)}
-              ttsFinished={!isSpeaking && listeningMode}
-            />
-          </View>
-
-          {/* Status indicator */}
-          {isChatting && (
-            <View style={styles.collapsedThinking}>
-              <ActivityIndicator color="#10b981" size="small" />
-            </View>
-          )}
-        </View>
+        <StudyChatCollapsed
+          styles={styles}
+          t={t}
+          messagesCount={messages.length}
+          isChatting={isChatting}
+          loadingQuestions={loadingQuestions}
+          onToggleTutor={toggleTutor}
+          onRequestExplanation={requestExplanation}
+          onRequestQuestions={requestQuestions}
+          onVoiceTranscription={handleVoiceTranscription}
+          listeningMode={listeningMode}
+          onListeningModeEnd={() => setListeningMode(false)}
+          ttsFinished={!isSpeaking && listeningMode}
+        />
       ) : (
-        <View style={styles.chatColumn}>
-          <View style={styles.chatHeader}>
-            <View style={styles.chatTitleRow}>
-              <ThemedText type="title" style={{ color: "#fff" }}>
-                {t("study.aiTutor")}
-              </ThemedText>
-              <Pressable
-                style={styles.collapseTutorButton}
-                onPress={toggleTutor}
-                accessibilityLabel={t("study.hideTutor")}
-                accessibilityRole="button"
-              >
-                <Ionicons name="chevron-forward" size={20} color="#64748b" />
-              </Pressable>
-            </View>
-            <View style={styles.voiceControlsRow}>
-              <Pressable
-                style={[styles.ttsToggle, ttsEnabled && styles.ttsToggleActive]}
-                onPress={() => {
-                  if (isSpeaking) {
-                    stopSpeaking();
-                  }
-                  setTtsEnabled(!ttsEnabled);
-                }}
-                accessibilityLabel={
-                  ttsEnabled ? t("voice.disableTts") : t("voice.enableTts")
-                }
-                accessibilityRole="button"
-              >
-                <Ionicons
-                  name={ttsEnabled ? "volume-high" : "volume-mute"}
-                  size={20}
-                  color={ttsEnabled ? "#10b981" : "#64748b"}
-                />
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.ttsToggle,
-                  captionsEnabled && styles.ttsToggleActive,
-                ]}
-                onPress={() => setCaptionsEnabled(!captionsEnabled)}
-                accessibilityLabel={
-                  captionsEnabled
-                    ? t("voice.disableCaptions")
-                    : t("voice.enableCaptions")
-                }
-                accessibilityRole="button"
-              >
-                <Ionicons
-                  name={captionsEnabled ? "text" : "text-outline"}
-                  size={18}
-                  color={captionsEnabled ? "#10b981" : "#64748b"}
-                />
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.ttsToggle,
-                  listeningMode && styles.listeningModeActive,
-                ]}
-                onPress={() => setListeningMode(!listeningMode)}
-                accessibilityLabel={
-                  listeningMode
-                    ? t("voice.disableListening")
-                    : t("voice.enableListening")
-                }
-                accessibilityRole="button"
-              >
-                <Ionicons
-                  name={listeningMode ? "ear" : "ear-outline"}
-                  size={18}
-                  color={listeningMode ? "#f59e0b" : "#64748b"}
-                />
-              </Pressable>
-            </View>
-          </View>
-          <ThemedText style={{ color: "#94a3b8", fontSize: 13 }}>
-            {studyPlanEntry
-              ? t("study.focusedOn", { title: studyPlanEntry.title })
-              : t("study.aiSubtitle")}
-          </ThemedText>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.chatToolbarScroll}
-            contentContainerStyle={styles.chatToolbarContent}
-          >
-            <Pressable
-              style={styles.explainButton}
-              onPress={requestExplanation}
-              disabled={isChatting}
-              accessibilityRole="button"
-              accessibilityLabel={t("study.explainThis")}
-              accessibilityState={{ disabled: isChatting }}
-            >
-              <Ionicons name="bulb-outline" size={18} color="#f59e0b" />
-              <ThemedText style={styles.explainButtonText}>
-                {t("study.explainThis")}
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              style={styles.primaryButton}
-              onPress={requestQuestions}
-              disabled={loadingQuestions}
-              accessibilityRole="button"
-              accessibilityLabel={t("study.quizMe")}
-              accessibilityState={{
-                disabled: loadingQuestions,
-                busy: loadingQuestions,
-              }}
-            >
-              {loadingQuestions ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <ThemedText style={styles.primaryButtonText}>
-                  {t("study.quizMe")}
-                </ThemedText>
-              )}
-            </Pressable>
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={handleAddPage}
-              accessibilityRole="button"
-              accessibilityLabel="Start a new blank page without deleting notes"
-            >
-              <ThemedText style={styles.secondaryButtonText}>
-                New blank page
-              </ThemedText>
-            </Pressable>
-            {currentQuestion && (
-              <Pressable
-                style={styles.secondaryButton}
-                onPress={nextQuestion}
-                accessibilityRole="button"
-                accessibilityLabel={t("study.nextQuestion")}
-              >
-                <ThemedText style={styles.secondaryButtonText}>
-                  {t("study.nextQuestion")}
-                </ThemedText>
-              </Pressable>
-            )}
-
-            <View style={styles.toolbarDivider} />
-
-            <Pressable
-              style={styles.quickActionChip}
-              onPress={() => sendToFeynmanAI(t("voice.quickSimpler"))}
-              disabled={isChatting}
-              accessibilityLabel={t("voice.quickSimpler")}
-            >
-              <Ionicons name="sparkles-outline" size={14} color="#a5b4fc" />
-              <ThemedText style={styles.quickActionText}>
-                {t("voice.simpler")}
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              style={styles.quickActionChip}
-              onPress={() => sendToFeynmanAI(t("voice.quickAnalogy"))}
-              disabled={isChatting}
-              accessibilityLabel={t("voice.quickAnalogy")}
-            >
-              <Ionicons
-                name="swap-horizontal-outline"
-                size={14}
-                color="#a5b4fc"
-              />
-              <ThemedText style={styles.quickActionText}>
-                {t("voice.analogy")}
-              </ThemedText>
-            </Pressable>
-            <Pressable
-              style={styles.quickActionChip}
-              onPress={() => sendToFeynmanAI(t("voice.quickFormula"))}
-              disabled={isChatting}
-              accessibilityLabel={t("voice.quickFormula")}
-            >
-              <Ionicons name="calculator-outline" size={14} color="#a5b4fc" />
-              <ThemedText style={styles.quickActionText}>
-                {t("voice.formula")}
-              </ThemedText>
-            </Pressable>
-          </ScrollView>
-
-          <FlatList
-            ref={chatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            getItemLayout={getItemLayout}
-            renderItem={({ item }) => {
-              const marker = item.questionId
-                ? answerMarkers.find((m) => m.questionId === item.questionId)
-                : null;
-              return (
-                <ThemedView
-                  style={[
-                    styles.chatBubble,
-                    item.role === "ai" ? styles.chatAI : styles.chatUser,
-                  ]}
-                >
-                  <View style={styles.bubbleHeader}>
-                    <View style={styles.bubbleTitleRow}>
-                      <ThemedText
-                        type="defaultSemiBold"
-                        style={{
-                          color: item.role === "ai" ? "#10b981" : "#60a5fa",
-                        }}
-                      >
-                        {item.role === "ai"
-                          ? t("study.tutorLabel")
-                          : t("study.youLabel")}
-                      </ThemedText>
-                      {marker && (
-                        <View style={styles.questionBadge}>
-                          <ThemedText style={styles.questionBadgeText}>
-                            Q{marker.questionIndex}
-                          </ThemedText>
-                        </View>
-                      )}
-                    </View>
-                    {item.role === "ai" && ttsEnabled && (
-                      <Pressable
-                        onPress={() => speakMessage(item.text)}
-                        style={styles.replayButton}
-                        accessibilityRole="button"
-                        accessibilityLabel={t("voice.enableTts")}
-                        accessibilityHint={t("study.speaking")}
-                      >
-                        <Ionicons
-                          name="play-circle"
-                          size={24}
-                          color="#94a3b8"
-                        />
-                      </Pressable>
-                    )}
-                  </View>
-                  {item.role === "ai" ? (
-                    <MarkdownText content={item.text} />
-                  ) : (
-                    <ThemedText style={{ color: "#e2e8f0" }}>
-                      {item.text}
-                    </ThemedText>
-                  )}
-                  {item.role === "ai" &&
-                    item.citations &&
-                    item.citations.length > 0 && (
-                      <View style={styles.citationRow}>
-                        {item.citations.map((citation, idx) => (
-                          <Pressable
-                            key={`${item.id}-citation-${idx}`}
-                            style={styles.citationChip}
-                            onPress={() => openCitationSource(citation)}
-                          >
-                            <Ionicons
-                              name="book-outline"
-                              size={12}
-                              color="#0ea5e9"
-                            />
-                            <ThemedText style={styles.citationChipText}>
-                              {citation.pageNumber
-                                ? `Source p${citation.pageNumber}`
-                                : "Source"}
-                            </ThemedText>
-                          </Pressable>
-                        ))}
-                      </View>
-                    )}
-                  {item.answerLinkId && (
-                    <Pressable
-                      style={styles.viewNotesButton}
-                      onPress={() => scrollToCanvasAnswer(item.answerLinkId!)}
-                    >
-                      <Ionicons
-                        name="document-text-outline"
-                        size={14}
-                        color="#60a5fa"
-                      />
-                      <ThemedText style={styles.viewNotesText}>
-                        {t("study.viewNotes")}
-                      </ThemedText>
-                    </Pressable>
-                  )}
-                  {item.visualBlockIds && item.visualBlockIds.length > 0 && (
-                    <Pressable
-                      style={styles.viewDiagramButton}
-                      onPress={() => {
-                        // Scroll to first visual block and highlight it
-                        const blockId = item.visualBlockIds![0];
-                        const block = activeVisualBlocks.find(
-                          (b) => b.id === blockId,
-                        );
-                        if (block) {
-                          // Scroll canvas to the visual block
-                          pageScrollRef.current?.scrollTo({
-                            y: 0,
-                            animated: true,
-                          });
-                          setTimeout(() => {
-                            canvasScrollRef.current?.scrollTo({
-                              y: Math.max(block.position.y - 24, 0),
-                              animated: true,
-                            });
-                            canvasHScrollRef.current?.scrollTo({
-                              x: Math.max(block.position.x - 24, 0),
-                              animated: true,
-                            });
-                            setHighlightedVisualBlockId(blockId);
-                            setTimeout(
-                              () => setHighlightedVisualBlockId(null),
-                              2500,
-                            );
-                          }, 100);
-                        }
-                      }}
-                    >
-                      <Ionicons
-                        name="git-network-outline"
-                        size={14}
-                        color="#10b981"
-                      />
-                      <ThemedText style={styles.viewDiagramText}>
-                        {t("study.viewDiagram")}
-                      </ThemedText>
-                    </Pressable>
-                  )}
-                </ThemedView>
-              );
-            }}
-            style={styles.chatList}
-            contentContainerStyle={{ gap: 8, paddingBottom: 8 }}
-            onScrollToIndexFailed={(info) => {
-              // Handle scroll to index failure gracefully
-              setTimeout(() => {
-                chatListRef.current?.scrollToIndex({
-                  index: info.index,
-                  animated: true,
-                });
-              }, 100);
-            }}
-          />
-
-          {/* Caption Overlay */}
-          {captionsEnabled && currentCaption && (
-            <View style={styles.captionOverlay}>
-              <Pressable
-                onPress={stopSpeaking}
-                style={styles.captionStopButton}
-              >
-                <Ionicons name="stop-circle" size={20} color="#ef4444" />
-              </Pressable>
-              <ScrollView
-                style={styles.captionScroll}
-                showsVerticalScrollIndicator={false}
-              >
-                <ThemedText style={styles.captionText} numberOfLines={4}>
-                  {currentCaption}
-                </ThemedText>
-              </ScrollView>
-            </View>
-          )}
-
-          <View style={styles.inputArea}>
-            <View style={styles.voiceRow}>
-              <VoiceInput
-                onTranscription={handleVoiceTranscription}
-                disabled={isChatting}
-                listeningMode={listeningMode}
-                onListeningModeEnd={() => setListeningMode(false)}
-                ttsFinished={!isSpeaking && listeningMode}
-              />
-              {isChatting && (
-                <View style={styles.thinkingIndicator}>
-                  <ActivityIndicator color="#10b981" size="small" />
-                  <ThemedText style={{ color: "#94a3b8", fontSize: 12 }}>
-                    {t("study.thinking")}
-                  </ThemedText>
-                </View>
-              )}
-              {isSpeaking && (
-                <Pressable
-                  onPress={stopSpeaking}
-                  style={styles.stopSpeakingButton}
-                >
-                  <Ionicons name="stop-circle" size={24} color="#ef4444" />
-                  <ThemedText style={styles.stopSpeakingText}>
-                    {t("study.stopSpeaking")}
-                  </ThemedText>
-                </Pressable>
-              )}
-            </View>
-
-            {currentQuestion && (
-              <View style={styles.submitArea}>
-                <Pressable
-                  style={[
-                    styles.submitButton,
-                    grading && styles.disabledButton,
-                  ]}
-                  onPress={submitAnswer}
-                  disabled={grading}
-                >
-                  {grading ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <>
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={18}
-                        color="#fff"
-                      />
-                      <ThemedText style={styles.primaryButtonText}>
-                        {t("study.submitAnswer")}
-                      </ThemedText>
-                    </>
-                  )}
-                </Pressable>
-                <ThemedText style={styles.metaText}>
-                  {t("study.gradingHint")}
-                </ThemedText>
-              </View>
-            )}
-          </View>
-        </View>
+        <StudyChatPanel
+          styles={styles}
+          t={t}
+          studyPlanEntry={studyPlanEntry}
+          ttsEnabled={ttsEnabled}
+          listeningMode={listeningMode}
+          isChatting={isChatting}
+          isSpeaking={isSpeaking}
+          activeTtsMessageId={activeTtsMessageId}
+          loadingQuestions={loadingQuestions}
+          grading={grading}
+          currentQuestion={currentQuestion}
+          messages={messages}
+          answerMarkers={answerMarkers}
+          chatListRef={chatListRef}
+          getItemLayout={getItemLayout}
+          onToggleTutor={toggleTutor}
+          onToggleTts={handleToggleTts}
+          onToggleListening={handleToggleListening}
+          onStopSpeaking={stopSpeaking}
+          onRequestExplanation={requestExplanation}
+          onRequestQuestions={requestQuestions}
+          onAddPage={handleAddPage}
+          onNextQuestion={nextQuestion}
+          onSendQuickAction={sendToFeynmanAI}
+          onVoiceTranscription={handleVoiceTranscription}
+          onListeningModeEnd={() => setListeningMode(false)}
+          ttsFinished={!isSpeaking && listeningMode}
+          onReplayMessage={speakMessage}
+          onOpenCitation={openCitationSource}
+          onViewNotes={scrollToCanvasAnswer}
+          onViewDiagram={handleViewDiagram}
+          onSubmitAnswer={submitAnswer}
+        />
       )}
 
-      {/* Flashcard Added Notification */}
-      {flashcardAdded && (
-        <View style={styles.flashcardNotification}>
-          <Ionicons name="layers" size={18} color="#fff" />
-          <ThemedText style={styles.flashcardNotificationText}>
-            {t("flashcards.added")}
-          </ThemedText>
-        </View>
-      )}
+      {flashcardAdded && <StudyFlashcardToast styles={styles} t={t} />}
     </ThemedView>
   );
 }
-
-const createStyles = (palette: typeof Colors.light) =>
-  StyleSheet.create({
-    shell: {
-      flex: 1,
-      flexDirection: "row",
-      padding: Spacing.md,
-      gap: Spacing.md,
-      backgroundColor: palette.background,
-    },
-    canvasColumn: {
-      flex: 4,
-      backgroundColor: palette.surface,
-      borderRadius: Radii.lg,
-      overflow: "hidden",
-      borderWidth: 1,
-      borderColor: palette.border,
-      ...Shadows.sm,
-    },
-    canvasColumnFullscreen: {
-      flex: 1,
-    },
-    canvasHeader: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      justifyContent: "space-between",
-      gap: Spacing.md,
-    },
-    canvasTitle: {
-      flex: 1,
-    },
-    tutorToggleButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: Radii.md,
-      backgroundColor: palette.surfaceAlt,
-      borderWidth: 1,
-      borderColor: palette.border,
-    },
-    tutorToggleButtonCollapsed: {
-      backgroundColor: `${palette.success}12`,
-      borderColor: `${palette.success}33`,
-    },
-    tutorToggleText: {
-      color: palette.success,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    collapseTutorButton: {
-      padding: 8,
-      borderRadius: Radii.md,
-      backgroundColor: palette.muted,
-    },
-    chatColumn: {
-      flex: 2,
-      backgroundColor: palette.surfaceAlt,
-      borderRadius: Radii.lg,
-      padding: Spacing.sm,
-      paddingTop: Spacing.md,
-      gap: Spacing.sm,
-      borderWidth: 1,
-      borderColor: palette.border,
-      ...Shadows.sm,
-    },
-    chatColumnCollapsed: {
-      width: 60,
-      backgroundColor: palette.surfaceAlt,
-      borderRadius: Radii.lg,
-      paddingVertical: Spacing.md,
-      paddingHorizontal: Spacing.sm,
-      gap: Spacing.md,
-      borderWidth: 1,
-      borderColor: palette.border,
-      alignItems: "center",
-      ...Shadows.sm,
-    },
-    expandTutorButton: {
-      width: 44,
-      height: 44,
-      borderRadius: Radii.md,
-      backgroundColor: `${palette.success}12`,
-      borderWidth: 1,
-      borderColor: `${palette.success}33`,
-      alignItems: "center",
-      justifyContent: "center",
-      position: "relative",
-    },
-    messageBadge: {
-      position: "absolute",
-      top: -6,
-      right: -6,
-      minWidth: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: palette.primary,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 4,
-    },
-    messageBadgeText: {
-      color: palette.textOnPrimary,
-      fontSize: 11,
-      fontWeight: "700",
-    },
-    collapsedQuickActions: {
-      gap: Spacing.xs,
-      alignItems: "center",
-    },
-    collapsedActionButton: {
-      width: 40,
-      height: 40,
-      borderRadius: Radii.md,
-      backgroundColor: palette.muted,
-      borderWidth: 1,
-      borderColor: palette.border,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    collapsedVoiceInput: {
-      marginTop: "auto",
-      alignItems: "center",
-    },
-    collapsedThinking: {
-      padding: Spacing.xs,
-    },
-    canvasArea: {
-      padding: Spacing.md,
-      gap: Spacing.sm,
-    },
-    pageNavContainer: {
-      marginBottom: Spacing.sm,
-    },
-    pageTabsContent: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      paddingVertical: 4,
-    },
-    pageTab: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: Radii.md,
-      backgroundColor: palette.surface,
-      borderWidth: 1,
-      borderColor: palette.border,
-      minWidth: 70,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    pageTabActive: {
-      backgroundColor: `${palette.primary}12`,
-      borderColor: palette.primary,
-    },
-    pageTabText: {
-      fontSize: 13,
-      color: palette.textMuted,
-      fontWeight: "500",
-    },
-    pageTabTextActive: {
-      color: palette.primary,
-      fontWeight: "600",
-    },
-    pageTitlePreview: {
-      overflow: "hidden",
-      borderRadius: 4,
-    },
-    addPageButton: {
-      padding: 10,
-      borderRadius: Radii.md,
-      backgroundColor: `${palette.success}12`,
-      borderWidth: 1,
-      borderColor: `${palette.success}33`,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    pageTitleContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.sm,
-      marginBottom: Spacing.sm,
-    },
-    pageTitleLabel: {
-      fontSize: 13,
-      color: palette.textMuted,
-      fontWeight: "500",
-    },
-    pageTitleCanvasWrapper: {
-      borderRadius: Radii.md,
-      borderWidth: 1,
-      borderColor: palette.border,
-      backgroundColor: "#f8fafc",
-      overflow: "hidden",
-    },
-    canvasScrollShell: {
-      marginTop: 8,
-    },
-    canvasInnerVertical: {
-      paddingBottom: Spacing.sm,
-    },
-    canvasWrapper: {
-      position: "relative",
-      // width and height are set dynamically via inline style
-    },
-    chatHeader: {
-      gap: 4,
-    },
-    chatTitleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    voiceControlsRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-    },
-    chatToolbarScroll: {
-      marginHorizontal: -4,
-      flexShrink: 0,
-    },
-    chatToolbarContent: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 4,
-      paddingVertical: 2,
-    },
-    ttsToggle: {
-      padding: 8,
-      borderRadius: Radii.md,
-      backgroundColor: palette.muted,
-      borderWidth: 1,
-      borderColor: palette.border,
-      minWidth: 36,
-      minHeight: 36,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    ttsToggleActive: {
-      backgroundColor: `${palette.success}1a`,
-      borderColor: `${palette.success}33`,
-    },
-    listeningModeActive: {
-      backgroundColor: `${palette.warning}1a`,
-      borderColor: `${palette.warning}33`,
-    },
-    toolbarDivider: {
-      width: 1,
-      height: 32,
-      backgroundColor: palette.border,
-      opacity: 0.6,
-      marginHorizontal: 4,
-    },
-    quickActionChip: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      backgroundColor: `${palette.primary}12`,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: Radii.pill,
-      borderWidth: 1,
-      borderColor: `${palette.primary}33`,
-    },
-    quickActionText: {
-      color: palette.primary,
-      fontSize: 12,
-      fontWeight: "500",
-    },
-    captionOverlay: {
-      backgroundColor: `${palette.surfaceAlt}f5`,
-      borderRadius: Radii.md,
-      padding: Spacing.sm,
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: Spacing.xs,
-      borderWidth: 1,
-      borderColor: `${palette.success}44`,
-      maxHeight: 100,
-    },
-    captionStopButton: {
-      padding: 4,
-    },
-    captionScroll: {
-      flex: 1,
-    },
-    captionText: {
-      color: palette.text,
-      fontSize: 14,
-      lineHeight: 20,
-    },
-    stopSpeakingButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      backgroundColor: `${palette.danger}12`,
-      borderRadius: Radii.md,
-      borderWidth: 1,
-      borderColor: `${palette.danger}44`,
-    },
-    stopSpeakingText: {
-      color: palette.danger,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    explainButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      backgroundColor: `${palette.warning}12`,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: Radii.md,
-      borderWidth: 1,
-      borderColor: `${palette.warning}66`,
-      minHeight: 36,
-    },
-    explainButtonText: {
-      color: palette.warning,
-      fontWeight: "600",
-      fontSize: 13,
-    },
-    primaryButton: {
-      backgroundColor: palette.primary,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: Radii.md,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      minHeight: 36,
-    },
-    primaryButtonText: {
-      color: palette.textOnPrimary,
-      fontWeight: "600",
-      fontSize: 13,
-    },
-    secondaryButton: {
-      borderRadius: Radii.md,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderWidth: 1,
-      borderColor: palette.border,
-      backgroundColor: palette.surface,
-      minHeight: 36,
-    },
-    secondaryButtonText: {
-      color: palette.text,
-      fontSize: 13,
-    },
-    chatList: {
-      flex: 1,
-      marginHorizontal: -4,
-    },
-    chatBubble: {
-      padding: 10,
-      paddingHorizontal: 12,
-      borderRadius: Radii.md,
-      gap: 4,
-      borderWidth: 1,
-      borderColor: palette.border,
-      backgroundColor: palette.surface,
-      marginHorizontal: 4,
-    },
-    bubbleHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    replayButton: {
-      padding: 8,
-      minWidth: 44,
-      minHeight: 44,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    chatAI: {
-      backgroundColor: palette.surfaceAlt,
-      borderLeftWidth: 3,
-      borderLeftColor: palette.success,
-    },
-    chatUser: {
-      backgroundColor: palette.surface,
-      borderLeftWidth: 3,
-      borderLeftColor: palette.primary,
-    },
-    metaText: {
-      fontSize: 11,
-      color: palette.textMuted,
-      marginTop: 4,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: palette.border,
-      borderRadius: Radii.md,
-      padding: 12,
-      minHeight: 120,
-      backgroundColor: palette.surface,
-      marginTop: Spacing.sm,
-      fontSize: 15,
-    },
-    inputArea: {
-      gap: 6,
-    },
-    voiceRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.sm,
-    },
-    thinkingIndicator: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-    },
-    submitArea: {
-      gap: 4,
-    },
-    submitButton: {
-      backgroundColor: palette.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: Radii.md,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: Spacing.xs,
-    },
-    disabledButton: {
-      opacity: 0.6,
-    },
-    center: {
-      flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
-      gap: Spacing.sm,
-      padding: Spacing.md,
-      backgroundColor: palette.background,
-    },
-    topicFocusBadge: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      backgroundColor: `${palette.success}12`,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      borderRadius: Radii.pill,
-      alignSelf: "flex-start",
-      marginTop: 4,
-      borderWidth: 1,
-      borderColor: `${palette.success}33`,
-    },
-    topicFocusText: {
-      color: palette.success,
-      fontSize: 13,
-      fontWeight: "500",
-    },
-    checkAnswerButton: {
-      position: "absolute",
-      backgroundColor: palette.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 25,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      ...Shadows.md,
-      zIndex: 100,
-    },
-    checkAnswerButtonText: {
-      color: palette.textOnPrimary,
-      fontWeight: "700",
-      fontSize: 16,
-    },
-    canvasHighlight: {
-      position: "absolute",
-      borderRadius: Radii.md,
-      borderWidth: 3,
-      borderColor: "transparent",
-      zIndex: 10,
-    },
-    canvasHighlightFull: {
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-    },
-    canvasHighlightActive: {
-      borderColor: palette.primary,
-      backgroundColor: `${palette.primary}14`,
-    },
-    answerMarkersContainer: {
-      marginTop: Spacing.md,
-      padding: Spacing.md,
-      backgroundColor: palette.surface,
-      borderRadius: Radii.md,
-      borderWidth: 1,
-      borderColor: palette.border,
-    },
-    markersTitle: {
-      fontSize: 13,
-      color: palette.textMuted,
-      marginBottom: Spacing.xs,
-    },
-    markersList: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: Spacing.xs,
-    },
-    markerBadge: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      backgroundColor: palette.surface,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: Radii.pill,
-      borderWidth: 1,
-      borderColor: palette.border,
-    },
-    markerBadgeHighlighted: {
-      borderColor: palette.primary,
-      backgroundColor: `${palette.primary}12`,
-    },
-    markerBadgeText: {
-      color: palette.success,
-      fontWeight: "600",
-      fontSize: 13,
-    },
-    bubbleTitleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-    },
-    questionBadge: {
-      backgroundColor: `${palette.primary}18`,
-      paddingVertical: 2,
-      paddingHorizontal: 8,
-      borderRadius: 10,
-    },
-    questionBadgeText: {
-      color: palette.primary,
-      fontSize: 11,
-      fontWeight: "600",
-    },
-    viewNotesButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      marginTop: 8,
-      alignSelf: "flex-start",
-      backgroundColor: `${palette.primary}10`,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: Radii.md,
-    },
-    viewNotesText: {
-      color: palette.primary,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    viewDiagramButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.xs,
-      marginTop: 8,
-      alignSelf: "flex-start",
-      backgroundColor: `${palette.success}12`,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: Radii.md,
-      borderWidth: 1,
-      borderColor: `${palette.success}33`,
-    },
-    viewDiagramText: {
-      color: palette.success,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    citationRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: Spacing.xs,
-      marginTop: 6,
-    },
-    citationChip: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      backgroundColor: `${palette.primary}10`,
-      paddingVertical: 6,
-      paddingHorizontal: 10,
-      borderRadius: Radii.md,
-      borderWidth: 1,
-      borderColor: `${palette.primary}33`,
-    },
-    citationChipText: {
-      color: palette.primary,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    flashcardNotification: {
-      position: "absolute",
-      bottom: Spacing.lg,
-      left: "50%",
-      transform: [{ translateX: -100 }],
-      flexDirection: "row",
-      alignItems: "center",
-      gap: Spacing.sm,
-      backgroundColor: palette.success,
-      paddingVertical: Spacing.sm,
-      paddingHorizontal: Spacing.md,
-      borderRadius: Radii.pill,
-      ...Shadows.md,
-    },
-    flashcardNotificationText: {
-      color: "#fff",
-      fontWeight: "600",
-      fontSize: 14,
-    },
-  });
