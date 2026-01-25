@@ -298,6 +298,7 @@ const de = {
   'study.addPage': 'Seite hinzufügen',
   'study.showTutor': 'KI-Tutor anzeigen',
   'study.hideTutor': 'KI-Tutor ausblenden',
+  'study.restartSession': 'Sitzung neu starten',
 
   'modal.title': 'Dies ist ein Modal',
   'modal.goHome': 'Zur Startseite',

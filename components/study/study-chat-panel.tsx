@@ -42,6 +42,7 @@ type StudyChatPanelProps = {
   onToggleTts: () => void;
   onToggleListening: () => void;
   onStopSpeaking: () => void;
+  onRestartSession: () => void;
   onRequestExplanation: () => void;
   onRequestQuestions: () => void;
   onAddPage: () => void;
@@ -77,6 +78,7 @@ export function StudyChatPanel({
   onToggleTts,
   onToggleListening,
   onStopSpeaking,
+  onRestartSession,
   onRequestExplanation,
   onRequestQuestions,
   onAddPage,
@@ -101,6 +103,7 @@ export function StudyChatPanel({
         onToggleTutor={onToggleTutor}
         onToggleTts={onToggleTts}
         onToggleListening={onToggleListening}
+        onRestartSession={onRestartSession}
       />
       <ThemedText
         style={{

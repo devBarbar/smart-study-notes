@@ -1,5 +1,5 @@
 import * as FileSystem from "expo-file-system/legacy";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -55,7 +55,9 @@ import {
     LectureFileChunk,
     addReviewEvent,
     countLectureChunks,
+  createSession,
     getSessionById,
+  getSupabase,
     getStudyPlanEntry,
     getUserStreak,
     listAnswerLinks,
@@ -85,6 +87,7 @@ import {
     StudyCitation,
     StudyPlanEntry,
     StudyQuestion,
+    StudySession,
 } from "@/types";
 
 // Estimated height for chat messages for scrollToIndex
@@ -109,6 +112,7 @@ export default function StudySessionScreen() {
   const { data: materials = [], isFetching: loadingMaterials } = useMaterials();
   const { data: lectures = [], isFetching: loadingLectures } = useLectures();
   const { t, agentLanguage } = useLanguage();
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? "light"];
   const styles = useMemo(() => createStudyStyles(palette), [palette]);
@@ -2005,6 +2009,51 @@ export default function StudySessionScreen() {
     setListeningMode((prev) => !prev);
   }, []);
 
+  const handleRestartSession = useCallback(async () => {
+    if (!lecture && !material) return;
+
+    if (isSpeaking) {
+      await stopSpeaking();
+    }
+
+    const sessionId = uuid();
+    const sessionTitle = studyPlanEntry
+      ? `${lecture?.title || material?.title || t("study.titleFallback")}: ${studyPlanEntry.title}`
+      : lecture
+        ? `${lecture.title} - Full Study`
+        : `${material?.title || t("study.titleFallback")} session`;
+
+    const newSession: StudySession = {
+      id: sessionId,
+      lectureId: lecture?.id,
+      materialId: material?.id,
+      studyPlanEntryId: studyPlanEntryId || undefined,
+      title: sessionTitle,
+      status: "active",
+      createdAt: new Date().toISOString(),
+    };
+
+    if (getSupabase()) {
+      await createSession(newSession);
+    }
+
+    const params = new URLSearchParams();
+    if (lecture?.id) params.set("lectureId", lecture.id);
+    if (material?.id) params.set("materialId", material.id);
+    if (studyPlanEntryId) params.set("studyPlanEntryId", studyPlanEntryId);
+
+    router.replace(`/study/${sessionId}?${params.toString()}`);
+  }, [
+    lecture,
+    material,
+    studyPlanEntry,
+    studyPlanEntryId,
+    t,
+    isSpeaking,
+    stopSpeaking,
+    router,
+  ]);
+
   return (
     <ThemedView style={styles.shell}>
       <StudyCanvasPanel
@@ -2066,6 +2115,7 @@ export default function StudySessionScreen() {
           onToggleTutor={toggleTutor}
           onRequestExplanation={requestExplanation}
           onRequestQuestions={requestQuestions}
+          onRestartSession={handleRestartSession}
           onVoiceTranscription={handleVoiceTranscription}
           listeningMode={listeningMode}
           onListeningModeEnd={() => setListeningMode(false)}
@@ -2092,6 +2142,7 @@ export default function StudySessionScreen() {
           onToggleTts={handleToggleTts}
           onToggleListening={handleToggleListening}
           onStopSpeaking={stopSpeaking}
+          onRestartSession={handleRestartSession}
           onRequestExplanation={requestExplanation}
           onRequestQuestions={requestQuestions}
           onAddPage={handleAddPage}

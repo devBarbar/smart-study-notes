@@ -12,6 +12,7 @@ type StudyChatHeaderProps = {
   onToggleTutor: () => void;
   onToggleTts: () => void;
   onToggleListening: () => void;
+  onRestartSession: () => void;
 };
 
 export function StudyChatHeader({
@@ -22,6 +23,7 @@ export function StudyChatHeader({
   onToggleTutor,
   onToggleTts,
   onToggleListening,
+  onRestartSession,
 }: StudyChatHeaderProps) {
   return (
     <View style={styles.chatHeader}>
@@ -39,6 +41,14 @@ export function StudyChatHeader({
         </Pressable>
       </View>
       <View style={styles.voiceControlsRow}>
+        <Pressable
+          style={styles.ttsToggle}
+          onPress={onRestartSession}
+          accessibilityLabel={t("study.restartSession")}
+          accessibilityRole="button"
+        >
+          <Ionicons name="refresh" size={18} color="#64748b" />
+        </Pressable>
         <Pressable
           style={[styles.ttsToggle, ttsEnabled && styles.ttsToggleActive]}
           onPress={onToggleTts}

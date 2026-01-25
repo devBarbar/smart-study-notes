@@ -14,6 +14,7 @@ type StudyChatCollapsedProps = {
   onToggleTutor: () => void;
   onRequestExplanation: () => void;
   onRequestQuestions: () => void;
+  onRestartSession: () => void;
   onVoiceTranscription: (text: string, transcriptionCostUsd?: number) => void;
   listeningMode: boolean;
   onListeningModeEnd: () => void;
@@ -29,6 +30,7 @@ export function StudyChatCollapsed({
   onToggleTutor,
   onRequestExplanation,
   onRequestQuestions,
+  onRestartSession,
   onVoiceTranscription,
   listeningMode,
   onListeningModeEnd,
@@ -53,6 +55,13 @@ export function StudyChatCollapsed({
       </Pressable>
 
       <View style={styles.collapsedQuickActions}>
+        <Pressable
+          style={styles.collapsedActionButton}
+          onPress={onRestartSession}
+          accessibilityLabel={t("study.restartSession")}
+        >
+          <Ionicons name="refresh" size={20} color="#64748b" />
+        </Pressable>
         <Pressable
           style={styles.collapsedActionButton}
           onPress={onRequestExplanation}

@@ -300,6 +300,7 @@ const en = {
   'study.addPage': 'Add page',
   'study.showTutor': 'Show AI Tutor',
   'study.hideTutor': 'Hide AI Tutor',
+  'study.restartSession': 'Restart session',
 
   'modal.title': 'This is a modal',
   'modal.goHome': 'Go to home screen',
