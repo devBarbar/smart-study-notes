@@ -2,31 +2,32 @@ import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  LayoutChangeEvent,
-  Linking,
-  ScrollView,
+    ActivityIndicator,
+    FlatList,
+    LayoutChangeEvent,
+    Linking,
+    ScrollView,
 } from "react-native";
 import {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withSpring,
+    withTiming,
 } from "react-native-reanimated";
 import { v4 as uuid } from "uuid";
 
 import { StreamingTTSPlayer, TTSPlayerState } from "@/lib/audio";
 
 import {
-  CanvasMode,
-  CanvasStroke,
-  HandwritingCanvasHandle,
+    CanvasMode,
+    CanvasStroke,
+    HandwritingCanvasHandle,
 } from "@/components/handwriting-canvas";
 import { StudyCanvasPanel } from "@/components/study/study-canvas-panel";
 import { StudyChatCollapsed } from "@/components/study/study-chat-collapsed";
 import { StudyChatPanel } from "@/components/study/study-chat-panel";
 import { StudyFlashcardToast } from "@/components/study/study-flashcard-toast";
+import { StudyLecturePassedToast } from "@/components/study/study-lecture-passed-toast";
 import { createStudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -38,52 +39,52 @@ import { useMaterials } from "@/hooks/use-materials";
 import { textToStrokes } from "@/lib/handwriting-font";
 import { computeMasteryScore, computeNextReviewDate } from "@/lib/mastery";
 import {
-  ChatMessage,
-  embedQuery,
-  evaluateAnswer,
-  generateQuestions,
-  streamFeynmanChat,
+    ChatMessage,
+    embedQuery,
+    evaluateAnswer,
+    generateQuestions,
+    streamFeynmanChat,
 } from "@/lib/openai";
 import {
-  createCanvasVisualBlock,
-  estimateVisualBlockSize,
-  parseAIResponse,
+    createCanvasVisualBlock,
+    estimateVisualBlockSize,
+    parseAIResponse,
 } from "@/lib/parse-visual-response";
 import { uploadCanvasImage } from "@/lib/storage";
 import {
-  LectureFileChunk,
-  addReviewEvent,
-  countLectureChunks,
-  getSessionById,
-  getStudyPlanEntry,
-  getUserStreak,
-  listAnswerLinks,
-  listReviewEvents,
-  listSessionMessages,
-  saveAnswerLink,
-  saveFlashcard,
-  saveSessionMessage,
-  searchLectureChunks,
-  updateSession,
-  updateStudyPlanEntryMastery,
-  updateStudyPlanEntryStatus,
-  updateUserStreak,
+    LectureFileChunk,
+    addReviewEvent,
+    countLectureChunks,
+    getSessionById,
+    getStudyPlanEntry,
+    getUserStreak,
+    listAnswerLinks,
+    listReviewEvents,
+    listSessionMessages,
+    saveAnswerLink,
+    saveFlashcard,
+    saveSessionMessage,
+    searchLectureChunks,
+    updateSession,
+    updateStudyPlanEntryMastery,
+    updateStudyPlanEntryStatus,
+    updateUserStreak,
 } from "@/lib/supabase";
 import {
-  CanvasAnswerMarker,
-  CanvasBounds,
-  CanvasPage,
-  CanvasStrokeData,
-  CanvasVisualBlock as CanvasVisualBlockType,
-  Lecture,
-  Material,
-  ReviewQuality,
-  SectionStatus,
-  StudyAnswerLink,
-  StudyChatMessage,
-  StudyCitation,
-  StudyPlanEntry,
-  StudyQuestion,
+    CanvasAnswerMarker,
+    CanvasBounds,
+    CanvasPage,
+    CanvasStrokeData,
+    CanvasVisualBlock as CanvasVisualBlockType,
+    Lecture,
+    Material,
+    ReviewQuality,
+    SectionStatus,
+    StudyAnswerLink,
+    StudyChatMessage,
+    StudyCitation,
+    StudyPlanEntry,
+    StudyQuestion,
 } from "@/types";
 
 // Estimated height for chat messages for scrollToIndex
@@ -292,6 +293,8 @@ export default function StudySessionScreen() {
 
   // Flashcard added notification state
   const [flashcardAdded, setFlashcardAdded] = useState(false);
+  const [lecturePassedToast, setLecturePassedToast] = useState(false);
+  const hasShownLecturePassedToastRef = useRef(false);
 
   // Canvas size derived from active page (auto-grows as user draws near edges)
   const canvasSize = useMemo(
@@ -318,6 +321,13 @@ export default function StudySessionScreen() {
     () => activePage?.visualBlocks || [],
     [activePage],
   );
+
+  useEffect(() => {
+    if (!lecture?.studyPlan || lecture.studyPlan.length === 0) return;
+    if (lecture.studyPlan.every((entry) => entry.status === "passed")) {
+      hasShownLecturePassedToastRef.current = true;
+    }
+  }, [lecture?.studyPlan]);
 
   // Title canvas ref for handwritten page titles
   const titleCanvasRef = useRef<HandwritingCanvasHandle>(null);
@@ -559,19 +569,20 @@ export default function StudySessionScreen() {
         "position" | "messageId" | "createdAt"
       >,
       messageId: string,
+      customBaseY?: number,
     ) => {
-      if (!activePage) return;
+      if (!activePage) return null;
 
       // Get current strokes directly from canvas ref (more reliable than state)
       const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
 
       // Calculate position - place below existing content
-      const currentMaxY = getMaxYWithVisualBlocks(
+      const currentMaxY = customBaseY ?? getMaxYWithVisualBlocks(
         currentStrokes,
         activeVisualBlocks,
       );
-      const padding = 40;
-      const position = { x: padding, y: currentMaxY + padding };
+      const padding = 60; // Increased padding for better separation
+      const position = { x: 40, y: currentMaxY + padding };
 
       // Estimate the size of the visual block
       const estimatedSize = estimateVisualBlockSize(partialBlock);
@@ -615,9 +626,6 @@ export default function StudySessionScreen() {
           }
           // Save immediately
           updateSession(sessionId, { canvasPages: updatedPages })
-            .then(() =>
-              console.log("[study] Canvas pages saved with visual block"),
-            )
             .catch((err) =>
               console.warn(
                 "[study] Failed to save canvas pages with visual block:",
@@ -642,7 +650,7 @@ export default function StudySessionScreen() {
         fullBlock.id,
       );
 
-      return fullBlock.id;
+      return { id: fullBlock.id, bottom: position.y + estimatedSize.height };
     },
     [
       activePage,
@@ -737,14 +745,17 @@ export default function StudySessionScreen() {
   );
 
   const writeQuestionToCanvas = useCallback(
-    (questionText: string) => {
-      if (!activePage) return;
+    (questionText: string, customBaseY?: number) => {
+      if (!activePage) return customBaseY ?? 0;
 
       const padding = 32;
       // Get fresh strokes from canvas ref and account for visual blocks
       const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
-      const baseY =
-        getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 40;
+      
+      // We add a safety buffer to ensure we don't overlap with recently added visual blocks
+      const baseY = customBaseY ?? 
+        (getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 60);
+      
       const availableWidth = Math.max(
         (activePage.width || canvasSize.width) - padding * 2,
         220,
@@ -768,7 +779,7 @@ export default function StudySessionScreen() {
         jitter: 1,
       });
 
-      if (generatedStrokes.length === 0) return;
+      if (generatedStrokes.length === 0) return baseY;
 
       const updatedStrokes = [...canvasStrokes, ...generatedStrokes];
       canvasRef.current?.setStrokes(updatedStrokes as CanvasStroke[]);
@@ -776,8 +787,8 @@ export default function StudySessionScreen() {
       setCanvasPages((prev) => {
         const updatedPages = prev.map((page) => {
           if (page.id !== activePageId) return page;
-          const nextHeight = Math.max(page.height, baseY + textHeight + 48);
-          const nextWidth = Math.max(page.width, padding + textWidth + 48);
+          const nextHeight = Math.max(page.height, baseY + textHeight + 60);
+          const nextWidth = Math.max(page.width, padding + textWidth + 60);
           return {
             ...page,
             strokes: updatedStrokes,
@@ -818,6 +829,8 @@ export default function StudySessionScreen() {
         canvasScrollRef.current?.scrollTo({ y: scrollY, animated: true });
         canvasHScrollRef.current?.scrollTo({ x: 0, animated: true });
       }, 150);
+
+      return baseY + textHeight;
     },
     [
       activePage,
@@ -1362,13 +1375,34 @@ export default function StudySessionScreen() {
 
               // Track visual block IDs added for this message
               const visualBlockIds: string[] = [];
+              
+              // Determine starting position on canvas
+              const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
+              let currentBatchY = getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 40;
 
-              // Add visual blocks to canvas if present
+              // 1. If there's a question in the AI response, write it FIRST (on top)
+              // Create a temp message object to use the helper
+              const tempMsg: StudyChatMessage = { id: aiMsgId, role: 'ai', text: parsed.text };
+              const questionText = getQuestionTextForMessage(tempMsg);
+              
+              if (questionText && !writtenQuestionIdsRef.current.has(aiMsgId)) {
+                writtenQuestionIdsRef.current.add(aiMsgId);
+                // writeQuestionToCanvas now returns the bottom Y coordinate
+                currentBatchY = writeQuestionToCanvas(questionText, currentBatchY);
+              }
+
+              // 2. Add visual blocks BELOW the question
               if (parsed.hasVisuals) {
                 for (const partialBlock of parsed.visualBlocks) {
-                  const blockId = addVisualBlockToCanvas(partialBlock, aiMsgId);
-                  if (blockId) {
-                    visualBlockIds.push(blockId);
+                  const result = addVisualBlockToCanvas(
+                    partialBlock,
+                    aiMsgId,
+                    currentBatchY,
+                  );
+                  if (result) {
+                    visualBlockIds.push(result.id);
+                    // Add extra padding between blocks
+                    currentBatchY = result.bottom + 20;
                   }
                 }
                 console.log(
@@ -1517,6 +1551,11 @@ export default function StudySessionScreen() {
         agentLanguage,
       );
 
+      const normalizedScore =
+        typeof feedback.score === "number"
+          ? Math.round(feedback.score)
+          : undefined;
+
       let uploadedImageUri: string | undefined;
       if (imageUri) {
         const uploaded = await uploadCanvasImage(imageUri);
@@ -1544,7 +1583,7 @@ export default function StudySessionScreen() {
         correctness: string,
       ): SectionStatus => {
         if (typeof score === "number") {
-          if (score >= 70) return "passed";
+          if (score >= 80) return "passed";
           if (score <= 40) return "failed";
           return "in_progress";
         }
@@ -1556,16 +1595,37 @@ export default function StudySessionScreen() {
       // Update study plan entry status when focusing on a specific section
       if (studyPlanEntryId) {
         const nextStatus = deriveSectionStatus(
-          feedback.score,
+          normalizedScore,
           feedback.correctness,
         );
         try {
           await updateStudyPlanEntryStatus(studyPlanEntryId, {
             status: nextStatus,
-            statusScore: feedback.score,
+            statusScore: normalizedScore,
           });
         } catch (err) {
           console.warn("[study] Failed to update section status", err);
+        }
+
+        if (
+          !hasShownLecturePassedToastRef.current &&
+          nextStatus === "passed" &&
+          lecture?.studyPlan &&
+          lecture.studyPlan.length > 0
+        ) {
+          const updatedPlan = lecture.studyPlan.map((entry) =>
+            entry.id === studyPlanEntryId
+              ? { ...entry, status: nextStatus }
+              : entry,
+          );
+          const lecturePassed = updatedPlan.every(
+            (entry) => entry.status === "passed",
+          );
+          if (lecturePassed) {
+            hasShownLecturePassedToastRef.current = true;
+            setLecturePassedToast(true);
+            setTimeout(() => setLecturePassedToast(false), 3500);
+          }
         }
 
         // Record review + update mastery schedule
@@ -1580,7 +1640,7 @@ export default function StudySessionScreen() {
           const reviewedAt = new Date().toISOString();
           await addReviewEvent({
             studyPlanEntryId,
-            score: feedback.score,
+            score: normalizedScore,
             responseQuality,
             reviewedAt,
           });
@@ -1596,12 +1656,12 @@ export default function StudySessionScreen() {
           });
 
           await updateStudyPlanEntryMastery(studyPlanEntryId, {
-            masteryScore,
+            masteryScore: Math.round(masteryScore),
             nextReviewAt,
             reviewCount,
             easeFactor,
             status: nextStatus,
-            statusScore: feedback.score,
+            statusScore: normalizedScore,
           });
 
           // Update streak
@@ -1658,7 +1718,7 @@ export default function StudySessionScreen() {
 
       // Create flashcard if the answer was correct/passed
       const isPassed =
-        (feedback.score !== undefined && feedback.score >= 70) ||
+        (feedback.score !== undefined && feedback.score >= 80) ||
         feedback.correctness === "correct";
       if (isPassed && lectureId) {
         try {
@@ -1672,6 +1732,7 @@ export default function StudySessionScreen() {
           const aiExplanation = explanationMessages
             .map((m) => m.text)
             .join("\n\n");
+          const fallbackExplanation = aiExplanation || feedback.summary || "";
 
           // Collect visual blocks from explanation messages
           const visualBlockIds = explanationMessages.flatMap(
@@ -1682,8 +1743,11 @@ export default function StudySessionScreen() {
           );
 
           // Extract the actual question text
-          const questionText =
-            questionToEvaluate.prompt || lastAiMessage?.text || "";
+          const questionText = questionToEvaluate.prompt
+            ? questionToEvaluate.prompt
+            : lastAiMessage
+              ? getQuestionTextForMessage(lastAiMessage) || lastAiMessage.text
+              : "";
 
           await saveFlashcard({
             lectureId,
@@ -1692,7 +1756,7 @@ export default function StudySessionScreen() {
             questionText,
             answerText: answerText || undefined,
             answerImageUri: uploadedImageUri,
-            aiExplanation: aiExplanation || undefined,
+            aiExplanation: fallbackExplanation || undefined,
             visualBlocks:
               collectedVisualBlocks.length > 0
                 ? collectedVisualBlocks
@@ -2045,6 +2109,7 @@ export default function StudySessionScreen() {
       )}
 
       {flashcardAdded && <StudyFlashcardToast styles={styles} t={t} />}
+      {lecturePassedToast && <StudyLecturePassedToast styles={styles} t={t} />}
     </ThemedView>
   );
 }

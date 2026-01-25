@@ -26,7 +26,7 @@ const DEFAULTS: Required<HandwritingOptions> = {
   charWidth: 18,
   charSpacing: 3,
   wordSpacing: 8,
-  lineHeight: 32,
+  lineHeight: 48,
   jitter: 0.8,
   maxWidth: 0,
 };

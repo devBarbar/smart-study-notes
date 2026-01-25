@@ -233,9 +233,11 @@ const de = {
 
   'flashcards.title': 'Lernkarten',
   'flashcards.added': 'Zu Lernkarten hinzugefügt!',
+  'lecture.passedToast': 'Vorlesung abgeschlossen!',
   'flashcards.question': 'Frage',
   'flashcards.answer': 'Antwort',
   'flashcards.explanation': 'Erklärung',
+  'flashcards.handwrittenAnswer': 'Handschriftliche Antwort',
   'flashcards.tapToFlip': 'Tippen zum Umdrehen',
   'flashcards.easy': 'Leicht',
   'flashcards.medium': 'Mittel',

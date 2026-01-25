@@ -119,6 +119,12 @@ export type DiagramNode = {
   /** Grid position for layout (0-indexed) */
   row?: number;
   col?: number;
+  /** Extra detail shown on tap */
+  description?: string;
+  /** If true, the label is hidden until tapped */
+  isMasked?: boolean;
+  /** The actual answer/label to show when unmasked */
+  hiddenLabel?: string;
 };
 
 export type DiagramEdgeStyle = 'solid' | 'dashed' | 'dotted';

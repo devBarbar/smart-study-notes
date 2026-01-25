@@ -235,9 +235,11 @@ const en = {
 
   'flashcards.title': 'Flashcards',
   'flashcards.added': 'Added to flashcards!',
+  'lecture.passedToast': 'Lecture completed!',
   'flashcards.question': 'Question',
   'flashcards.answer': 'Answer',
   'flashcards.explanation': 'Explanation',
+  'flashcards.handwrittenAnswer': 'Handwritten answer',
   'flashcards.tapToFlip': 'Tap to flip',
   'flashcards.easy': 'Easy',
   'flashcards.medium': 'Medium',

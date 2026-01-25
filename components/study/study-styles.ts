@@ -593,4 +593,23 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             fontWeight: "600",
             fontSize: 14,
         },
+        lecturePassedNotification: {
+            position: "absolute",
+            bottom: Spacing.lg + 56,
+            left: "50%",
+            transform: [{ translateX: -120 }],
+            flexDirection: "row",
+            alignItems: "center",
+            gap: Spacing.sm,
+            backgroundColor: palette.primary,
+            paddingVertical: Spacing.sm,
+            paddingHorizontal: Spacing.md,
+            borderRadius: Radii.pill,
+            ...Shadows.md,
+        },
+        lecturePassedNotificationText: {
+            color: "#fff",
+            fontWeight: "600",
+            fontSize: 14,
+        },
     });

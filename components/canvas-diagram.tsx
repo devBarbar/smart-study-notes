@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, G, Line, Marker, Path, Polygon, Rect, Text as SvgText } from 'react-native-svg';
+import dagre from 'dagre';
+import React, { useMemo, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
+import Svg, { Circle, Defs, G, Marker, Path, Polygon, Rect, Text as SvgText } from 'react-native-svg';
 
 import { DiagramData, DiagramEdge, DiagramNode, DiagramNodeShape } from '@/types';
 
@@ -36,6 +37,17 @@ type PositionedNode = DiagramNode & {
   height: number;
 };
 
+type PositionedEdge = DiagramEdge & {
+  points: { x: number; y: number }[];
+};
+
+type LayoutResult = {
+  nodes: PositionedNode[];
+  edges: PositionedEdge[];
+  width: number;
+  height: number;
+};
+
 type Props = {
   data: DiagramData;
   position: { x: number; y: number };
@@ -44,142 +56,65 @@ type Props = {
 };
 
 /**
- * Calculate node positions using a simple grid layout algorithm
+ * Calculate node positions and edge paths using dagre
  */
 const calculateNodePositions = (
   nodes: DiagramNode[],
+  edges: DiagramEdge[],
   layout: 'vertical' | 'horizontal' | 'tree' = 'vertical'
-): PositionedNode[] => {
-  if (nodes.length === 0) return [];
+): LayoutResult => {
+  if (nodes.length === 0) return { nodes: [], edges: [], width: 0, height: 0 };
 
-  const positioned: PositionedNode[] = [];
+  const g = new dagre.graphlib.Graph();
+  const rankdir = layout === 'horizontal' ? 'LR' : 'TB';
+  
+  g.setGraph({
+    rankdir,
+    nodesep: NODE_SPACING_X,
+    ranksep: NODE_SPACING_Y,
+    marginx: PADDING,
+    marginy: PADDING,
+  });
+  
+  g.setDefaultEdgeLabel(() => ({}));
 
-  if (layout === 'horizontal') {
-    // Single row layout
-    nodes.forEach((node, index) => {
-      positioned.push({
-        ...node,
-        x: PADDING + index * (NODE_WIDTH + NODE_SPACING_X),
-        y: PADDING,
-        width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-      });
-    });
-  } else if (layout === 'tree') {
-    // Tree layout - place nodes based on edges (BFS from first node)
-    // For simplicity, we'll use a level-based approach
-    const levels: Map<string, number> = new Map();
-    const visited = new Set<string>();
-    const queue: { id: string; level: number }[] = [];
+  nodes.forEach((node) => {
+    g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  });
 
-    // Start from first node
-    if (nodes.length > 0) {
-      queue.push({ id: nodes[0].id, level: 0 });
-      levels.set(nodes[0].id, 0);
-    }
+  edges.forEach((edge) => {
+    g.setEdge(edge.from, edge.to);
+  });
 
-    // Assign levels (not used for edges here, just node order)
-    let maxLevel = 0;
-    nodes.forEach((node, idx) => {
-      if (!levels.has(node.id)) {
-        const level = Math.floor(idx / 3); // Simple fallback: 3 per row
-        levels.set(node.id, level);
-        maxLevel = Math.max(maxLevel, level);
-      }
-    });
+  dagre.layout(g);
 
-    // Position by level
-    const levelCounts: Map<number, number> = new Map();
-    nodes.forEach((node) => {
-      const level = levels.get(node.id) ?? 0;
-      const indexInLevel = levelCounts.get(level) ?? 0;
-      levelCounts.set(level, indexInLevel + 1);
+  const positionedNodes: PositionedNode[] = nodes.map((node) => {
+    const dagreNode = g.node(node.id);
+    return {
+      ...node,
+      x: dagreNode.x - dagreNode.width / 2,
+      y: dagreNode.y - dagreNode.height / 2,
+      width: dagreNode.width,
+      height: dagreNode.height,
+    };
+  });
 
-      positioned.push({
-        ...node,
-        x: PADDING + indexInLevel * (NODE_WIDTH + NODE_SPACING_X),
-        y: PADDING + level * (NODE_HEIGHT + NODE_SPACING_Y),
-        width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-      });
-    });
-  } else {
-    // Vertical layout - nodes flow top to bottom, wrapping
-    const maxCols = Math.ceil(Math.sqrt(nodes.length));
-    nodes.forEach((node, index) => {
-      const col = index % maxCols;
-      const row = Math.floor(index / maxCols);
-      positioned.push({
-        ...node,
-        x: PADDING + col * (NODE_WIDTH + NODE_SPACING_X),
-        y: PADDING + row * (NODE_HEIGHT + NODE_SPACING_Y),
-        width: NODE_WIDTH,
-        height: NODE_HEIGHT,
-      });
-    });
-  }
+  const positionedEdges: PositionedEdge[] = edges.map((edge) => {
+    const dagreEdge = g.edge(edge.from, edge.to);
+    return {
+      ...edge,
+      points: dagreEdge.points,
+    };
+  });
 
-  return positioned;
-};
-
-/**
- * Calculate the total size needed for the diagram
- */
-const calculateDiagramSize = (nodes: PositionedNode[], hasTitle: boolean): { width: number; height: number } => {
-  if (nodes.length === 0) return { width: 200, height: 100 };
-
-  const maxX = Math.max(...nodes.map((n) => n.x + n.width));
-  const maxY = Math.max(...nodes.map((n) => n.y + n.height));
+  const graph = g.graph();
 
   return {
-    width: maxX + PADDING,
-    height: maxY + PADDING + (hasTitle ? 40 : 0),
+    nodes: positionedNodes,
+    edges: positionedEdges,
+    width: graph.width ?? 800,
+    height: graph.height ?? 600,
   };
-};
-
-/**
- * Get connection points for an edge between two nodes
- */
-const getEdgePoints = (
-  from: PositionedNode,
-  to: PositionedNode
-): { x1: number; y1: number; x2: number; y2: number } => {
-  const fromCenterX = from.x + from.width / 2;
-  const fromCenterY = from.y + from.height / 2;
-  const toCenterX = to.x + to.width / 2;
-  const toCenterY = to.y + to.height / 2;
-
-  // Determine which sides to connect
-  const dx = toCenterX - fromCenterX;
-  const dy = toCenterY - fromCenterY;
-
-  let x1: number, y1: number, x2: number, y2: number;
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-    // Horizontal connection
-    if (dx > 0) {
-      x1 = from.x + from.width;
-      x2 = to.x;
-    } else {
-      x1 = from.x;
-      x2 = to.x + to.width;
-    }
-    y1 = fromCenterY;
-    y2 = toCenterY;
-  } else {
-    // Vertical connection
-    x1 = fromCenterX;
-    x2 = toCenterX;
-    if (dy > 0) {
-      y1 = from.y + from.height;
-      y2 = to.y;
-    } else {
-      y1 = from.y;
-      y2 = to.y + to.height;
-    }
-  }
-
-  return { x1, y1, x2, y2 };
 };
 
 /**
@@ -187,9 +122,13 @@ const getEdgePoints = (
  */
 const renderNodeShape = (
   node: PositionedNode,
-  colors: { fill: string; stroke: string }
+  colors: { fill: string; stroke: string },
+  isMasked: boolean = false
 ): React.ReactElement => {
   const shape: DiagramNodeShape = node.shape ?? 'box';
+  const fill = isMasked ? '#f1f5f9' : colors.fill;
+  const stroke = isMasked ? '#94a3b8' : colors.stroke;
+  const strokeDash = isMasked ? '4,4' : undefined;
 
   switch (shape) {
     case 'circle':
@@ -198,9 +137,10 @@ const renderNodeShape = (
           cx={node.x + node.width / 2}
           cy={node.y + node.height / 2}
           r={Math.min(node.width, node.height) / 2 - 4}
-          fill={colors.fill}
-          stroke={colors.stroke}
+          fill={fill}
+          stroke={stroke}
           strokeWidth={2}
+          strokeDasharray={strokeDash}
         />
       );
     case 'diamond':
@@ -211,9 +151,10 @@ const renderNodeShape = (
       return (
         <Polygon
           points={`${cx},${cy - hh} ${cx + hw},${cy} ${cx},${cy + hh} ${cx - hw},${cy}`}
-          fill={colors.fill}
-          stroke={colors.stroke}
+          fill={fill}
+          stroke={stroke}
           strokeWidth={2}
+          strokeDasharray={strokeDash}
         />
       );
     case 'ellipse':
@@ -222,9 +163,10 @@ const renderNodeShape = (
           cx={node.x + node.width / 2}
           cy={node.y + node.height / 2}
           r={node.width / 2 - 4}
-          fill={colors.fill}
-          stroke={colors.stroke}
+          fill={fill}
+          stroke={stroke}
           strokeWidth={2}
+          strokeDasharray={strokeDash}
           scaleY={0.6}
         />
       );
@@ -238,9 +180,10 @@ const renderNodeShape = (
           height={node.height}
           rx={8}
           ry={8}
-          fill={colors.fill}
-          stroke={colors.stroke}
+          fill={fill}
+          stroke={stroke}
           strokeWidth={2}
+          strokeDasharray={strokeDash}
         />
       );
   }
@@ -271,36 +214,55 @@ const wrapText = (text: string, maxChars: number = 18): string[] => {
  * Canvas Diagram Component
  * Renders a flowchart or concept map directly as SVG
  */
-export const CanvasDiagram: React.FC<Props> = ({ data, position, scale = 1 }) => {
-  // Calculate positioned nodes
-  const positionedNodes = useMemo(
-    () => calculateNodePositions(data.nodes, data.layout),
-    [data.nodes, data.layout]
+export const CanvasDiagram: React.FC<Props> = ({ data, position, scale = 1, onNodePress }) => {
+  const [unmaskedNodes, setUnmaskedNodes] = useState<Set<string>>(new Set());
+
+  // Calculate positioned nodes and edges
+  const layoutResult = useMemo(
+    () => calculateNodePositions(data.nodes, data.edges, data.layout),
+    [data.nodes, data.edges, data.layout]
   );
 
-  // Create a map for quick node lookup
-  const nodeMap = useMemo(() => {
-    const map = new Map<string, PositionedNode>();
-    positionedNodes.forEach((node) => map.set(node.id, node));
-    return map;
-  }, [positionedNodes]);
+  const handleNodePress = (node: PositionedNode) => {
+    // 1. Handle masking toggle
+    if (node.isMasked && !unmaskedNodes.has(node.id)) {
+      setUnmaskedNodes((prev) => new Set(prev).add(node.id));
+      return;
+    }
 
-  // Calculate diagram size
-  const diagramSize = useMemo(
-    () => calculateDiagramSize(positionedNodes, !!data.title),
-    [positionedNodes, data.title]
-  );
+    // 2. Handle description display
+    if (node.description) {
+      Alert.alert(node.label, node.description);
+    }
+
+    // 3. Optional external callback
+    onNodePress?.(node.id);
+  };
 
   // Title offset
   const titleOffset = data.title ? 40 : 0;
+  const diagramWidth = layoutResult.width;
+  const diagramHeight = layoutResult.height + titleOffset;
 
   return (
     <View style={styles.container}>
       <Svg
-        width={diagramSize.width * scale}
-        height={diagramSize.height * scale}
-        viewBox={`0 0 ${diagramSize.width} ${diagramSize.height}`}
+        width={diagramWidth * scale}
+        height={diagramHeight * scale}
+        viewBox={`0 0 ${diagramWidth} ${diagramHeight}`}
       >
+        {/* Background */}
+        <Rect
+          x={0}
+          y={0}
+          width={diagramWidth}
+          height={diagramHeight}
+          rx={12}
+          fill="#fcfcfc"
+          stroke="#e2e8f0"
+          strokeWidth={1}
+        />
+
         {/* Arrow marker definition */}
         <Defs>
           <Marker
@@ -333,41 +295,41 @@ export const CanvasDiagram: React.FC<Props> = ({ data, position, scale = 1 }) =>
 
         {/* Edges (render before nodes so they appear behind) */}
         <G translateY={titleOffset}>
-          {data.edges.map((edge, index) => {
-            const fromNode = nodeMap.get(edge.from);
-            const toNode = nodeMap.get(edge.to);
-            if (!fromNode || !toNode) return null;
-
-            const points = getEdgePoints(fromNode, toNode);
+          {layoutResult.edges.map((edge, index) => {
             const style = EDGE_STYLES[edge.style ?? 'solid'];
-            const midX = (points.x1 + points.x2) / 2;
-            const midY = (points.y1 + points.y2) / 2;
+            
+            // Create path data from points
+            const pathData = edge.points
+              .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
+              .join(' ');
+
+            // Find mid-point for label
+            const midIndex = Math.floor(edge.points.length / 2);
+            const midPoint = edge.points[midIndex];
 
             return (
               <G key={`edge-${index}`}>
-                <Line
-                  x1={points.x1}
-                  y1={points.y1}
-                  x2={points.x2}
-                  y2={points.y2}
+                <Path
+                  d={pathData}
                   stroke="#64748b"
                   strokeWidth={2}
                   strokeDasharray={style.dashArray}
+                  fill="none"
                   markerEnd="url(#arrowhead)"
                 />
                 {edge.label && (
                   <G>
                     <Rect
-                      x={midX - edge.label.length * 3.5 - 4}
-                      y={midY - 10}
+                      x={midPoint.x - edge.label.length * 3.5 - 4}
+                      y={midPoint.y - 10}
                       width={edge.label.length * 7 + 8}
                       height={20}
                       fill="white"
                       rx={4}
                     />
                     <SvgText
-                      x={midX}
-                      y={midY + 4}
+                      x={midPoint.x}
+                      y={midPoint.y + 4}
                       fontSize={12}
                       fill="#64748b"
                       textAnchor="middle"
@@ -383,24 +345,27 @@ export const CanvasDiagram: React.FC<Props> = ({ data, position, scale = 1 }) =>
 
         {/* Nodes */}
         <G translateY={titleOffset}>
-          {positionedNodes.map((node) => {
+          {layoutResult.nodes.map((node) => {
             const colorKey = node.color ?? 'default';
             const colors = NODE_COLORS[colorKey] ?? NODE_COLORS.default;
-            const textLines = wrapText(node.label);
+            
+            const isMaskedAndHidden = node.isMasked && !unmaskedNodes.has(node.id);
+            const displayLabel = isMaskedAndHidden ? node.label : (node.hiddenLabel ?? node.label);
+            const textLines = wrapText(displayLabel);
             const lineHeight = 16;
             const textStartY = node.y + node.height / 2 - ((textLines.length - 1) * lineHeight) / 2;
 
             return (
-              <G key={node.id}>
-                {renderNodeShape(node, colors)}
+              <G key={node.id} onPress={() => handleNodePress(node)}>
+                {renderNodeShape(node, colors, isMaskedAndHidden)}
                 {textLines.map((line, lineIndex) => (
                   <SvgText
                     key={`${node.id}-line-${lineIndex}`}
                     x={node.x + node.width / 2}
                     y={textStartY + lineIndex * lineHeight}
                     fontSize={13}
-                    fontWeight="500"
-                    fill={colors.text}
+                    fontWeight={isMaskedAndHidden ? "400" : "600"}
+                    fill={isMaskedAndHidden ? "#64748b" : colors.text}
                     textAnchor="middle"
                     alignmentBaseline="middle"
                   >

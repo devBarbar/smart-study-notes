@@ -4,8 +4,9 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Radii, Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLanguage } from '@/contexts/language-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useSessions } from '@/hooks/use-sessions';
 import { SectionStatus, StudyPlanEntry, StudySession } from '@/types';
 
 type EntryActionSheetProps = {
@@ -31,6 +32,7 @@ export const EntryActionSheet = ({
   const palette = Colors[colorScheme ?? 'light'];
   const styles = useMemo(() => createStyles(palette), [palette]);
   const { t } = useLanguage();
+  const { isFetching: loadingSessions } = useSessions();
 
   if (!entry) return null;
 
@@ -85,7 +87,7 @@ export const EntryActionSheet = ({
                   <Pressable 
                     style={styles.actionButton}
                     onPress={() => handleAction('review')}
-                    disabled={loading}
+                    disabled={loading || loadingSessions}
                   >
                     <View style={[styles.actionIcon, styles.primaryIcon]}>
                       <Ionicons name="play" size={20} color="#fff" />
@@ -121,7 +123,7 @@ export const EntryActionSheet = ({
                 <Pressable 
                   style={styles.actionButton}
                   onPress={() => handleAction('continue')}
-                  disabled={loading}
+                  disabled={loading || loadingSessions}
                 >
                   <View style={[styles.actionIcon, styles.successIcon]}>
                     <Ionicons name="play" size={20} color="#fff" />
@@ -137,7 +139,7 @@ export const EntryActionSheet = ({
                 <Pressable 
                   style={styles.actionButton}
                   onPress={() => handleAction('new')}
-                  disabled={loading}
+                  disabled={loading || loadingSessions}
                 >
                   <View style={[styles.actionIcon, styles.secondaryIcon]}>
                     <Ionicons name="add" size={20} color={palette.text} />
@@ -155,7 +157,7 @@ export const EntryActionSheet = ({
               <Pressable 
                 style={styles.actionButton}
                 onPress={() => handleAction('start')}
-                disabled={loading}
+                disabled={loading || loadingSessions}
               >
                 <View style={[styles.actionIcon, styles.primaryIcon]}>
                   <Ionicons name="play" size={20} color="#fff" />

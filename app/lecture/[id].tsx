@@ -34,7 +34,7 @@ type TabKey = 'overview' | 'studyPlan' | 'flashcards' | 'practice' | 'materials'
 export default function LectureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: lectures = [], isFetching, refetch } = useLectures();
-  const { data: sessions = [], refetch: refetchSessions } = useSessions();
+  const { data: sessions = [], refetch: refetchSessions,isFetching: loadingSessions } = useSessions();
   const { data: practiceExams = [], refetch: refetchPracticeExams, isFetching: loadingPracticeExams } = usePracticeExams(id);
   const { data: flashcardCount = 0, refetch: refetchFlashcardCount } = useFlashcardCount(id);
   const router = useRouter();

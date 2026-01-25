@@ -151,9 +151,9 @@ Visual block format (use ONLY when helpful, not every response):
   "data": {
     "title": "Optional diagram title",
     "nodes": [
-      { "id": "A", "label": "First concept", "shape": "box" },
-      { "id": "B", "label": "Second concept", "shape": "box" },
-      { "id": "C", "label": "Result", "shape": "circle" }
+      { "id": "A", "label": "First concept", "shape": "box", "color": "blue", "description": "Core concept detail" },
+      { "id": "B", "label": "Second concept", "shape": "box", "description": "Process step detail" },
+      { "id": "C", "label": "???", "shape": "circle", "isMasked": true, "hiddenLabel": "Result", "description": "The hidden answer" }
     ],
     "edges": [
       { "from": "A", "to": "B", "label": "leads to" },
@@ -194,6 +194,16 @@ Or for definitions:
 Rules for visual blocks:
 - Include AT MOST ONE visual block per response
 - Only use when it genuinely aids understanding
+- **Visual Semantics**:
+  - \`box\` + \`blue\`: Core Concepts
+  - \`box\` + \`default\`: Steps/Actions
+  - \`diamond\` + \`purple\`: Decisions/Logic
+  - \`ellipse\` + \`green\`: Examples
+  - \`box\`+ \`red\`: Misconceptions or "What NOT to do"
+- **Active Learning**: 
+  - For concepts you just explained, you can use \`"isMasked": true\` on key nodes to test the student.
+  - Set \`label\` to a hint (like "???") and \`hiddenLabel\` to the actual answer.
+  - Always provide a \`description\` for nodes to allow the student to drill down for more info.
 - Keep diagrams simple (max 6-8 nodes)
 - Node shapes: "box" (default), "circle", "diamond", "ellipse"
 - Edge styles: "solid" (default), "dashed", "dotted"

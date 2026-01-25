@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Image, Modal, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    interpolate,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from 'react-native-reanimated';
 
 import { MarkdownText } from '@/components/markdown-text';
@@ -34,6 +34,7 @@ export const FlashcardCard = ({
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
   const styles = useMemo(() => createStyles(palette), [palette]);
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
 
   // Flip animation state (0 = front/question, 1 = back/answer)
   const flipProgress = useSharedValue(0);
@@ -109,6 +110,23 @@ export const FlashcardCard = ({
             {flashcard.answerText ? (
               <ThemedText style={styles.answerText}>{flashcard.answerText}</ThemedText>
             ) : null}
+            {flashcard.answerImageUri ? (
+              <View style={styles.answerImageSection}>
+                <View style={styles.answerImageHeader}>
+                  <Ionicons name="pencil" size={14} color={palette.primary} />
+                  <ThemedText style={styles.answerImageLabel}>
+                    {t('flashcards.handwrittenAnswer')}
+                  </ThemedText>
+                </View>
+                <Pressable onPress={() => setImagePreviewOpen(true)}>
+                  <Image
+                    source={{ uri: flashcard.answerImageUri }}
+                    style={styles.answerImage}
+                    resizeMode="contain"
+                  />
+                </Pressable>
+              </View>
+            ) : null}
             {flashcard.aiExplanation ? (
               <View style={styles.explanationSection}>
                 <View style={styles.explanationHeader}>
@@ -182,6 +200,26 @@ export const FlashcardCard = ({
           {t('flashcards.reviewed', { count: flashcard.reviewCount })}
         </ThemedText>
       </View>
+
+      <Modal
+        visible={imagePreviewOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImagePreviewOpen(false)}
+      >
+        <Pressable
+          style={styles.imagePreviewBackdrop}
+          onPress={() => setImagePreviewOpen(false)}
+        >
+          <View style={styles.imagePreviewContainer}>
+            <Image
+              source={{ uri: flashcard.answerImageUri || '' }}
+              style={styles.imagePreview}
+              resizeMode="contain"
+            />
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
@@ -193,7 +231,7 @@ const createStyles = (palette: typeof Colors.light) =>
     },
     cardContainer: {
       width: '100%',
-      height: 320,
+      height: 440,
       position: 'relative',
     },
     card: {
@@ -250,6 +288,47 @@ const createStyles = (palette: typeof Colors.light) =>
       lineHeight: 24,
       color: palette.text,
       marginBottom: Spacing.sm,
+    },
+    answerImageSection: {
+      backgroundColor: `${palette.primary}08`,
+      borderRadius: Radii.md,
+      padding: Spacing.sm,
+      marginBottom: Spacing.sm,
+      gap: Spacing.xs,
+    },
+    answerImageHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    answerImageLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: palette.primary,
+    },
+    answerImage: {
+      width: '100%',
+      height: 260,
+      borderRadius: Radii.sm,
+      backgroundColor: palette.surface,
+    },
+    imagePreviewBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: Spacing.lg,
+    },
+    imagePreviewContainer: {
+      width: '100%',
+      height: '100%',
+      backgroundColor: palette.surface,
+      borderRadius: Radii.lg,
+      padding: Spacing.md,
+    },
+    imagePreview: {
+      width: '100%',
+      height: '100%',
     },
     explanationSection: {
       backgroundColor: `${palette.warning}10`,

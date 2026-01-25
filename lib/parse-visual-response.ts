@@ -1,4 +1,3 @@
-import { v4 as uuid } from 'uuid';
 import {
   BulletData,
   CanvasVisualBlock,
@@ -8,6 +7,7 @@ import {
   VisualBlockData,
   VisualBlockType,
 } from '@/types';
+import { v4 as uuid } from 'uuid';
 
 /**
  * Result of parsing an AI response for visual content
@@ -49,6 +49,11 @@ const isValidDiagramData = (data: unknown): data is DiagramData => {
     if (!node || typeof node !== 'object') return false;
     const n = node as Record<string, unknown>;
     if (typeof n.id !== 'string' || typeof n.label !== 'string') return false;
+    
+    // Optional fields validation
+    if (n.description !== undefined && typeof n.description !== 'string') return false;
+    if (n.isMasked !== undefined && typeof n.isMasked !== 'boolean') return false;
+    if (n.hiddenLabel !== undefined && typeof n.hiddenLabel !== 'string') return false;
   }
   
   // Validate edges have required fields
@@ -241,18 +246,34 @@ export const estimateVisualBlockSize = (
       const data = block.data as DiagramData;
       const nodeCount = data.nodes.length;
       
-      // Estimate grid dimensions based on layout
+      // With Dagre layout, we can estimate better
+      // Breadth: number of nodes in parallel
+      // Depth: number of levels
       const isVertical = data.layout !== 'horizontal';
-      const cols = isVertical ? Math.ceil(Math.sqrt(nodeCount)) : nodeCount;
-      const rows = isVertical ? Math.ceil(nodeCount / cols) : 1;
       
-      const width = cols * NODE_WIDTH + (cols - 1) * NODE_SPACING_X + PADDING * 2;
-      const height = rows * NODE_HEIGHT + (rows - 1) * NODE_SPACING_Y + PADDING * 2;
+      // Rough heuristic for Dagre layout dimensions
+      // Vertical: width grows with nodes split into columns (sqrt), height grows with levels
+      // Horizontal: width grows with levels, height grows with parallel nodes
+      const levelsEstimate = Math.max(Math.ceil(Math.log2(nodeCount + 1)), 2);
+      const parallelEstimate = Math.ceil(nodeCount / levelsEstimate);
+
+      const width = isVertical 
+        ? parallelEstimate * (NODE_WIDTH + NODE_SPACING_X) + PADDING * 4
+        : levelsEstimate * (NODE_WIDTH + NODE_SPACING_X) + PADDING * 4;
+        
+      const height = isVertical
+        ? levelsEstimate * (NODE_HEIGHT + NODE_SPACING_Y) + PADDING * 4
+        : parallelEstimate * (NODE_HEIGHT + NODE_SPACING_Y) + PADDING * 4;
       
       // Add space for title if present
-      const titleHeight = data.title ? 40 : 0;
+      const titleHeight = data.title ? 80 : 0;
       
-      return { width, height: height + titleHeight };
+      // Cap sizes to reasonable canvas growth but ensure enough space
+      // Dagre can sometimes pack nodes tighter or looser, so we add a 20% safety margin
+      return { 
+        width: Math.max(width * 1.2, 500), 
+        height: Math.max((height + titleHeight) * 1.2, 400) 
+      };
     }
     
     case 'bullets': {
