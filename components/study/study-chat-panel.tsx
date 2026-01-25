@@ -8,11 +8,11 @@ import { StudyChatToolbar } from "@/components/study/study-chat-toolbar";
 import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
 import {
-  CanvasAnswerMarker,
-  StudyChatMessage,
-  StudyCitation,
-  StudyPlanEntry,
-  StudyQuestion,
+    CanvasAnswerMarker,
+    StudyChatMessage,
+    StudyCitation,
+    StudyPlanEntry,
+    StudyQuestion,
 } from "@/types";
 
 type StudyChatPanelProps = {

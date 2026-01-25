@@ -55,10 +55,10 @@ import {
     LectureFileChunk,
     addReviewEvent,
     countLectureChunks,
-  createSession,
+    createSession,
     getSessionById,
-  getSupabase,
     getStudyPlanEntry,
+    getSupabase,
     getUserStreak,
     listAnswerLinks,
     listReviewEvents,
@@ -585,7 +585,7 @@ export default function StudySessionScreen() {
         currentStrokes,
         activeVisualBlocks,
       );
-      const padding = 60; // Increased padding for better separation
+      const padding = customBaseY !== undefined ? 16 : 60;
       const position = { x: 40, y: currentMaxY + padding };
 
       // Estimate the size of the visual block
