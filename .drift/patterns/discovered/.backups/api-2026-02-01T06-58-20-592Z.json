@@ -1,0 +1,253 @@
+{
+  "version": "1.0.0",
+  "category": "api",
+  "patterns": [
+    {
+      "id": "c255521fc361c1ca",
+      "subcategory": "http-methods",
+      "name": "HTTP Methods Detector",
+      "description": "Detects HTTP method usage patterns and flags RESTful convention violations",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "api/http-methods",
+          "patternId": "api/http-methods/fetch-api"
+        }
+      },
+      "confidence": {
+        "frequency": 0.07,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 7,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/audio.ts",
+          "line": 163,
+          "column": 30
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 32,
+          "column": 26
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 18,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 123,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 619,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 63,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 41,
+          "column": 28
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ff1fb4699dac7fa1",
+      "subcategory": "http-methods",
+      "name": "HTTP Methods Detector",
+      "description": "Detects HTTP method usage patterns and flags RESTful convention violations",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "api/http-methods",
+          "patternId": "api/http-methods/method-post"
+        }
+      },
+      "confidence": {
+        "frequency": 0.06,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 6,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/audio.ts",
+          "line": 163,
+          "column": 30
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 32,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 123,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 619,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 63,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 41,
+          "column": 28
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c8e823fb876b6c6d",
+      "subcategory": "http-methods",
+      "name": "HTTP Methods Detector",
+      "description": "Detects HTTP method usage patterns and flags RESTful convention violations",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "api/http-methods",
+          "patternId": "api/http-methods/method-head"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/storage.ts",
+          "line": 18,
+          "column": 26
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "214072b225574f66",
+      "subcategory": "response-envelope",
+      "name": "Response Envelope Detector",
+      "description": "Detects response envelope patterns and flags inconsistencies",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "api/response-envelope",
+          "patternId": "api/response-envelope/nextjs-response"
+        }
+      },
+      "confidence": {
+        "frequency": 0.11,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 11,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 13,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/enqueue-job/index.ts",
+          "line": 24,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/evaluate-answer/index.ts",
+          "line": 16,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/extract-pdf-text/index.ts",
+          "line": 16,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/feynman-chat/index.ts",
+          "line": 23,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 16,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 13,
+          "column": 12
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 81,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 57,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 31,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 12,
+          "column": 14
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:20.569Z",
+  "checksum": "a7cd916bdc2b2556"
+}

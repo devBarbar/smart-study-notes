@@ -1,0 +1,2073 @@
+{
+  "version": "1.0.0",
+  "category": "testing",
+  "patterns": [
+    {
+      "id": "5b471c430b9cf507",
+      "subcategory": "test-structure",
+      "name": "Test Structure Detector",
+      "description": "Learns test structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/test-structure",
+          "patternId": "testing/test-structure/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 22,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 337,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 337,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 338,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 341,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 343,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 344,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 349,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 351,
+          "column": 20
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 356,
+          "column": 16
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 967,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1844,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1852,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 20,
+          "column": 45
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 66,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 24
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 53
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 142,
+          "column": 17
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 142,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 143,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 150,
+          "column": 35
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 152,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 233,
+          "column": 17
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 233,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 234,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 241,
+          "column": 35
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 243,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 121,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 38,
+          "column": 32
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 71,
+          "column": 17
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 71,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 72,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 117,
+          "column": 20
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 117,
+          "column": 44
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 117,
+          "column": 77
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 52,
+          "column": 22
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 52,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 54,
+          "column": 22
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 55,
+          "column": 24
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 56,
+          "column": 57
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 40,
+          "column": 5
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 40,
+          "column": 64
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 46,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 53,
+          "column": 29
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 55,
+          "column": 14
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 65,
+          "column": 10
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 70,
+          "column": 28
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 70,
+          "column": 39
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 89,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 90,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 94,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 94,
+          "column": 30
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 94,
+          "column": 48
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 96,
+          "column": 12
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 112,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 115,
+          "column": 38
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 123,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 123,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 126,
+          "column": 40
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 8,
+          "column": 46
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 417,
+          "column": 27
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 41,
+          "column": 35
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 41,
+          "column": 44
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 132,
+          "column": 68
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 153,
+          "column": 43
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 153,
+          "column": 58
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 156,
+          "column": 33
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 157,
+          "column": 16
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 671,
+          "column": 67
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 719,
+          "column": 3
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 744,
+          "column": 14
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 77,
+          "column": 14
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 77,
+          "column": 24
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 79,
+          "column": 15
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 113,
+          "column": 60
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 232,
+          "column": 50
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 283,
+          "column": 41
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 287,
+          "column": 18
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 43,
+          "column": 47
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 44,
+          "column": 14
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 97,
+          "column": 24
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 224,
+          "column": 55
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1089,
+          "column": 64
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1105,
+          "column": 43
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1399,
+          "column": 34
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 5,
+          "column": 4
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 30,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 63,
+          "column": 47
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 62,
+          "column": 52
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 64,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 138,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 19,
+          "column": 53
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 19,
+          "column": 69
+        },
+        {
+          "file": "supabase/functions/extract-pdf-text/index.ts",
+          "line": 43,
+          "column": 37
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 88,
+          "column": 16
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 88,
+          "column": 25
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 95,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 143,
+          "column": 24
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "77609522312d8f73",
+      "subcategory": "describe-naming",
+      "name": "Describe Naming Detector",
+      "description": "Learns test describe/it naming patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/describe-naming",
+          "patternId": "testing/describe-naming/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 19,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 337,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 337,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 338,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 341,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 343,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 344,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 349,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 351,
+          "column": 20
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 356,
+          "column": 16
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 967,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1844,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1852,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 20,
+          "column": 45
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 66,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 24
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 75,
+          "column": 53
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 142,
+          "column": 17
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 142,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 143,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 150,
+          "column": 35
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 152,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 233,
+          "column": 17
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 233,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 234,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 241,
+          "column": 35
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 243,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 121,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 38,
+          "column": 32
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 71,
+          "column": 17
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 71,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 72,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 117,
+          "column": 20
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 117,
+          "column": 44
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 117,
+          "column": 77
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 52,
+          "column": 22
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 52,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 54,
+          "column": 22
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 55,
+          "column": 24
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 56,
+          "column": 57
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 40,
+          "column": 5
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 40,
+          "column": 64
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 46,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 53,
+          "column": 29
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 55,
+          "column": 14
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 65,
+          "column": 10
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 70,
+          "column": 28
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 70,
+          "column": 39
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 89,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 90,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 94,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 94,
+          "column": 30
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 94,
+          "column": 48
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 96,
+          "column": 12
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 112,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 115,
+          "column": 38
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 123,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 123,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 126,
+          "column": 40
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 417,
+          "column": 27
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 41,
+          "column": 35
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 41,
+          "column": 44
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 132,
+          "column": 68
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 153,
+          "column": 43
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 153,
+          "column": 58
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 156,
+          "column": 33
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 157,
+          "column": 16
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 719,
+          "column": 3
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 744,
+          "column": 14
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 671,
+          "column": 67
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 721,
+          "column": 48
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 77,
+          "column": 14
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 77,
+          "column": 24
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 79,
+          "column": 15
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 113,
+          "column": 60
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 232,
+          "column": 50
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 283,
+          "column": 41
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 287,
+          "column": 18
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 43,
+          "column": 47
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 44,
+          "column": 14
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 85,
+          "column": 83
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 104,
+          "column": 24
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 118,
+          "column": 40
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 131,
+          "column": 3
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 139,
+          "column": 1
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 5,
+          "column": 4
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 30,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 63,
+          "column": 47
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 62,
+          "column": 52
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 64,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 149,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 163,
+          "column": 40
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 176,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 184,
+          "column": 1
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 19,
+          "column": 53
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 19,
+          "column": 69
+        },
+        {
+          "file": "supabase/functions/extract-pdf-text/index.ts",
+          "line": 43,
+          "column": 37
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 88,
+          "column": 16
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "468ea547f74d6205",
+      "subcategory": "fixture-patterns",
+      "name": "Fixture Patterns Detector",
+      "description": "Learns test fixture patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/fixture-patterns",
+          "patternId": "testing/fixture-patterns/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 14,
+        "score": 0.7381818181818183,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 139,
+          "column": 67
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1557,
+          "column": 31
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 65,
+          "column": 23
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 66,
+          "column": 24
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 76,
+          "column": 5
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 90,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 95,
+          "column": 23
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 96,
+          "column": 44
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 128,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 136,
+          "column": 27
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 142,
+          "column": 12
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 179,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 186,
+          "column": 23
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 187,
+          "column": 44
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 219,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 227,
+          "column": 27
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 233,
+          "column": 12
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 217,
+          "column": 50
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 222,
+          "column": 34
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 222,
+          "column": 46
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 222,
+          "column": 58
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 223,
+          "column": 6
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 223,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 223,
+          "column": 30
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 243,
+          "column": 23
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 284,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 292,
+          "column": 14
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 35,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 36,
+          "column": 21
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 37,
+          "column": 23
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 57,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 65,
+          "column": 14
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 71,
+          "column": 12
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 134,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 137,
+          "column": 30
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 138,
+          "column": 24
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 138,
+          "column": 49
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 140,
+          "column": 98
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 160,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 161,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 161,
+          "column": 52
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 186,
+          "column": 12
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 205,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 241,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 243,
+          "column": 23
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 244,
+          "column": 32
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 262,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 270,
+          "column": 14
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 276,
+          "column": 12
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 324,
+          "column": 26
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 149,
+          "column": 46
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 152,
+          "column": 21
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 236,
+          "column": 14
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 443,
+          "column": 37
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 50,
+          "column": 10
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 80,
+          "column": 12
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 81,
+          "column": 18
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 82,
+          "column": 14
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 124,
+          "column": 16
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 125,
+          "column": 20
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 126,
+          "column": 14
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 127,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 128,
+          "column": 16
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 135,
+          "column": 14
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 150,
+          "column": 18
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 150,
+          "column": 45
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 243,
+          "column": 10
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 305,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 305,
+          "column": 51
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 447,
+          "column": 13
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 448,
+          "column": 12
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 489,
+          "column": 10
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 581,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 584,
+          "column": 59
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 586,
+          "column": 45
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 588,
+          "column": 63
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 589,
+          "column": 7
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 600,
+          "column": 16
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 625,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 625,
+          "column": 51
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 43,
+          "column": 13
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 70,
+          "column": 26
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 74,
+          "column": 13
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 87,
+          "column": 30
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 91,
+          "column": 13
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 96,
+          "column": 24
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 100,
+          "column": 13
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 113,
+          "column": 46
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 127,
+          "column": 35
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 132,
+          "column": 35
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 137,
+          "column": 38
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 142,
+          "column": 33
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 247,
+          "column": 25
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 252,
+          "column": 26
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 269,
+          "column": 27
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 282,
+          "column": 27
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 283,
+          "column": 36
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 287,
+          "column": 13
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 288,
+          "column": 9
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 298,
+          "column": 34
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "cbff1d6dcb0fdc47",
+      "subcategory": "test-structure",
+      "name": "Test Structure Detector",
+      "description": "Learns test structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/test-structure",
+          "patternId": "testing/test-structure/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.17,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1836,
+          "column": 291
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1836,
+          "column": 308
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1866,
+          "column": 42
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 204,
+          "column": 87
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 4,
+          "column": 241
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 42,
+          "column": 39
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 104,
+          "column": 192
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 196,
+          "column": 17
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 6,
+          "column": 106
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 60,
+          "column": 39
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 149,
+          "column": 192
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 241,
+          "column": 17
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 61,
+          "column": 34
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 2,
+          "column": 8
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 2,
+          "column": 24
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 1,
+          "column": 8
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 1,
+          "column": 26
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ab4ab960a969e468",
+      "subcategory": "fixture-patterns",
+      "name": "Fixture Patterns Detector",
+      "description": "Learns test fixture patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/fixture-patterns",
+          "patternId": "testing/fixture-patterns/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.8109090909090909,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 852,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 852,
+          "column": 64
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 929,
+          "column": 36
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 233,
+          "column": 24
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "cb95383afb8b6ee7",
+      "subcategory": "fixture-patterns",
+      "name": "Fixture Patterns Detector",
+      "description": "Learns test fixture patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/fixture-patterns",
+          "patternId": "testing/fixture-patterns/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.06,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.8109090909090909,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 860,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1081,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1092,
+          "column": 20
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1123,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1163,
+          "column": 20
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 200,
+          "column": 49
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "73fa0e5238cbc8cf",
+      "subcategory": "test-file-naming",
+      "name": "Test File Naming Detector",
+      "description": "Learns test file naming patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/test-file-naming",
+          "patternId": "testing/test-file-naming/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.22,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 6,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 8,
+          "column": 46
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 417,
+          "column": 27
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 671,
+          "column": 67
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 97,
+          "column": 24
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 224,
+          "column": 55
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 44,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1089,
+          "column": 64
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1105,
+          "column": 43
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1399,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 138,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 64,
+          "column": 9
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0d3b17ee014c7cd2",
+      "subcategory": "test-co-location",
+      "name": "Test Co-Location Detector",
+      "description": "Learns test co-location patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/test-co-location",
+          "patternId": "testing/test-co-location/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.18,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 6,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 8,
+          "column": 46
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 417,
+          "column": 27
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 671,
+          "column": 67
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 97,
+          "column": 24
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 224,
+          "column": 55
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1089,
+          "column": 64
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1105,
+          "column": 43
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1399,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 138,
+          "column": 24
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "67bf243deefe652c",
+      "subcategory": "describe-naming",
+      "name": "Describe Naming Detector",
+      "description": "Learns test describe/it naming patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/describe-naming",
+          "patternId": "testing/describe-naming/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.7775,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/prompts.ts",
+          "line": 106,
+          "column": 82
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 151,
+          "column": 82
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "a9731f123e80bb59",
+      "subcategory": "test-structure",
+      "name": "Test Structure Detector",
+      "description": "Learns test structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "testing/test-structure",
+          "patternId": "testing/test-structure/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 12,
+          "column": 1
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 23,
+          "column": 1
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.476Z",
+  "checksum": "3488c964407f4c8e"
+}

@@ -1,0 +1,339 @@
+{
+  "modules": {
+    "contexts/auth-context.tsx": {
+      "path": "contexts/auth-context.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/themed-text.tsx": {
+      "path": "components/themed-text.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/ui/icon-symbol.ios.tsx": {
+      "path": "components/ui/icon-symbol.ios.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/ui/icon-symbol.tsx": {
+      "path": "components/ui/icon-symbol.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "hooks/use-color-scheme.web.ts": {
+      "path": "hooks/use-color-scheme.web.ts",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "hooks/use-theme-color.ts": {
+      "path": "hooks/use-theme-color.ts",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/hello-wave.tsx": {
+      "path": "components/hello-wave.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/study/study-lecture-passed-toast.tsx": {
+      "path": "components/study/study-lecture-passed-toast.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/study/study-flashcard-toast.tsx": {
+      "path": "components/study/study-flashcard-toast.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "lib/audio.ts": {
+      "path": "lib/audio.ts",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "app/(tabs)/_layout.tsx": {
+      "path": "app/(tabs)/_layout.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "app/auth/_layout.tsx": {
+      "path": "app/auth/_layout.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/themed-view.tsx": {
+      "path": "components/themed-view.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/study/study-chat-list.tsx": {
+      "path": "components/study/study-chat-list.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/external-link.tsx": {
+      "path": "components/external-link.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/haptic-tab.tsx": {
+      "path": "components/haptic-tab.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "app/_layout.tsx": {
+      "path": "app/_layout.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/study/study-chat-panel.tsx": {
+      "path": "components/study/study-chat-panel.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "components/parallax-scroll-view.tsx": {
+      "path": "components/parallax-scroll-view.tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    },
+    "app/lecture/[id].tsx": {
+      "path": "app/lecture/[id].tsx",
+      "imports": [],
+      "importedBy": [],
+      "exports": [],
+      "metrics": {
+        "Ca": 0,
+        "Ce": 0,
+        "instability": 0,
+        "abstractness": 0,
+        "distance": 1
+      },
+      "role": "balanced",
+      "isEntryPoint": false,
+      "isLeaf": true
+    }
+  },
+  "edges": [],
+  "cycles": [],
+  "metrics": {
+    "totalModules": 20,
+    "totalEdges": 0,
+    "cycleCount": 0,
+    "avgInstability": 0,
+    "avgDistance": 1,
+    "zoneOfPain": [],
+    "zoneOfUselessness": [],
+    "hotspots": [],
+    "isolatedModules": []
+  },
+  "generatedAt": "2026-02-01T06:58:41.454Z",
+  "projectRoot": "/Users/barbarahmad/Documents/devBarbar/smart-notes/smart-learning-notes"
+}

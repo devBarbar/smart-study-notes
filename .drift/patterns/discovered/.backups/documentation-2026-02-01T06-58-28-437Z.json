@@ -1,0 +1,1038 @@
+{
+  "version": "1.0.0",
+  "category": "documentation",
+  "patterns": [
+    {
+      "id": "ad758b603f46d0ac",
+      "subcategory": "jsdoc-patterns",
+      "name": "JSDoc Patterns Detector",
+      "description": "Learns JSDoc documentation patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/jsdoc-patterns",
+          "patternId": "documentation/jsdoc-patterns/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.38,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 23,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 219,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 237,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 216,
+          "column": 14
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 24,
+          "column": 23
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 39,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 10,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 9,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 11,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 10,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 14,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 20,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 10,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-flashcard-toast.tsx",
+          "line": 9,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-lecture-passed-toast.tsx",
+          "line": 9,
+          "column": 20
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 13,
+          "column": 20
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 90,
+          "column": 19
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 91,
+          "column": 35
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 17,
+          "column": 36
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 20,
+          "column": 19
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 28,
+          "column": 3
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 37,
+          "column": 29
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 820,
+          "column": 78
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 78,
+          "column": 57
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 153,
+          "column": 5
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 302,
+          "column": 59
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 201,
+          "column": 30
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 72,
+          "column": 4
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 5,
+          "column": 100
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 52,
+          "column": 31
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 61,
+          "column": 46
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 197,
+          "column": 4
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 20,
+          "column": 3
+        },
+        {
+          "file": "types/index.ts",
+          "line": 8,
+          "column": 3
+        },
+        {
+          "file": "types/index.ts",
+          "line": 59,
+          "column": 3
+        },
+        {
+          "file": "types/index.ts",
+          "line": 123,
+          "column": 3
+        },
+        {
+          "file": "types/index.ts",
+          "line": 170,
+          "column": 5
+        },
+        {
+          "file": "types/index.ts",
+          "line": 162,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "4af554cc1d18af5b",
+      "subcategory": "todo-patterns",
+      "name": "Todo Patterns Detector",
+      "description": "Learns TODO/FIXME comment patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/todo-patterns",
+          "patternId": "documentation/todo-patterns/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.2,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 7,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 57,
+          "column": 10
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 125,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 426,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 441,
+          "column": 30
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 506,
+          "column": 44
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 514,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 694,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 714,
+          "column": 51
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 941,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 948,
+          "column": 58
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 950,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 960,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 965,
+          "column": 18
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 369,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 908,
+          "column": 35
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 73,
+          "column": 26
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 715,
+          "column": 22
+        },
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 5,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 412,
+          "column": 51
+        },
+        {
+          "file": "types/index.ts",
+          "line": 208,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "619ac4d755ea388d",
+      "subcategory": "example-code",
+      "name": "Example Code Detector",
+      "description": "Learns example code patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/example-code",
+          "patternId": "documentation/example-code/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.82,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 12,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 216,
+          "column": 14
+        },
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 25,
+          "column": 74
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 671,
+          "column": 48
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 302,
+          "column": 59
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 201,
+          "column": 30
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1380,
+          "column": 17
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1399,
+          "column": 17
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 5,
+          "column": 100
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 52,
+          "column": 31
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 61,
+          "column": 46
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 18,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 27,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 142,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 146,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 178,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 182,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 267,
+          "column": 52
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 270,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 311,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 312,
+          "column": 71
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 313,
+          "column": 61
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 59,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 59,
+          "column": 58
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 62,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 62,
+          "column": 32
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 62,
+          "column": 64
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 11,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 32,
+          "column": 4
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 34,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 35,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 35,
+          "column": 42
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 36,
+          "column": 21
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 36,
+          "column": 41
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 37,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 39,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 40,
+          "column": 23
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 54,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 54,
+          "column": 44
+        },
+        {
+          "file": "types/index.ts",
+          "line": 162,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "f4f01c7fdbb8afcd",
+      "subcategory": "readme-structure",
+      "name": "Readme Structure Detector",
+      "description": "Learns README structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/readme-structure",
+          "patternId": "documentation/readme-structure/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.68,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 7,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 25,
+          "column": 74
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 140,
+          "column": 55
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1380,
+          "column": 17
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1399,
+          "column": 17
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 18,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 27,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 142,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 146,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 178,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 182,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 267,
+          "column": 52
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 270,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 311,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 312,
+          "column": 71
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 313,
+          "column": 61
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 59,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 59,
+          "column": 58
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 62,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 62,
+          "column": 32
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 62,
+          "column": 64
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 11,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 32,
+          "column": 4
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 34,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 35,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 35,
+          "column": 42
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 36,
+          "column": 21
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 36,
+          "column": 41
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 37,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 39,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 40,
+          "column": 23
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 54,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 54,
+          "column": 44
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c9d4330b942448ba",
+      "subcategory": "todo-patterns",
+      "name": "Todo Patterns Detector",
+      "description": "Learns TODO/FIXME comment patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/todo-patterns",
+          "patternId": "documentation/todo-patterns/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.03,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.75125,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/openai.ts",
+          "line": 712,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 712,
+          "column": 134
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 744,
+          "column": 51
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "795094543e0483d9",
+      "subcategory": "jsdoc-patterns",
+      "name": "JSDoc Patterns Detector",
+      "description": "Learns JSDoc documentation patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/jsdoc-patterns",
+          "patternId": "documentation/jsdoc-patterns/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.05,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/prompts.ts",
+          "line": 104,
+          "column": 150
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 120,
+          "column": 98
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 220,
+          "column": 67
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 149,
+          "column": 150
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 165,
+          "column": 98
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0a73a360cfe09c16",
+      "subcategory": "readme-structure",
+      "name": "Readme Structure Detector",
+      "description": "Learns README structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/readme-structure",
+          "patternId": "documentation/readme-structure/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.774,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 309,
+          "column": 9
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "1231e37e701563aa",
+      "subcategory": "example-code",
+      "name": "Example Code Detector",
+      "description": "Learns example code patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/example-code",
+          "patternId": "documentation/example-code/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 309,
+          "column": 9
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "304d66ea365923b4",
+      "subcategory": "example-code",
+      "name": "Example Code Detector",
+      "description": "Learns example code patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/example-code",
+          "patternId": "documentation/example-code/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 4,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 38,
+          "column": 6
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "bd492e8405e7abd8",
+      "subcategory": "readme-structure",
+      "name": "Readme Structure Detector",
+      "description": "Learns README structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "documentation/readme-structure",
+          "patternId": "documentation/readme-structure/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.8778947368421053,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 23,
+          "column": 44
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.406Z",
+  "checksum": "62f5ffe2cb1d3a0f"
+}

@@ -1,0 +1,101 @@
+{
+  "version": "0.9.46",
+  "schemaVersion": "2.0.0",
+  "createdAt": "2026-02-01T06:59:01.934Z",
+  "updatedAt": "2026-02-01T06:59:01.936Z",
+  "project": {
+    "id": "e527a30b-536e-4c26-87bd-f0baf62c21e9",
+    "name": "smart-learning-notes",
+    "rootPath": "/Users/barbarahmad/Documents/devBarbar/smart-notes/smart-learning-notes"
+  },
+  "baseline": {
+    "scanId": "3d57a775",
+    "scannedAt": "2026-02-01T06:59:01.934Z",
+    "fileCount": 95,
+    "patternCount": 530,
+    "approvedCount": 350,
+    "categories": {
+      "security": 1021,
+      "structural": 5430,
+      "components": 5246,
+      "styling": 13211,
+      "logging": 3227,
+      "data-access": 3706,
+      "config": 872,
+      "types": 8046,
+      "accessibility": 752,
+      "performance": 2588,
+      "api": 112,
+      "auth": 932,
+      "errors": 6309,
+      "testing": 1075,
+      "documentation": 706
+    },
+    "checksum": "bb5c3df8f19978eb"
+  },
+  "features": {
+    "callGraph": {
+      "enabled": true,
+      "builtAt": "2026-02-01T06:58:37.071Z",
+      "stats": {
+        "functions": 36,
+        "callSites": 281,
+        "resolvedCalls": 49,
+        "entryPoints": 28,
+        "dataAccessors": 3,
+        "filesProcessed": 94
+      }
+    },
+    "testTopology": {
+      "enabled": true,
+      "builtAt": "2026-02-01T06:58:39.906Z",
+      "stats": {
+        "totalTests": 0,
+        "testFiles": 0,
+        "filesAnalyzed": 95,
+        "extractedFiles": 0
+      }
+    },
+    "coupling": {
+      "enabled": true,
+      "builtAt": "2026-02-01T06:58:41.457Z",
+      "stats": {
+        "modules": 20,
+        "cycles": 0,
+        "hotspots": 0,
+        "healthScore": 100,
+        "filesAnalyzed": 95
+      }
+    },
+    "dna": {
+      "enabled": true,
+      "builtAt": "2026-02-01T06:58:43.435Z",
+      "stats": {
+        "genes": 10,
+        "mutations": 0,
+        "healthScore": 60,
+        "filesAnalyzed": 0,
+        "componentFiles": 0,
+        "backendFiles": 0
+      }
+    },
+    "memory": {
+      "enabled": true,
+      "builtAt": "2026-02-01T06:59:01.933Z",
+      "stats": {
+        "initialized": 1
+      }
+    }
+  },
+  "settings": {
+    "autoApproveThreshold": 0.85,
+    "autoApproveEnabled": true
+  },
+  "history": [
+    {
+      "action": "setup_complete",
+      "timestamp": "2026-02-01T06:59:01.934Z",
+      "details": "Initial setup: 530 patterns, 350 approved"
+    }
+  ]
+}

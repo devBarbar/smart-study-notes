@@ -1,0 +1,3240 @@
+{
+  "version": "1.0.0",
+  "category": "performance",
+  "patterns": [
+    {
+      "id": "44291e39088f29ee",
+      "subcategory": "bundle-size",
+      "name": "Bundle Size Detector",
+      "description": "Learns bundle size optimization patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/bundle-size",
+          "patternId": "performance/bundle-size/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 29,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 25,
+          "column": 50
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 32,
+          "column": 50
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 39,
+          "column": 50
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 115,
+          "column": 34
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 117,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 138,
+          "column": 38
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 255,
+          "column": 53
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 258,
+          "column": 37
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 112,
+          "column": 32
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 44,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 849,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 875,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 878,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 900,
+          "column": 41
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 918,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 944,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 953,
+          "column": 50
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 974,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 997,
+          "column": 50
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 999,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1016,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1029,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1039,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1042,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1080,
+          "column": 21
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1119,
+          "column": 59
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1124,
+          "column": 57
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1144,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1179,
+          "column": 58
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1197,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1221,
+          "column": 59
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1224,
+          "column": 52
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1251,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1277,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1280,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1295,
+          "column": 46
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1341,
+          "column": 36
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1350,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1354,
+          "column": 51
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1399,
+          "column": 48
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1407,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1415,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1432,
+          "column": 19
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 318,
+          "column": 41
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 324,
+          "column": 39
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 412,
+          "column": 42
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 425,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 717,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 34,
+          "column": 35
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 41,
+          "column": 46
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 61,
+          "column": 44
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 71,
+          "column": 39
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 75,
+          "column": 42
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 102,
+          "column": 60
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 105,
+          "column": 42
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 93,
+          "column": 45
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 101,
+          "column": 54
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 110,
+          "column": 46
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 118,
+          "column": 52
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 129,
+          "column": 43
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 137,
+          "column": 52
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 145,
+          "column": 42
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 153,
+          "column": 52
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 163,
+          "column": 41
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 171,
+          "column": 50
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 81,
+          "column": 44
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 86,
+          "column": 48
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 94,
+          "column": 35
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 103,
+          "column": 49
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 116,
+          "column": 43
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 133,
+          "column": 41
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 141,
+          "column": 46
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 149,
+          "column": 35
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 164,
+          "column": 45
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 173,
+          "column": 40
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 182,
+          "column": 49
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 194,
+          "column": 35
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 110,
+          "column": 43
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 131,
+          "column": 15
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 149,
+          "column": 15
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 163,
+          "column": 36
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 207,
+          "column": 17
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 221,
+          "column": 17
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 242,
+          "column": 50
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 250,
+          "column": 43
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 229,
+          "column": 11
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 94,
+          "column": 60
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 59,
+          "column": 40
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 70,
+          "column": 39
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 67,
+          "column": 62
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 74,
+          "column": 43
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 163,
+          "column": 15
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 176,
+          "column": 37
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 235,
+          "column": 36
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 343,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 348,
+          "column": 27
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 384,
+          "column": 21
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 47,
+          "column": 38
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 63,
+          "column": 36
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.519Z",
+        "approvedAt": "2026-02-01T06:58:26.519Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "50ff238a3e23b6df",
+      "subcategory": "lazy-loading",
+      "name": "Lazy Loading Detector",
+      "description": "Learns lazy loading patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/lazy-loading",
+          "patternId": "performance/lazy-loading/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 39,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 59,
+          "column": 5
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 28,
+          "column": 38
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 43,
+          "column": 29
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 53,
+          "column": 29
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 68,
+          "column": 29
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 101,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 131,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 176,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 190,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 249,
+          "column": 50
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 272,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 296,
+          "column": 44
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 329,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 381,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 502,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 687,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 49,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 74,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 184,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 192,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 27,
+          "column": 24
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 62,
+          "column": 32
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 126,
+          "column": 40
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 149,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 137,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 808,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 854,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 972,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1098,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1136,
+          "column": 49
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1169,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1222,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1233,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1275,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1486,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1532,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2017,
+          "column": 44
+        },
+        {
+          "file": "components/external-link.tsx",
+          "line": 13,
+          "column": 16
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 47,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 71,
+          "column": 5
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 205,
+          "column": 22
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 28,
+          "column": 19
+        },
+        {
+          "file": "components/upload-buttons.tsx",
+          "line": 23,
+          "column": 24
+        },
+        {
+          "file": "components/upload-buttons.tsx",
+          "line": 39,
+          "column": 21
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 47,
+          "column": 32
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 107,
+          "column": 38
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 130,
+          "column": 37
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 47,
+          "column": 28
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 62,
+          "column": 28
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 95,
+          "column": 39
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 143,
+          "column": 39
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 164,
+          "column": 39
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 186,
+          "column": 37
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 199,
+          "column": 31
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 33,
+          "column": 39
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 59,
+          "column": 5
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 74,
+          "column": 5
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 82,
+          "column": 5
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 45,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 63,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 82,
+          "column": 17
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 99,
+          "column": 17
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 117,
+          "column": 17
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 44,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-materials.ts",
+          "line": 8,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 41,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-sessions.ts",
+          "line": 8,
+          "column": 14
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 420,
+          "column": 28
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 30,
+          "column": 18
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 72,
+          "column": 40
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 86,
+          "column": 34
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 115,
+          "column": 31
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 142,
+          "column": 32
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 235,
+          "column": 20
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 246,
+          "column": 35
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 288,
+          "column": 27
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 296,
+          "column": 28
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 317,
+          "column": 34
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 382,
+          "column": 18
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 443,
+          "column": 24
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 484,
+          "column": 20
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 558,
+          "column": 31
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 613,
+          "column": 34
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 644,
+          "column": 44
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 812,
+          "column": 37
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 9,
+          "column": 32
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 42,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 12,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 18,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 25,
+          "column": 15
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 74,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 83,
+          "column": 23
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 101,
+          "column": 39
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 124,
+          "column": 42
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 172,
+          "column": 46
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 179,
+          "column": 35
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 193,
+          "column": 36
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 214,
+          "column": 36
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 248,
+          "column": 30
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 263,
+          "column": 29
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.549Z",
+        "approvedAt": "2026-02-01T06:58:26.549Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c9bfaaca4a8fcf66",
+      "subcategory": "lazy-loading",
+      "name": "Lazy Loading Detector",
+      "description": "Learns lazy loading patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/lazy-loading",
+          "patternId": "performance/lazy-loading/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.72,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 9,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 97,
+          "column": 36
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 97,
+          "column": 51
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 78,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 45,
+          "column": 36
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 49,
+          "column": 40
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 300,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1988,
+          "column": 31
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 101,
+          "column": 35
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 101,
+          "column": 63
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 3,
+          "column": 11
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 31,
+          "column": 15
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 59,
+          "column": 12
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 64,
+          "column": 13
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 118,
+          "column": 19
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 123,
+          "column": 18
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 221,
+          "column": 17
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 251,
+          "column": 15
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 258,
+          "column": 10
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 3,
+          "column": 11
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 3,
+          "column": 22
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 31,
+          "column": 15
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 31,
+          "column": 26
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 59,
+          "column": 12
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 59,
+          "column": 23
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 64,
+          "column": 13
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 64,
+          "column": 24
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 118,
+          "column": 19
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 118,
+          "column": 30
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 123,
+          "column": 18
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 123,
+          "column": 29
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 223,
+          "column": 17
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 223,
+          "column": 28
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 253,
+          "column": 15
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 253,
+          "column": 26
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 260,
+          "column": 10
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 260,
+          "column": 21
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.577Z",
+        "approvedAt": "2026-02-01T06:58:26.577Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0b8f5e687d8f0fcd",
+      "subcategory": "memoization",
+      "name": "Memoization Detector",
+      "description": "Learns memoization patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/memoization",
+          "patternId": "performance/memoization/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.34,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 27,
+        "score": 0.9458620689655173,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 4,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 4,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 6,
+          "column": 10
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 4,
+          "column": 34
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 4,
+          "column": 10
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 4,
+          "column": 34
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 4,
+          "column": 10
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 3,
+          "column": 34
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 2,
+          "column": 17
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 2,
+          "column": 23
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 1,
+          "column": 22
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 1,
+          "column": 17
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 1,
+          "column": 29
+        },
+        {
+          "file": "components/upload-buttons.tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 4,
+          "column": 34
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 4,
+          "column": 10
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 1,
+          "column": 65
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 1,
+          "column": 79
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 1,
+          "column": 43
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.606Z",
+        "approvedAt": "2026-02-01T06:58:26.606Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "4d60ee11a75ca216",
+      "subcategory": "memoization",
+      "name": "Memoization Detector",
+      "description": "Learns memoization patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/memoization",
+          "patternId": "performance/memoization/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 27,
+        "score": 0.9458620689655173,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 22,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 32,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 37,
+          "column": 20
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 42,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 47,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 53,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 58,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 87,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 21,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 20,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 28,
+          "column": 26
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 64,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 45,
+          "column": 18
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 80,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 83,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 89,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 123,
+          "column": 22
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 529,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 581,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 589,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 604,
+          "column": 36
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 636,
+          "column": 30
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 672,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 794,
+          "column": 30
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 176,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 244,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 249,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 272,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 296,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 316,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 502,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 516,
+          "column": 26
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 520,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 524,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 537,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 617,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 687,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 737,
+          "column": 26
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 767,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 45,
+          "column": 18
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 23,
+          "column": 18
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 25,
+          "column": 20
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 43,
+          "column": 18
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 277,
+          "column": 26
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 282,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 62,
+          "column": 20
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 100,
+          "column": 33
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 111,
+          "column": 23
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 117,
+          "column": 37
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 121,
+          "column": 29
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 126,
+          "column": 28
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 149,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 118,
+          "column": 18
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 153,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 162,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 211,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 239,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 245,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 304,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 321,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 324,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 512,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 380,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 392,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 405,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 430,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 437,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 533,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 538,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 551,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 569,
+          "column": 34
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 670,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 711,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 726,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 751,
+          "column": 33
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1058,
+          "column": 34
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1064,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1070,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1082,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1124,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1149,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1154,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1221,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1233,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1240,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1262,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1274,
+          "column": 27
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1478,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1859,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1874,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1933,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1955,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1971,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2002,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2006,
+          "column": 27
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2013,
+          "column": 33
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2017,
+          "column": 32
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 221,
+          "column": 24
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 35,
+          "column": 18
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 33,
+          "column": 18
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.639Z",
+        "approvedAt": "2026-02-01T06:58:26.639Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "714ec91d7005b184",
+      "subcategory": "lazy-loading",
+      "name": "Lazy Loading Detector",
+      "description": "Learns lazy loading patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/lazy-loading",
+          "patternId": "performance/lazy-loading/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.4,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 10,
+        "score": 0.9161538461538461,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/_layout.tsx",
+          "line": 84,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 848,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 848,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1468,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1481,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 2166,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 478,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2119,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2119,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2139,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2139,
+          "column": 29
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 30,
+          "column": 3
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 29,
+          "column": 3
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 271,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 278,
+          "column": 5
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 13,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 27,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 124,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 124,
+          "column": 27
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 12,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.675Z",
+        "approvedAt": "2026-02-01T06:58:26.675Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "6c15dbbd1d568212",
+      "subcategory": "code-splitting",
+      "name": "Code Splitting Detector",
+      "description": "Learns code splitting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/code-splitting",
+          "patternId": "performance/code-splitting/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 11,
+        "score": 0.9102439024390243,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 142,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 148,
+          "column": 17
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 154,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 154,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 154,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 165,
+          "column": 60
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 387,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 393,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 399,
+          "column": 17
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 399,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 399,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 410,
+          "column": 59
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 198,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 204,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 210,
+          "column": 17
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 210,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 210,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 221,
+          "column": 63
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1833,
+          "column": 8
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1311,
+          "column": 19
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1352,
+          "column": 17
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1352,
+          "column": 26
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 717,
+          "column": 1
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 174,
+          "column": 7
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 177,
+          "column": 9
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 182,
+          "column": 9
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 188,
+          "column": 9
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 188,
+          "column": 17
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 218,
+          "column": 3
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 229,
+          "column": 5
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 223,
+          "column": 7
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 16,
+          "column": 3
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 16,
+          "column": 17
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 32
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 67
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 614,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 614,
+          "column": 30
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 61
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 27
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 62
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 28
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 63
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 155,
+          "column": 3
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 165,
+          "column": 3
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 193,
+          "column": 43
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 201,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 201,
+          "column": 18
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 201,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 242,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 242,
+          "column": 21
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 73,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 76,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 81,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 86,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 86,
+          "column": 17
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 191,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 33,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 33,
+          "column": 17
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 23,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 136,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 148,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 148,
+          "column": 51
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 178,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 105,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 105,
+          "column": 30
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 105,
+          "column": 43
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 105,
+          "column": 58
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 106,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 106,
+          "column": 21
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 106,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 108,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 110,
+          "column": 17
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 110,
+          "column": 30
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 110,
+          "column": 59
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 129,
+          "column": 72
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 170,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 190,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 190,
+          "column": 51
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 214,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 123,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 123,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 131,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 133,
+          "column": 19
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 133,
+          "column": 32
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 133,
+          "column": 61
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 163,
+          "column": 66
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 244,
+          "column": 19
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 244,
+          "column": 27
+        },
+        {
+          "file": "types/index.ts",
+          "line": 295,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.717Z",
+        "approvedAt": "2026-02-01T06:58:26.717Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "2a2e2be45a069195",
+      "subcategory": "lazy-loading",
+      "name": "Lazy Loading Detector",
+      "description": "Learns lazy loading patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/lazy-loading",
+          "patternId": "performance/lazy-loading/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.9161538461538461,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 296,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1024,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1034,
+          "column": 9
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 43,
+          "column": 9
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 85,
+          "column": 69
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.747Z",
+        "approvedAt": "2026-02-01T06:58:26.747Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "3c129bdfa62728d0",
+      "subcategory": "code-splitting",
+      "name": "Code Splitting Detector",
+      "description": "Learns code splitting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/code-splitting",
+          "patternId": "performance/code-splitting/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.08,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.9102439024390243,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1312,
+          "column": 18
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 194,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 91,
+          "column": 18
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 54,
+          "column": 352
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.786Z",
+        "approvedAt": "2026-02-01T06:58:26.786Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "2c3eac81f18d811b",
+      "subcategory": "code-splitting",
+      "name": "Code Splitting Detector",
+      "description": "Learns code splitting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/code-splitting",
+          "patternId": "performance/code-splitting/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.26,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.9102439024390243,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1360,
+          "column": 51
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 29,
+          "column": 29
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 29,
+          "column": 45
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 29,
+          "column": 55
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 29,
+          "column": 81
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 29,
+          "column": 119
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 29,
+          "column": 163
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 46,
+          "column": 29
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 46,
+          "column": 45
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 46,
+          "column": 55
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 46,
+          "column": 81
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 46,
+          "column": 119
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 46,
+          "column": 163
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.827Z",
+        "approvedAt": "2026-02-01T06:58:26.827Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "4e086a0ee2b3866b",
+      "subcategory": "code-splitting",
+      "name": "Code Splitting Detector",
+      "description": "Learns code splitting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/code-splitting",
+          "patternId": "performance/code-splitting/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.14,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.931111111111111,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 737,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 196,
+          "column": 22
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 144,
+          "column": 24
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 269,
+          "column": 12
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 283,
+          "column": 8
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 98,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 240,
+          "column": 26
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.859Z",
+        "approvedAt": "2026-02-01T06:58:26.859Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "66bdbe5e0d43b006",
+      "subcategory": "debounce-throttle",
+      "name": "Debounce Throttle Detector",
+      "description": "Learns debounce and throttle patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/debounce-throttle",
+          "patternId": "performance/debounce-throttle/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1886,
+          "column": 22
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 2,
+          "column": 27
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.900Z",
+        "approvedAt": "2026-02-01T06:58:26.900Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "5f50ee52cdff9c31",
+      "subcategory": "bundle-size",
+      "name": "Bundle Size Detector",
+      "description": "Learns bundle size optimization patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/bundle-size",
+          "patternId": "performance/bundle-size/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.08,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 557,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 600,
+          "column": 17
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 222,
+          "column": 13
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 222,
+          "column": 55
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.932Z",
+        "approvedAt": "2026-02-01T06:58:26.932Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "1835ebd716064fde",
+      "subcategory": "caching-patterns",
+      "name": "Caching Patterns Detector",
+      "description": "Learns caching patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/caching-patterns",
+          "patternId": "performance/caching-patterns/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.18,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 6,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 58,
+          "column": 9
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 206,
+          "column": 13
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 206,
+          "column": 35
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 41,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/enqueue-job/index.ts",
+          "line": 35,
+          "column": 40
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 23,
+          "column": 40
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 738,
+          "column": 38
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.962Z",
+        "approvedAt": "2026-02-01T06:58:26.962Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "5525ff54ce3a51be",
+      "subcategory": "debounce-throttle",
+      "name": "Debounce Throttle Detector",
+      "description": "Learns debounce and throttle patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/debounce-throttle",
+          "patternId": "performance/debounce-throttle/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.12,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/audio.ts",
+          "line": 335,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 774,
+          "column": 66
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1503,
+          "column": 41
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 99,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 4,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 4,
+          "column": 58
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:26.992Z",
+        "approvedAt": "2026-02-01T06:58:26.992Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "104415395d603ff8",
+      "subcategory": "debounce-throttle",
+      "name": "Debounce Throttle Detector",
+      "description": "Learns debounce and throttle patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/debounce-throttle",
+          "patternId": "performance/debounce-throttle/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.16,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.8922222222222222,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/supabase.ts",
+          "line": 781,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 781,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 969,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1009,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1115,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1514,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1514,
+          "column": 12
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 749,
+          "column": 8
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:27.023Z",
+        "approvedAt": "2026-02-01T06:58:27.023Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "604cc5f723ef590c",
+      "subcategory": "code-splitting",
+      "name": "Code Splitting Detector",
+      "description": "Learns code splitting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "performance/code-splitting",
+          "patternId": "performance/code-splitting/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.945,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "types/index.ts",
+          "line": 26,
+          "column": 13
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:27.054Z",
+        "approvedAt": "2026-02-01T06:58:27.054Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.357Z",
+  "checksum": "1ec3a63318f9523a"
+}

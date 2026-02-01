@@ -1,0 +1,2148 @@
+{
+  "version": "1.0.0",
+  "category": "auth",
+  "patterns": [
+    {
+      "id": "0160c1d6cfb5d65e",
+      "subcategory": "token-handling",
+      "name": "Token Handling Detector",
+      "description": "Learns token handling patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/token-handling",
+          "patternId": "auth/token-handling/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.85,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 11,
+        "score": 0.6594736842105262,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 65,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 73,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 49,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 49,
+          "column": 22
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 84,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 85,
+          "column": 6
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 91,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 91,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 95,
+          "column": 22
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 95,
+          "column": 56
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 96,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 96,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 101,
+          "column": 7
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 203,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 206,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 231,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 237,
+          "column": 38
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 31,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 105,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 369,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 377,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 632,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 665,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 810,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 847,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 865,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 866,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 867,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 871,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 879,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 885,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 889,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 908,
+          "column": 27
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 926,
+          "column": 57
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 955,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 975,
+          "column": 45
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 982,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1100,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1120,
+          "column": 6
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1138,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1145,
+          "column": 6
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1171,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1182,
+          "column": 6
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1253,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1258,
+          "column": 20
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1440,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1472,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2032,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2036,
+          "column": 14
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 56,
+          "column": 38
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 59,
+          "column": 34
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 64,
+          "column": 16
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 67,
+          "column": 45
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 76,
+          "column": 25
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 12,
+          "column": 3
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 67,
+          "column": 11
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 68,
+          "column": 17
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 80,
+          "column": 66
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 84,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 85,
+          "column": 15
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 116,
+          "column": 21
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 121,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 147,
+          "column": 21
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 152,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 168,
+          "column": 21
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 172,
+          "column": 15
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 173,
+          "column": 9
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 153,
+          "column": 82
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 214,
+          "column": 42
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1219,
+          "column": 36
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 304,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 305,
+          "column": 18
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 306,
+          "column": 17
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 307,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 308,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 309,
+          "column": 13
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 310,
+          "column": 23
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1036,
+          "column": 15
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1331,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1333,
+          "column": 45
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1369,
+          "column": 48
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1370,
+          "column": 72
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1371,
+          "column": 21
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1636,
+          "column": 15
+        },
+        {
+          "file": "types/index.ts",
+          "line": 331,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0400c75443055adc",
+      "subcategory": "audit",
+      "name": "Audit Logging Detector",
+      "description": "Learns audit logging patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/audit",
+          "patternId": "auth/audit/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.7,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 24,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 96,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 117,
+          "column": 14
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 135,
+          "column": 14
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 255,
+          "column": 14
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 77,
+          "column": 12
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 44,
+          "column": 12
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 112,
+          "column": 14
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 122,
+          "column": 14
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 44,
+          "column": 10
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 5,
+          "column": 3
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 213,
+          "column": 18
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 875,
+          "column": 12
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 953,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 983,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 997,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1039,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1221,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1277,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 525,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1104,
+          "column": 34
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1104,
+          "column": 72
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 386,
+          "column": 14
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 48,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 299,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 409,
+          "column": 14
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 200,
+          "column": 56
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 201,
+          "column": 33
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 5,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1987,
+          "column": 10
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 939,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1658,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1659,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 534,
+          "column": 31
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 102,
+          "column": 16
+        },
+        {
+          "file": "components/external-link.tsx",
+          "line": 13,
+          "column": 23
+        },
+        {
+          "file": "components/external-link.tsx",
+          "line": 16,
+          "column": 11
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 100,
+          "column": 10
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 141,
+          "column": 17
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 143,
+          "column": 21
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 151,
+          "column": 30
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 151,
+          "column": 42
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 163,
+          "column": 18
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 164,
+          "column": 21
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 171,
+          "column": 30
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 171,
+          "column": 42
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 94,
+          "column": 42
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 4,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 343,
+          "column": 24
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 95,
+          "column": 12
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 46,
+          "column": 14
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 62,
+          "column": 16
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 65,
+          "column": 12
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 224,
+          "column": 14
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 80,
+          "column": 59
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 81,
+          "column": 49
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 59,
+          "column": 39
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 65,
+          "column": 3
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 80,
+          "column": 35
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 80,
+          "column": 43
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 65,
+          "column": 20
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 66,
+          "column": 33
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 71,
+          "column": 30
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 71,
+          "column": 60
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 765,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 767,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 768,
+          "column": 23
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 769,
+          "column": 18
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1369,
+          "column": 41
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1370,
+          "column": 51
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1371,
+          "column": 14
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "d4bb3f17e8b53a97",
+      "subcategory": "middleware",
+      "name": "Auth Middleware Detector",
+      "description": "Learns auth middleware patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/middleware",
+          "patternId": "auth/middleware/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.08,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 183,
+          "column": 17
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 196,
+          "column": 17
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 31,
+          "column": 29
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 71,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 16,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 23,
+          "column": 11
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 30,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 48,
+          "column": 29
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "5d04a8f741409279",
+      "subcategory": "token-handling",
+      "name": "Token Handling Detector",
+      "description": "Learns token handling patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/token-handling",
+          "patternId": "auth/token-handling/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.38,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.8042105263157895,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 92,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 92,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 94,
+          "column": 18
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 236,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 756,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 781,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 781,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 312,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 316,
+          "column": 57
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 367,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 625,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 804,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 855,
+          "column": 12
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 862,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 864,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 864,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 874,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 874,
+          "column": 44
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 907,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 973,
+          "column": 12
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1093,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1128,
+          "column": 12
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1164,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1252,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1439,
+          "column": 19
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1841,
+          "column": 51
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 20,
+          "column": 7
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 20,
+          "column": 52
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 21,
+          "column": 7
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 21,
+          "column": 50
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 22,
+          "column": 7
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 22,
+          "column": 64
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 51,
+          "column": 9
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 51,
+          "column": 48
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 52,
+          "column": 9
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 52,
+          "column": 51
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1259,
+          "column": 67
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 252,
+          "column": 121
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "66a84495d259f8e3",
+      "subcategory": "permission-checks",
+      "name": "Permission Checks Detector",
+      "description": "Learns permission check patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/permission-checks",
+          "patternId": "auth/permission-checks/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 21,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 10,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 11,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 51,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 53,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 53,
+          "column": 48
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 54,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 55,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 55,
+          "column": 69
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 56,
+          "column": 52
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 57,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 103,
+          "column": 23
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 108,
+          "column": 6
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 117,
+          "column": 59
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 123,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 129,
+          "column": 21
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 133,
+          "column": 25
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 421,
+          "column": 23
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 441,
+          "column": 12
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 442,
+          "column": 19
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 443,
+          "column": 20
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 446,
+          "column": 15
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 450,
+          "column": 15
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 453,
+          "column": 27
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 459,
+          "column": 20
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 461,
+          "column": 28
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 462,
+          "column": 21
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 22,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 23,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 76,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 77,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 78,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 79,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 80,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 80,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 235,
+          "column": 10
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 235,
+          "column": 50
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 240,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 240,
+          "column": 61
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 241,
+          "column": 6
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 248,
+          "column": 10
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 248,
+          "column": 48
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 249,
+          "column": 10
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 273,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 284,
+          "column": 14
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 285,
+          "column": 10
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 352,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 352,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 353,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 397,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 410,
+          "column": 20
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 411,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 414,
+          "column": 20
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 456,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 460,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 523,
+          "column": 16
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 527,
+          "column": 16
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 531,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 531,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 538,
+          "column": 52
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 552,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 552,
+          "column": 49
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 572,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 581,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 581,
+          "column": 65
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 647,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 648,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 663,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 671,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 671,
+          "column": 50
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 699,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 703,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 708,
+          "column": 6
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 708,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 711,
+          "column": 46
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 712,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 712,
+          "column": 44
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 723,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 724,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 757,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 757,
+          "column": 65
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 764,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 768,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 769,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 776,
+          "column": 16
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 788,
+          "column": 34
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 789,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 789,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 828,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 833,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 834,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 843,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 844,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 845,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 865,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 866,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 867,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 867,
+          "column": 49
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 871,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 879,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 885,
+          "column": 13
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "934a1d1c645ca4e3",
+      "subcategory": "rbac-patterns",
+      "name": "RBAC Patterns Detector",
+      "description": "Learns role-based access control patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/rbac-patterns",
+          "patternId": "auth/rbac-patterns/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 473,
+          "column": 52
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 483,
+          "column": 50
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 934,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 936,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 936,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1026,
+          "column": 46
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1037,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1243,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1534,
+          "column": 65
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1740,
+          "column": 30
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "057508e3544652a5",
+      "subcategory": "audit",
+      "name": "Audit Logging Detector",
+      "description": "Learns audit logging patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/audit",
+          "patternId": "auth/audit/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.83,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1448,
+          "column": 36
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ebcaf8dedd6adff8",
+      "subcategory": "rbac-patterns",
+      "name": "RBAC Patterns Detector",
+      "description": "Learns role-based access control patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/rbac-patterns",
+          "patternId": "auth/rbac-patterns/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.07,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.6824999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/voice-input.tsx",
+          "line": 40,
+          "column": 10
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 81,
+          "column": 35
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 153,
+          "column": 82
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 443,
+          "column": 52
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 448,
+          "column": 26
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "bb4e9d27dd52c826",
+      "subcategory": "rbac-patterns",
+      "name": "RBAC Patterns Detector",
+      "description": "Learns role-based access control patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/rbac-patterns",
+          "patternId": "auth/rbac-patterns/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7472727272727272,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/voice-input.tsx",
+          "line": 69,
+          "column": 41
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 186,
+          "column": 8
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "4f13cae50dee78b1",
+      "subcategory": "ownership",
+      "name": "Resource Ownership Detector",
+      "description": "Learns resource ownership patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/ownership",
+          "patternId": "auth/ownership/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.8396078431372549,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/supabase.ts",
+          "line": 85,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 258,
+          "column": 8
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c3a2316ac8f82234",
+      "subcategory": "ownership",
+      "name": "Resource Ownership Detector",
+      "description": "Learns resource ownership patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/ownership",
+          "patternId": "auth/ownership/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.25,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/supabase.ts",
+          "line": 88,
+          "column": 10
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 107,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 128,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 273,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 311,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 447,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 523,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 575,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 617,
+          "column": 16
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 725,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 752,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 766,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 801,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 826,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 921,
+          "column": 18
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1189,
+          "column": 16
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1388,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1435,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 23,
+          "column": 12
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 21,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 50,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 266,
+          "column": 20
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 278,
+          "column": 20
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 296,
+          "column": 20
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 370,
+          "column": 16
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "03f3d01182140a30",
+      "subcategory": "rbac-patterns",
+      "name": "RBAC Patterns Detector",
+      "description": "Learns role-based access control patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/rbac-patterns",
+          "patternId": "auth/rbac-patterns/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 736,
+          "column": 18
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0c50c52800a48589",
+      "subcategory": "ownership",
+      "name": "Resource Ownership Detector",
+      "description": "Learns resource ownership patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "auth/ownership",
+          "patternId": "auth/ownership/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.03,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7546153846153846,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 672,
+          "column": 66
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 688,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 818,
+          "column": 26
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.428Z",
+  "checksum": "0a36ec4350e1b469"
+}

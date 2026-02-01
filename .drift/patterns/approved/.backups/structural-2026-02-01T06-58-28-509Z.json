@@ -1,0 +1,6206 @@
+{
+  "version": "1.0.0",
+  "category": "structural",
+  "patterns": [
+    {
+      "id": "e41ed6473365a823",
+      "subcategory": "file-naming",
+      "name": "File Naming Detector",
+      "description": "Learns file naming convention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/file-naming",
+          "patternId": "structural/file-naming/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 39,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 22,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 25,
+          "column": 60
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 29,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 32,
+          "column": 60
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 36,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 39,
+          "column": 60
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 115,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 138,
+          "column": 25
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 258,
+          "column": 25
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 51,
+          "column": 21
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 52,
+          "column": 21
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 53,
+          "column": 21
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 54,
+          "column": 21
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 55,
+          "column": 21
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 56,
+          "column": 21
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 57,
+          "column": 21
+        },
+        {
+          "file": "app/auth/_layout.tsx",
+          "line": 6,
+          "column": 21
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 349,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 354,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 354,
+          "column": 30
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 358,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 358,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 358,
+          "column": 60
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 358,
+          "column": 96
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 364,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 364,
+          "column": 45
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 364,
+          "column": 78
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 376,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 376,
+          "column": 45
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 376,
+          "column": 82
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 435,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 2264,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 2273,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 2278,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 878,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 900,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 918,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 944,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 974,
+          "column": 21
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 999,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1016,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1029,
+          "column": 21
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1042,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1079,
+          "column": 21
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1119,
+          "column": 45
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1124,
+          "column": 45
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1143,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1179,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1196,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1224,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1251,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1280,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1295,
+          "column": 21
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1341,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1350,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1354,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1399,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1407,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1415,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1431,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 87,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 87,
+          "column": 22
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 105,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 111,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 118,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 118,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 118,
+          "column": 76
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 126,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 126,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 126,
+          "column": 80
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 131,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 172,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 188,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 244,
+          "column": 15
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 244,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 244,
+          "column": 58
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 445,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 453,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 21,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 318,
+          "column": 23
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 324,
+          "column": 25
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 412,
+          "column": 25
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 425,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 174,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 174,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1958,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1958,
+          "column": 28
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 17,
+          "column": 5
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 18,
+          "column": 5
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 19,
+          "column": 5
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 20,
+          "column": 5
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 21,
+          "column": 5
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 22,
+          "column": 5
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 34,
+          "column": 21
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 41,
+          "column": 21
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 61,
+          "column": 27
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 71,
+          "column": 21
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 75,
+          "column": 21
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 105,
+          "column": 27
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 93,
+          "column": 33
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.631Z",
+        "approvedAt": "2026-02-01T06:58:17.631Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "f76e425118f71fbf",
+      "subcategory": "directory-structure",
+      "name": "Directory Structure Detector",
+      "description": "Learns directory structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/directory-structure",
+          "patternId": "structural/directory-structure/import"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 60,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 4,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 7,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 14,
+          "column": 63
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 15,
+          "column": 62
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 9,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 16,
+          "column": 61
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 11,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 13,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 9,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 10,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 9,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 10,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 10,
+          "column": 37
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 9,
+          "column": 35
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 11,
+          "column": 35
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 17,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 23,
+          "column": 143
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 24,
+          "column": 266
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 8,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 9,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 10,
+          "column": 34
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 11,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 12,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 13,
+          "column": 68
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 25,
+          "column": 107
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 18,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 19,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 20,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 21,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 22,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 13,
+          "column": 117
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 14,
+          "column": 36
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 15,
+          "column": 149
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 16,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 11,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 12,
+          "column": 32
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 12,
+          "column": 47
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 13,
+          "column": 33
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 10,
+          "column": 33
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 11,
+          "column": 35
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 21,
+          "column": 35
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 22,
+          "column": 63
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 34,
+          "column": 11
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 8,
+          "column": 34
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 14,
+          "column": 11
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 15,
+          "column": 33
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 16,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 17,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 35,
+          "column": 92
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 19,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 19,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 39,
+          "column": 34
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 40,
+          "column": 63
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 47,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 52,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 53,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 74,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 25,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 26,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 27,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 28,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 29,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 30,
+          "column": 44
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 31,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 32,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 33,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 91,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 36,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 37,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 38,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 5,
+          "column": 43
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 6,
+          "column": 76
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 14,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 7,
+          "column": 35
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 9,
+          "column": 68
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 10,
+          "column": 32
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 8,
+          "column": 35
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.662Z",
+        "approvedAt": "2026-02-01T06:58:17.662Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "37eaa3920a8f990f",
+      "subcategory": "import-ordering",
+      "name": "Import Ordering Detector",
+      "description": "Learns import ordering patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/import-ordering",
+          "patternId": "structural/import-ordering/import"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 87,
+        "score": 0.9063636363636364,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 1,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 2,
+          "column": 14
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 4,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 5,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 6,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 7,
+          "column": 27
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 8,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 7,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 7,
+          "column": 41
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 8,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 1,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 2,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 3,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 4,
+          "column": 43
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 5,
+          "column": 71
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 6,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 8,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 9,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 10,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 11,
+          "column": 27
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 12,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 13,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 14,
+          "column": 55
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 15,
+          "column": 54
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 16,
+          "column": 53
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 4,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 4,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 11,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 11,
+          "column": 41
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 12,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 13,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 13,
+          "column": 38
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 1,
+          "column": 20
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 2,
+          "column": 88
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 3,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 5,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 6,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 7,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 8,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 9,
+          "column": 27
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 10,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 11,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 9,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 9,
+          "column": 41
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 10,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 10,
+          "column": 38
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 11,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 1,
+          "column": 20
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 2,
+          "column": 77
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 3,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 5,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 6,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 7,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 8,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 9,
+          "column": 27
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 10,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 11,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 9,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 9,
+          "column": 41
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 10,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 10,
+          "column": 38
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 11,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 1,
+          "column": 45
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 2,
+          "column": 71
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 4,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 5,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 6,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 7,
+          "column": 20
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 8,
+          "column": 44
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 9,
+          "column": 27
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 10,
+          "column": 29
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 1,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 1,
+          "column": 34
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 7,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 8,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 9,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 9,
+          "column": 41
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 2,
+          "column": 51
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 3,
+          "column": 45
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 4,
+          "column": 42
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 5,
+          "column": 22
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 7,
+          "column": 48
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 8,
+          "column": 35
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 11,
+          "column": 27
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 12,
+          "column": 34
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 13,
+          "column": 29
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 14,
+          "column": 19
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 4,
+          "column": 17
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 4,
+          "column": 28
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 6,
+          "column": 10
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 6,
+          "column": 19
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 11,
+          "column": 10
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.693Z",
+        "approvedAt": "2026-02-01T06:58:17.693Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c4d2c48c013d0452",
+      "subcategory": "import-ordering",
+      "name": "Import Ordering Detector",
+      "description": "Learns import ordering patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/import-ordering",
+          "patternId": "structural/import-ordering/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 48,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 11,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 12,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 19,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 20,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 22,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 23,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 24,
+          "column": 47
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 32,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 37,
+          "column": 20
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 42,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 47,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 53,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 58,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 87,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 13,
+          "column": 16
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 16,
+          "column": 47
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 17,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 18,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 19,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 21,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 13,
+          "column": 16
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 16,
+          "column": 47
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 17,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 18,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 20,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 13,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 15,
+          "column": 44
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 15,
+          "column": 53
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 23,
+          "column": 7
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 26,
+          "column": 41
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 28,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 21,
+          "column": 11
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 21,
+          "column": 31
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 22,
+          "column": 20
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 23,
+          "column": 18
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 24,
+          "column": 23
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 27,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 63,
+          "column": 23
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 64,
+          "column": 23
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 31,
+          "column": 7
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 32,
+          "column": 23
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 35,
+          "column": 17
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 38,
+          "column": 29
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 39,
+          "column": 35
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 40,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 36,
+          "column": 56
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 37,
+          "column": 89
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 38,
+          "column": 105
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 39,
+          "column": 72
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 40,
+          "column": 18
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 41,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 42,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 43,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 45,
+          "column": 18
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 52,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 55,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 56,
+          "column": 55
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 57,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 58,
+          "column": 41
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 61,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 65,
+          "column": 59
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 66,
+          "column": 45
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 67,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 69,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 80,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 83,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 89,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 104,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 109,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 116,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 123,
+          "column": 22
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 128,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 176,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 244,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 249,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 272,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 296,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 316,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 502,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 516,
+          "column": 26
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 520,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 524,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 529,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 537,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 581,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 589,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 604,
+          "column": 36
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 617,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 636,
+          "column": 30
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 654,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 672,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 687,
+          "column": 27
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 716,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 737,
+          "column": 26
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 767,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 794,
+          "column": 30
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 36,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 38,
+          "column": 41
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.717Z",
+        "approvedAt": "2026-02-01T06:58:17.717Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "d973b04ae170120d",
+      "subcategory": "co-location",
+      "name": "Co-Location Detector",
+      "description": "Learns co-location patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/co-location",
+          "patternId": "structural/co-location/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.83,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 59,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 5,
+          "column": 52
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 16,
+          "column": 61
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 2,
+          "column": 69
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 2,
+          "column": 58
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 2,
+          "column": 52
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 7,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 5,
+          "column": 94
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 25,
+          "column": 107
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 4,
+          "column": 50
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 16,
+          "column": 32
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 2,
+          "column": 59
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 13,
+          "column": 33
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 5,
+          "column": 73
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 35,
+          "column": 92
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 31,
+          "column": 61
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 91,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 5,
+          "column": 43
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 3,
+          "column": 17
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 6,
+          "column": 76
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 2,
+          "column": 21
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 2,
+          "column": 21
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 14,
+          "column": 11
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 3,
+          "column": 40
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 10,
+          "column": 32
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 3,
+          "column": 28
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 10,
+          "column": 64
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 3,
+          "column": 35
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 16,
+          "column": 51
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 3,
+          "column": 52
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 11,
+          "column": 51
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 4,
+          "column": 40
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 9,
+          "column": 28
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 4,
+          "column": 21
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 8,
+          "column": 29
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 4,
+          "column": 21
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 9,
+          "column": 33
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 2,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 22,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 32,
+          "column": 11
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 4,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 4,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 4,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 7,
+          "column": 34
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 5,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 6,
+          "column": 72
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 5,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 8,
+          "column": 72
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 8,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 16,
+          "column": 11
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 4,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 6,
+          "column": 34
+        },
+        {
+          "file": "components/study/study-flashcard-toast.tsx",
+          "line": 4,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-lecture-passed-toast.tsx",
+          "line": 4,
+          "column": 55
+        },
+        {
+          "file": "components/study/study-styles.ts",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/themed-text.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/ui/icon-symbol.ios.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/upload-buttons.tsx",
+          "line": 4,
+          "column": 21
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 5,
+          "column": 69
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 5,
+          "column": 33
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 5,
+          "column": 51
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 5,
+          "column": 28
+        },
+        {
+          "file": "hooks/use-materials.ts",
+          "line": 3,
+          "column": 29
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 5,
+          "column": 33
+        },
+        {
+          "file": "hooks/use-sessions.ts",
+          "line": 3,
+          "column": 33
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 5,
+          "column": 33
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 1,
+          "column": 37
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 1,
+          "column": 33
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 1,
+          "column": 76
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 1,
+          "column": 130
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 9,
+          "column": 11
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 204,
+          "column": 87
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 1,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1,
+          "column": 379
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 2,
+          "column": 8
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 2,
+          "column": 24
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.740Z",
+        "approvedAt": "2026-02-01T06:58:17.740Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "3b3616f1942d01a5",
+      "subcategory": "co-location",
+      "name": "Co-Location Detector",
+      "description": "Learns co-location patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/co-location",
+          "patternId": "structural/co-location/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 50,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 22,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 95,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 95,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 104,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 104,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 105,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 105,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 107,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 107,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 108,
+          "column": 25
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 108,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 111,
+          "column": 25
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 111,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 114,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 114,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 123,
+          "column": 27
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 123,
+          "column": 34
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 130,
+          "column": 11
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 130,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 130,
+          "column": 119
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 139,
+          "column": 50
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 139,
+          "column": 57
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 145,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 145,
+          "column": 28
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 152,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 152,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 163,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 163,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 171,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 171,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 182,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 182,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 190,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 190,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 201,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 201,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 217,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 219,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 220,
+          "column": 11
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 229,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 236,
+          "column": 11
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 236,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 237,
+          "column": 13
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 237,
+          "column": 20
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 238,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 238,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 239,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 239,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 241,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 245,
+          "column": 23
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 245,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 250,
+          "column": 11
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 250,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 250,
+          "column": 51
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 259,
+          "column": 27
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 259,
+          "column": 34
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 265,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 265,
+          "column": 28
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 21,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 25,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 25,
+          "column": 42
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 26,
+          "column": 61
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 26,
+          "column": 68
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 26,
+          "column": 95
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 27,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 27,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 28,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 28,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 32,
+          "column": 42
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 32,
+          "column": 49
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 36,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 36,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 37,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 37,
+          "column": 33
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 42,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 42,
+          "column": 33
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 48,
+          "column": 19
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 48,
+          "column": 26
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 49,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 49,
+          "column": 28
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 53,
+          "column": 44
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 53,
+          "column": 51
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 57,
+          "column": 21
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 57,
+          "column": 28
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 61,
+          "column": 44
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 61,
+          "column": 51
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 70,
+          "column": 13
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 70,
+          "column": 20
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 76,
+          "column": 15
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 76,
+          "column": 22
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 20,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 24,
+          "column": 35
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 24,
+          "column": 42
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 25,
+          "column": 61
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 25,
+          "column": 68
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 25,
+          "column": 95
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 26,
+          "column": 17
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 26,
+          "column": 24
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 30,
+          "column": 40
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 30,
+          "column": 47
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.763Z",
+        "approvedAt": "2026-02-01T06:58:17.763Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "6139f97d56afd4f0",
+      "subcategory": "directory-structure",
+      "name": "Directory Structure Detector",
+      "description": "Learns directory structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/directory-structure",
+          "patternId": "structural/directory-structure/function_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 15,
+          "column": 25
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.788Z",
+        "approvedAt": "2026-02-01T06:58:17.788Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "345d1c523172b61c",
+      "subcategory": "circular-deps",
+      "name": "Circular Dependencies Detector",
+      "description": "Learns circular dependency patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/circular-deps",
+          "patternId": "structural/circular-deps/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.43,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 10,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 13,
+          "column": 16
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 13,
+          "column": 16
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 45,
+          "column": 25
+        },
+        {
+          "file": "eslint.config.js",
+          "line": 2,
+          "column": 26
+        },
+        {
+          "file": "eslint.config.js",
+          "line": 3,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 103,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 126,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 174,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 196,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 265,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 302,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 442,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 469,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 482,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 514,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 531,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 566,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 604,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 713,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 735,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 762,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 797,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 815,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 909,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1180,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1384,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1403,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1432,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1469,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1505,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1547,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1606,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1621,
+          "column": 9
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 9,
+          "column": 12
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 10,
+          "column": 14
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 11,
+          "column": 18
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 121,
+          "column": 18
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 157,
+          "column": 18
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 203,
+          "column": 18
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 282,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 601,
+          "column": 18
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 57,
+          "column": 20
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 39,
+          "column": 20
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.817Z",
+        "approvedAt": "2026-02-01T06:58:17.817Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "bc3e8468d1486eb7",
+      "subcategory": "file-naming",
+      "name": "File Naming Detector",
+      "description": "Learns file naming convention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/file-naming",
+          "patternId": "structural/file-naming/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.21,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 8,
+        "score": 0.8778947368421053,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 330,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 357,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 357,
+          "column": 35
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 75,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 175,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1959,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 370,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 370,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 512,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 847,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 847,
+          "column": 25
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 145,
+          "column": 115
+        },
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 15,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 17,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 298,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 298,
+          "column": 25
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 13,
+          "column": 59
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 22,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 22,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 24,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 35,
+          "column": 24
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.842Z",
+        "approvedAt": "2026-02-01T06:58:17.842Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "a7c5b534b4aca9c1",
+      "subcategory": "file-naming",
+      "name": "File Naming Detector",
+      "description": "Learns file naming convention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/file-naming",
+          "patternId": "structural/file-naming/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.47,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 10,
+        "score": 0.8778947368421053,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 355,
+          "column": 83
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 358,
+          "column": 48
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 364,
+          "column": 50
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 376,
+          "column": 50
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 435,
+          "column": 25
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 436,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 436,
+          "column": 84
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1351,
+          "column": 78
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 69,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 69,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 69,
+          "column": 48
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 69,
+          "column": 64
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 121,
+          "column": 30
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 121,
+          "column": 73
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 58,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 58,
+          "column": 21
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 89,
+          "column": 87
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 89,
+          "column": 98
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 95,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 95,
+          "column": 22
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 113,
+          "column": 91
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 113,
+          "column": 102
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 118,
+          "column": 48
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 126,
+          "column": 48
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 142,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 142,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 244,
+          "column": 45
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 244,
+          "column": 68
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 341,
+          "column": 33
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 178,
+          "column": 36
+        },
+        {
+          "file": "components/ui/icon-symbol.ios.tsx",
+          "line": 11,
+          "column": 3
+        },
+        {
+          "file": "components/ui/icon-symbol.ios.tsx",
+          "line": 11,
+          "column": 26
+        },
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 8,
+          "column": 44
+        },
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 8,
+          "column": 90
+        },
+        {
+          "file": "components/upload-buttons.tsx",
+          "line": 33,
+          "column": 9
+        },
+        {
+          "file": "components/upload-buttons.tsx",
+          "line": 33,
+          "column": 21
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 381,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 381,
+          "column": 20
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 518,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 518,
+          "column": 16
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 855,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 855,
+          "column": 16
+        },
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 23,
+          "column": 41
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 311,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 316,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 413,
+          "column": 39
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 30,
+          "column": 50
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.867Z",
+        "approvedAt": "2026-02-01T06:58:17.867Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "7bc5592ce9c82c85",
+      "subcategory": "directory-structure",
+      "name": "Directory Structure Detector",
+      "description": "Learns directory structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/directory-structure",
+          "patternId": "structural/directory-structure/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.05,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.9494117647058824,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 365,
+          "column": 50
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 119,
+          "column": 48
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 588,
+          "column": 9
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 588,
+          "column": 68
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 589,
+          "column": 12
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.894Z",
+        "approvedAt": "2026-02-01T06:58:17.894Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "e36745bba647ac68",
+      "subcategory": "co-location",
+      "name": "Co-Location Detector",
+      "description": "Learns co-location patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/co-location",
+          "patternId": "structural/co-location/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.11,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 417,
+          "column": 46
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 495,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 228,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 287,
+          "column": 49
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 48,
+          "column": 27
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 58,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 346,
+          "column": 30
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 6,
+          "column": 1
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 12,
+          "column": 1
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 17,
+          "column": 1
+        },
+        {
+          "file": "tests/prompts.test.ts",
+          "line": 23,
+          "column": 1
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.919Z",
+        "approvedAt": "2026-02-01T06:58:17.919Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "d052babcbc8e69ad",
+      "subcategory": "barrel-exports",
+      "name": "Barrel Exports Detector",
+      "description": "Learns barrel export patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/barrel-exports",
+          "patternId": "structural/barrel-exports/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.17,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 10,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 381,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 192,
+          "column": 13
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 353,
+          "column": 54
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 430,
+          "column": 52
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1861,
+          "column": 13
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1972,
+          "column": 14
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 16,
+          "column": 3
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 205,
+          "column": 7
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 16,
+          "column": 5
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 20,
+          "column": 5
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 35,
+          "column": 5
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "file": "eslint.config.js",
+          "line": 5,
+          "column": 8
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 19,
+          "column": 7
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 79,
+          "column": 11
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 79,
+          "column": 49
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.943Z",
+        "approvedAt": "2026-02-01T06:58:17.943Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "6319a9af8bb337d8",
+      "subcategory": "barrel-exports",
+      "name": "Barrel Exports Detector",
+      "description": "Learns barrel export patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/barrel-exports",
+          "patternId": "structural/barrel-exports/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.07,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 417,
+          "column": 46
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 495,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 228,
+          "column": 33
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 287,
+          "column": 49
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 133,
+          "column": 44
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1546,
+          "column": 49
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 346,
+          "column": 30
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.967Z",
+        "approvedAt": "2026-02-01T06:58:17.967Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "6f59d4aa6ef8aafd",
+      "subcategory": "import-ordering",
+      "name": "Import Ordering Detector",
+      "description": "Learns import ordering patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/import-ordering",
+          "patternId": "structural/import-ordering/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.96,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 16,
+        "score": 0.9063636363636364,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 598,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 86,
+          "column": 20
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 103,
+          "column": 35
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 235,
+          "column": 20
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 46,
+          "column": 12
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 73,
+          "column": 16
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 395,
+          "column": 14
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 498,
+          "column": 6
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 63,
+          "column": 18
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 7,
+          "column": 328
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 42,
+          "column": 4
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 104,
+          "column": 121
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 120,
+          "column": 68
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 28,
+          "column": 50
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 37,
+          "column": 48
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 105,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 127,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 175,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 182,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 209,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 250,
+          "column": 40
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 266,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 283,
+          "column": 40
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 303,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 331,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 365,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 366,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 367,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 463,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 471,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 490,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 507,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 525,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 539,
+          "column": 31
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 548,
+          "column": 58
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 558,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 567,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 582,
+          "column": 40
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 633,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 640,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 674,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 722,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 749,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 764,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 777,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 799,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 824,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 838,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 839,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 840,
+          "column": 12
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 911,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 934,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 965,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 998,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1034,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1079,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1094,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1110,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1124,
+          "column": 40
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1135,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1158,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1181,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1209,
+          "column": 34
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1386,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1405,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1451,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1472,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1510,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1551,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1589,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1609,
+          "column": 6
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1624,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 17,
+          "column": 54
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 60,
+          "column": 4
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 149,
+          "column": 121
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 165,
+          "column": 68
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 49,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/enqueue-job/index.ts",
+          "line": 63,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 53,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 78,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 90,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 96,
+          "column": 20
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 103,
+          "column": 115
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 263,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 275,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 293,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 380,
+          "column": 49
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 384,
+          "column": 6
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 500,
+          "column": 12
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 703,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 718,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 745,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 765,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 834,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 849,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 94,
+          "column": 113
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:17.992Z",
+        "approvedAt": "2026-02-01T06:58:17.992Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "3f2f345b5c256c86",
+      "subcategory": "circular-deps",
+      "name": "Circular Dependencies Detector",
+      "description": "Learns circular dependency patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/circular-deps",
+          "patternId": "structural/circular-deps/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.9458620689655173,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 8,
+          "column": 10
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 8,
+          "column": 54
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 2,
+          "column": 10
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.021Z",
+        "approvedAt": "2026-02-01T06:58:18.021Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "e5329e72489a750a",
+      "subcategory": "import-ordering",
+      "name": "Import Ordering Detector",
+      "description": "Learns import ordering patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/import-ordering",
+          "patternId": "structural/import-ordering/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 21,
+        "score": 0.8533333333333333,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 157,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1833,
+          "column": 8
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 611,
+          "column": 17
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 612,
+          "column": 17
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1275,
+          "column": 12
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1283,
+          "column": 13
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 30,
+          "column": 11
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 35,
+          "column": 11
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 91,
+          "column": 13
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 96,
+          "column": 13
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 17,
+          "column": 3
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 17,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 68,
+          "column": 11
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 68,
+          "column": 26
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 85,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 85,
+          "column": 24
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 172,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 172,
+          "column": 25
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 205,
+          "column": 9
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 112,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 10,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 60,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 78,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 95,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 113,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 7,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-materials.ts",
+          "line": 5,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 7,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-sessions.ts",
+          "line": 5,
+          "column": 14
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 717,
+          "column": 1
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 562,
+          "column": 45
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 32
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 67
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 614,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 614,
+          "column": 30
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 61
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 27
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 62
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 28
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 63
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 408,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 408,
+          "column": 31
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 618,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 618,
+          "column": 31
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 664,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 664,
+          "column": 25
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 701,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 701,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 880,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 880,
+          "column": 27
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 83,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 84,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 96,
+          "column": 31
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 103,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 126,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 128,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 128,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 265,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 273,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 273,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 302,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 311,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 311,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 442,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 447,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 447,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 514,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 523,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 523,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 566,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 575,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 575,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 604,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 617,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 617,
+          "column": 16
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 713,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 735,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 762,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 766,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 766,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 797,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 815,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 909,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 921,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 921,
+          "column": 18
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1169,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1169,
+          "column": 21
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1180,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1186,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1186,
+          "column": 29
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1189,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1189,
+          "column": 16
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1221,
+          "column": 73
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1221,
+          "column": 79
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.045Z",
+        "approvedAt": "2026-02-01T06:58:18.045Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "6be48066dcd5791d",
+      "subcategory": "directory-structure",
+      "name": "Directory Structure Detector",
+      "description": "Learns directory structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/directory-structure",
+          "patternId": "structural/directory-structure/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.09,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.8613793103448276,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 418,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1107,
+          "column": 59
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2088,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2088,
+          "column": 24
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 42,
+          "column": 11
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 60,
+          "column": 3
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 584,
+          "column": 50
+        },
+        {
+          "file": "supabase/functions/extract-pdf-text/index.ts",
+          "line": 37,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/extract-pdf-text/index.ts",
+          "line": 52,
+          "column": 58
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.069Z",
+        "approvedAt": "2026-02-01T06:58:18.069Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "35eb5b42e2669ba6",
+      "subcategory": "directory-structure",
+      "name": "Directory Structure Detector",
+      "description": "Learns directory structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/directory-structure",
+          "patternId": "structural/directory-structure/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.03,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.8613793103448276,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 814,
+          "column": 18
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 818,
+          "column": 48
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 863,
+          "column": 29
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.093Z",
+        "approvedAt": "2026-02-01T06:58:18.093Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "7e779eba064601c1",
+      "subcategory": "co-location",
+      "name": "Co-Location Detector",
+      "description": "Learns co-location patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/co-location",
+          "patternId": "structural/co-location/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.17,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.9205050505050505,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 135,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 191,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1604,
+          "column": 60
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1862,
+          "column": 11
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 161,
+          "column": 15
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 161,
+          "column": 23
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 161,
+          "column": 48
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 170,
+          "column": 15
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 170,
+          "column": 23
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 170,
+          "column": 48
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 179,
+          "column": 15
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 179,
+          "column": 23
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 179,
+          "column": 48
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 41,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 91,
+          "column": 46
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 59,
+          "column": 63
+        },
+        {
+          "file": "types/index.ts",
+          "line": 259,
+          "column": 52
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.116Z",
+        "approvedAt": "2026-02-01T06:58:18.116Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "54ded25c98bb9c3c",
+      "subcategory": "circular-deps",
+      "name": "Circular Dependencies Detector",
+      "description": "Learns circular dependency patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/circular-deps",
+          "patternId": "structural/circular-deps/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.3,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 7,
+        "score": 0.9381818181818182,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1833,
+          "column": 8
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 611,
+          "column": 17
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 612,
+          "column": 17
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 23,
+          "column": 14
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 717,
+          "column": 1
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 9
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 32
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 399,
+          "column": 67
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 614,
+          "column": 7
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 614,
+          "column": 30
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 26
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 655,
+          "column": 61
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 27
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 692,
+          "column": 62
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 28
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 871,
+          "column": 63
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 83,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 39,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 23,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 136,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 148,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 148,
+          "column": 51
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 178,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 170,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 190,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 190,
+          "column": 51
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 214,
+          "column": 13
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.139Z",
+        "approvedAt": "2026-02-01T06:58:18.139Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "e708fb824a963deb",
+      "subcategory": "circular-deps",
+      "name": "Circular Dependencies Detector",
+      "description": "Learns circular dependency patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/circular-deps",
+          "patternId": "structural/circular-deps/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 12,
+          "column": 6
+        },
+        {
+          "file": "types/index.ts",
+          "line": 26,
+          "column": 13
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.163Z",
+        "approvedAt": "2026-02-01T06:58:18.163Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ea00bea7a8f88c58",
+      "subcategory": "module-boundaries",
+      "name": "Module Boundaries Detector",
+      "description": "Learns module boundary patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/module-boundaries",
+          "patternId": "structural/module-boundaries/function_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/external-link.tsx",
+          "line": 7,
+          "column": 17
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.188Z",
+        "approvedAt": "2026-02-01T06:58:18.188Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "d8b1937535d83f49",
+      "subcategory": "file-naming",
+      "name": "File Naming Detector",
+      "description": "Learns file naming convention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/file-naming",
+          "patternId": "structural/file-naming/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.12,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.8533333333333333,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 88,
+          "column": 35
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 88,
+          "column": 64
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 88,
+          "column": 91
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 88,
+          "column": 105
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 67,
+          "column": 16
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 67,
+          "column": 39
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 606,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 606,
+          "column": 16
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 611,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 611,
+          "column": 16
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 30,
+          "column": 30
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 30,
+          "column": 45
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.216Z",
+        "approvedAt": "2026-02-01T06:58:18.216Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "12a6555f9eab430d",
+      "subcategory": "co-location",
+      "name": "Co-Location Detector",
+      "description": "Learns co-location patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/co-location",
+          "patternId": "structural/co-location/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.945,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 6,
+          "column": 33
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.249Z",
+        "approvedAt": "2026-02-01T06:58:18.249Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "e8655cb8b5175ffc",
+      "subcategory": "import-ordering",
+      "name": "Import Ordering Detector",
+      "description": "Learns import ordering patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/import-ordering",
+          "patternId": "structural/import-ordering/function_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.03,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.945,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 229,
+          "column": 17
+        },
+        {
+          "file": "hooks/use-color-scheme.web.ts",
+          "line": 7,
+          "column": 17
+        },
+        {
+          "file": "hooks/use-theme-color.ts",
+          "line": 9,
+          "column": 17
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.271Z",
+        "approvedAt": "2026-02-01T06:58:18.271Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "b5d36a7a90d07ed0",
+      "subcategory": "module-boundaries",
+      "name": "Module Boundaries Detector",
+      "description": "Learns module boundary patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/module-boundaries",
+          "patternId": "structural/module-boundaries/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.07,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.92625,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/storage.ts",
+          "line": 38,
+          "column": 45
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 38,
+          "column": 68
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 38,
+          "column": 79
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 38,
+          "column": 89
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 39,
+          "column": 29
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 39,
+          "column": 40
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 39,
+          "column": 50
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.295Z",
+        "approvedAt": "2026-02-01T06:58:18.295Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c3b452e337607818",
+      "subcategory": "import-ordering",
+      "name": "Import Ordering Detector",
+      "description": "Learns import ordering patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/import-ordering",
+          "patternId": "structural/import-ordering/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/supabase.ts",
+          "line": 91,
+          "column": 13
+        },
+        {
+          "file": "types/index.ts",
+          "line": 26,
+          "column": 13
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.319Z",
+        "approvedAt": "2026-02-01T06:58:18.319Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "92c4760b46dbbf2b",
+      "subcategory": "circular-deps",
+      "name": "Circular Dependencies Detector",
+      "description": "Learns circular dependency patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/circular-deps",
+          "patternId": "structural/circular-deps/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.09,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 8,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "lib/supabase.ts",
+          "line": 1259,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 54,
+          "column": 352
+        },
+        {
+          "file": "supabase/functions/enqueue-job/index.ts",
+          "line": 57,
+          "column": 45
+        },
+        {
+          "file": "supabase/functions/evaluate-answer/index.ts",
+          "line": 17,
+          "column": 53
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 47,
+          "column": 47
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 258,
+          "column": 46
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 32,
+          "column": 42
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 13,
+          "column": 67
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 24,
+          "column": 42
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.345Z",
+        "approvedAt": "2026-02-01T06:58:18.345Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "e9442228340eba92",
+      "subcategory": "co-location",
+      "name": "Co-Location Detector",
+      "description": "Learns co-location patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/co-location",
+          "patternId": "structural/co-location/function_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.945,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "scripts/reset-project.js",
+          "line": 21,
+          "column": 25
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.369Z",
+        "approvedAt": "2026-02-01T06:58:18.369Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ad47edcde8465287",
+      "subcategory": "barrel-exports",
+      "name": "Barrel Exports Detector",
+      "description": "Learns barrel export patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/barrel-exports",
+          "patternId": "structural/barrel-exports/function_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "scripts/reset-project.js",
+          "line": 21,
+          "column": 25
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.395Z",
+        "approvedAt": "2026-02-01T06:58:18.395Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "4098d86c6ed5cfec",
+      "subcategory": "package-boundaries",
+      "name": "Package Boundaries Detector",
+      "description": "Learns package boundary patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/package-boundaries",
+          "patternId": "structural/package-boundaries/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "scripts/reset-project.js",
+          "line": 6,
+          "column": 51
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.427Z",
+        "approvedAt": "2026-02-01T06:58:18.427Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "34421d9c71e4f836",
+      "subcategory": "file-naming",
+      "name": "File Naming Detector",
+      "description": "Learns file naming convention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "structural/file-naming",
+          "patternId": "structural/file-naming/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.8575,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 5,
+          "column": 6
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.450Z",
+        "approvedAt": "2026-02-01T06:58:18.450Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.438Z",
+  "checksum": "008f849dc311c5a5"
+}

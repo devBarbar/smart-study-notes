@@ -1,0 +1,1558 @@
+{
+  "version": "1.0.0",
+  "category": "config",
+  "patterns": [
+    {
+      "id": "c24e5f498baa5be4",
+      "subcategory": "required-optional",
+      "name": "Required/Optional Detector",
+      "description": "Learns required/optional configuration patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/required-optional",
+          "patternId": "config/required-optional/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 30,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 10,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 18,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 15,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 15,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 12,
+          "column": 8
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 62,
+          "column": 8
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 71,
+          "column": 70
+        },
+        {
+          "file": "app/auth/_layout.tsx",
+          "line": 3,
+          "column": 8
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 23,
+          "column": 8
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 34,
+          "column": 8
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 34,
+          "column": 8
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 16,
+          "column": 8
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 8,
+          "column": 8
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 37,
+          "column": 8
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 613,
+          "column": 51
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 614,
+          "column": 49
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 104,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 82,
+          "column": 50
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 92,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 181,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 261,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 391,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 433,
+          "column": 8
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 128,
+          "column": 8
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 21,
+          "column": 8
+        },
+        {
+          "file": "components/themed-text.tsx",
+          "line": 58,
+          "column": 40
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 28,
+          "column": 69
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 29,
+          "column": 73
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 35,
+          "column": 27
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 36,
+          "column": 29
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 47,
+          "column": 27
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 48,
+          "column": 29
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 23,
+          "column": 17
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 575,
+          "column": 21
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 39,
+          "column": 37
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 70,
+          "column": 39
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 87,
+          "column": 43
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 96,
+          "column": 37
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 113,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 119,
+          "column": 58
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 120,
+          "column": 62
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 325,
+          "column": 8
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 327,
+          "column": 8
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 21,
+          "column": 8
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 38,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 43,
+          "column": 60
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 56,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 137,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 179,
+          "column": 30
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 114,
+          "column": 12
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 171,
+          "column": 30
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "4b22155ae3aada5e",
+      "subcategory": "default-values",
+      "name": "Default Values Detector",
+      "description": "Learns default value patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/default-values",
+          "patternId": "config/default-values/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 36,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 10,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 18,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 15,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 15,
+          "column": 8
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 12,
+          "column": 8
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 62,
+          "column": 8
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 71,
+          "column": 70
+        },
+        {
+          "file": "app/auth/_layout.tsx",
+          "line": 3,
+          "column": 8
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 23,
+          "column": 8
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 34,
+          "column": 8
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 34,
+          "column": 8
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 16,
+          "column": 8
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 8,
+          "column": 8
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 37,
+          "column": 8
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 104,
+          "column": 8
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1768,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 306,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 307,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 385,
+          "column": 14
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 386,
+          "column": 15
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 880,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 881,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 898,
+          "column": 22
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 899,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 901,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 917,
+          "column": 20
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 918,
+          "column": 21
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 920,
+          "column": 27
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 82,
+          "column": 50
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 92,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 181,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 261,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 391,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 433,
+          "column": 8
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 36,
+          "column": 3
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 75,
+          "column": 54
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 76,
+          "column": 64
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 89,
+          "column": 20
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 91,
+          "column": 9
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 128,
+          "column": 8
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 21,
+          "column": 8
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 66,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 115,
+          "column": 3
+        },
+        {
+          "file": "components/themed-text.tsx",
+          "line": 58,
+          "column": 40
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 28,
+          "column": 69
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 29,
+          "column": 73
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 35,
+          "column": 27
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 36,
+          "column": 29
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 47,
+          "column": 27
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 48,
+          "column": 29
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 13,
+          "column": 62
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 90,
+          "column": 61
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 91,
+          "column": 43
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 71,
+          "column": 42
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 120,
+          "column": 16
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 125,
+          "column": 19
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 127,
+          "column": 34
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 307,
+          "column": 6
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 575,
+          "column": 21
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 29,
+          "column": 3
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 33,
+          "column": 18
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 34,
+          "column": 5
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 763,
+          "column": 12
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 767,
+          "column": 73
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 807,
+          "column": 9
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 497,
+          "column": 17
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 497,
+          "column": 33
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 504,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 508,
+          "column": 12
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 511,
+          "column": 21
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 214,
+          "column": 4
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 113,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 119,
+          "column": 58
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 120,
+          "column": 62
+        },
+        {
+          "file": "lib/translations/de.ts",
+          "line": 325,
+          "column": 8
+        },
+        {
+          "file": "lib/translations/en.ts",
+          "line": 327,
+          "column": 8
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 21,
+          "column": 8
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 38,
+          "column": 8
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 18,
+          "column": 45
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 43,
+          "column": 60
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 56,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 137,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 179,
+          "column": 30
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 114,
+          "column": 12
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 171,
+          "column": 30
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "27d4f4e9c6203b01",
+      "subcategory": "feature-flags",
+      "name": "Feature Flags Detector",
+      "description": "Learns feature flag patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/feature-flags",
+          "patternId": "config/feature-flags/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.22,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 12,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2120,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2146,
+          "column": 26
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 176,
+          "column": 23
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 238,
+          "column": 36
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 90,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 155,
+          "column": 22
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 57,
+          "column": 60
+        },
+        {
+          "file": "components/themed-view.tsx",
+          "line": 10,
+          "column": 3
+        },
+        {
+          "file": "components/themed-view.tsx",
+          "line": 64,
+          "column": 9
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 17,
+          "column": 3
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 29,
+          "column": 3
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 81,
+          "column": 83
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 190,
+          "column": 41
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 211,
+          "column": 13
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 211,
+          "column": 32
+        },
+        {
+          "file": "hooks/use-theme-color.ts",
+          "line": 2,
+          "column": 15
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 172,
+          "column": 4
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 127,
+          "column": 49
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 172,
+          "column": 49
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 24,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 53,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 66,
+          "column": 54
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "aeb8f86e5ed6694a",
+      "subcategory": "feature-flags",
+      "name": "Feature Flags Detector",
+      "description": "Learns feature flag patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/feature-flags",
+          "patternId": "config/feature-flags/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 203,
+          "column": 157
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "46b35f8bb4734bd3",
+      "subcategory": "config-validation",
+      "name": "Config Validation Detector",
+      "description": "Learns configuration validation patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/config-validation",
+          "patternId": "config/config-validation/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.52,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 6,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 491,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 492,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 494,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 495,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 502,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 503,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 508,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 509,
+          "column": 14
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 123,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 124,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 332,
+          "column": 30
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 333,
+          "column": 23
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 334,
+          "column": 23
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 335,
+          "column": 30
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 336,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 351,
+          "column": 51
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 394,
+          "column": 6
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 39,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 70,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 87,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 96,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 113,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 186,
+          "column": 17
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 187,
+          "column": 17
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 129,
+          "column": 39
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 174,
+          "column": 39
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "25161383d7ce9dc9",
+      "subcategory": "config-validation",
+      "name": "Config Validation Detector",
+      "description": "Learns configuration validation patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/config-validation",
+          "patternId": "config/config-validation/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7847058823529411,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1836,
+          "column": 252
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0b398bb4aeb11d54",
+      "subcategory": "required-optional",
+      "name": "Required/Optional Detector",
+      "description": "Learns required/optional configuration patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/required-optional",
+          "patternId": "config/required-optional/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.12,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 238,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 350,
+          "column": 65
+        },
+        {
+          "file": "components/themed-text.tsx",
+          "line": 51,
+          "column": 19
+        },
+        {
+          "file": "components/themed-text.tsx",
+          "line": 51,
+          "column": 42
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 43,
+          "column": 50
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 60,
+          "column": 94
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "8bf61bfec6a60149",
+      "subcategory": "default-values",
+      "name": "Default Values Detector",
+      "description": "Learns default value patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/default-values",
+          "patternId": "config/default-values/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 350,
+          "column": 65
+        },
+        {
+          "file": "components/themed-text.tsx",
+          "line": 51,
+          "column": 19
+        },
+        {
+          "file": "components/themed-text.tsx",
+          "line": 51,
+          "column": 42
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 43,
+          "column": 50
+        },
+        {
+          "file": "supabase/functions/stream-tts/index.ts",
+          "line": 60,
+          "column": 94
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0ba01d2df79413f6",
+      "subcategory": "default-values",
+      "name": "Default Values Detector",
+      "description": "Learns default value patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/default-values",
+          "patternId": "config/default-values/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.14,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.82,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 87,
+          "column": 11
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 87,
+          "column": 29
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 60,
+          "column": 59
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 503,
+          "column": 7
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 507,
+          "column": 7
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 510,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 16,
+          "column": 20
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "39b36648ab9c8324",
+      "subcategory": "feature-flags",
+      "name": "Feature Flags Detector",
+      "description": "Learns feature flag patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/feature-flags",
+          "patternId": "config/feature-flags/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.03,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 190,
+          "column": 19
+        },
+        {
+          "file": "components/themed-view.tsx",
+          "line": 27,
+          "column": 13
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 69,
+          "column": 98
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "72d2145ebc6acb71",
+      "subcategory": "default-values",
+      "name": "Default Values Detector",
+      "description": "Learns default value patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/default-values",
+          "patternId": "config/default-values/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 77,
+          "column": 5
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 110,
+          "column": 20
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 119,
+          "column": 20
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 309,
+          "column": 17
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 310,
+          "column": 54
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "a8f84c6c21c79aa6",
+      "subcategory": "config-validation",
+      "name": "Config Validation Detector",
+      "description": "Learns configuration validation patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/config-validation",
+          "patternId": "config/config-validation/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.06,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.8427272727272728,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 56,
+          "column": 5
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 181,
+          "column": 13
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 181,
+          "column": 25
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c607b796f82e6d9e",
+      "subcategory": "env-config",
+      "name": "Environment Config Detector",
+      "description": "Learns environment configuration patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/env-config",
+          "patternId": "config/env-config/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.12,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.6533333333333333,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/audio.ts",
+          "line": 417,
+          "column": 36
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 9,
+          "column": 22
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 10,
+          "column": 27
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 6,
+          "column": 24
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 7,
+          "column": 22
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 430,
+          "column": 22
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 431,
+          "column": 27
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 7,
+          "column": 22
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 6,
+          "column": 22
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 7,
+          "column": 27
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "b8fbf9d2226b2c00",
+      "subcategory": "environment-detection",
+      "name": "Environment Detection Detector",
+      "description": "Learns environment detection patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "config/environment-detection",
+          "patternId": "config/environment-detection/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "scripts/reset-project.js",
+          "line": 90,
+          "column": 45
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.487Z",
+  "checksum": "02db43a2dbdca3ae"
+}

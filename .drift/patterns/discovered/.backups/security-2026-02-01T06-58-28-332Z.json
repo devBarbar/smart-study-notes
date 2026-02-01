@@ -1,0 +1,1473 @@
+{
+  "version": "1.0.0",
+  "category": "security",
+  "patterns": [
+    {
+      "id": "e33755ad7ede3ba1",
+      "subcategory": "csp-headers",
+      "name": "CSP Headers Detector",
+      "description": "Learns Content Security Policy header patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/csp-headers",
+          "patternId": "security/csp-headers/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.65,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 17,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 104,
+          "column": 33
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 105,
+          "column": 29
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 145,
+          "column": 11
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 390,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1385,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 201,
+          "column": 13
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 31,
+          "column": 61
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 111,
+          "column": 32
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 23,
+          "column": 3
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 24,
+          "column": 3
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 36,
+          "column": 15
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 36,
+          "column": 33
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 37,
+          "column": 15
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 37,
+          "column": 37
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 41,
+          "column": 52
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 41,
+          "column": 70
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 55,
+          "column": 30
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 56,
+          "column": 11
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 58,
+          "column": 10
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 70,
+          "column": 13
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 122,
+          "column": 25
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 123,
+          "column": 27
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 179,
+          "column": 31
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 40,
+          "column": 34
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 96,
+          "column": 33
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 272,
+          "column": 9
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 556,
+          "column": 17
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 467,
+          "column": 5
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 472,
+          "column": 5
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 13,
+          "column": 48
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 232,
+          "column": 54
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 15,
+          "column": 51
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 29,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 169,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 131,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/enqueue-job/index.ts",
+          "line": 32,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/evaluate-answer/index.ts",
+          "line": 27,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/evaluate-answer/index.ts",
+          "line": 31,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/evaluate-answer/index.ts",
+          "line": 37,
+          "column": 35
+        },
+        {
+          "file": "supabase/functions/generate-practice-exam/index.ts",
+          "line": 20,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 532,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 536,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 542,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/transcribe-audio/index.ts",
+          "line": 10,
+          "column": 29
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "1350d83fdfd4e6b1",
+      "subcategory": "sql-injection",
+      "name": "SQL Injection Detector",
+      "description": "Learns SQL injection prevention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/sql-injection",
+          "patternId": "security/sql-injection/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.06,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/_layout.tsx",
+          "line": 64,
+          "column": 9
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 64,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1081,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1092,
+          "column": 20
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1123,
+          "column": 25
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1163,
+          "column": 20
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "9985512a2fc68985",
+      "subcategory": "sql-injection",
+      "name": "SQL Injection Detector",
+      "description": "Learns SQL injection prevention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/sql-injection",
+          "patternId": "security/sql-injection/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.15,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 9,
+        "score": 0.7408333333333332,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/_layout.tsx",
+          "line": 68,
+          "column": 6
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 68,
+          "column": 34
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 79,
+          "column": 7
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 314,
+          "column": 16
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 514,
+          "column": 28
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 714,
+          "column": 76
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 165,
+          "column": 7
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1319,
+          "column": 17
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 41,
+          "column": 7
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 40,
+          "column": 7
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 36,
+          "column": 18
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 223,
+          "column": 87
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 250,
+          "column": 18
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 261,
+          "column": 24
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1007,
+          "column": 33
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "2c9563cca028b573",
+      "subcategory": "input-sanitization",
+      "name": "Input Sanitization Detector",
+      "description": "Learns input sanitization patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/input-sanitization",
+          "patternId": "security/input-sanitization/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.47,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 15,
+        "score": 0.6876470588235293,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 165,
+          "column": 22
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 178,
+          "column": 24
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 191,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 736,
+          "column": 29
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 745,
+          "column": 21
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 35,
+          "column": 25
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 380,
+          "column": 6
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 59,
+          "column": 4
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 598,
+          "column": 11
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 753,
+          "column": 25
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 207,
+          "column": 23
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 208,
+          "column": 33
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 236,
+          "column": 45
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 39,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 70,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 87,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 96,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 113,
+          "column": 4
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 186,
+          "column": 17
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 187,
+          "column": 17
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 151,
+          "column": 55
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 209,
+          "column": 11
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 139,
+          "column": 4
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 5,
+          "column": 122
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 21,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 30,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 288,
+          "column": 23
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 289,
+          "column": 19
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 38,
+          "column": 12
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 58,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 68,
+          "column": 35
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 70,
+          "column": 57
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 13,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 28,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 10,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 19,
+          "column": 41
+        },
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 34,
+          "column": 33
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 5,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 123,
+          "column": 33
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 11,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 159,
+          "column": 35
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 333,
+          "column": 29
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 424,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 47,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 151,
+          "column": 32
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 576,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 580,
+          "column": 44
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "d86b60f345748b69",
+      "subcategory": "secret-management",
+      "name": "Secret Management Detector",
+      "description": "Learns secret management patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/secret-management",
+          "patternId": "security/secret-management/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.54,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 18,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 9,
+          "column": 3
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 132,
+          "column": 8
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 134,
+          "column": 23
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 285,
+          "column": 9
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 39,
+          "column": 10
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 61,
+          "column": 36
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 86,
+          "column": 71
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 181,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1153,
+          "column": 34
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1153,
+          "column": 55
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1155,
+          "column": 38
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 106,
+          "column": 29
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 106,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 213,
+          "column": 39
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 14,
+          "column": 71
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 180,
+          "column": 34
+        },
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 9,
+          "column": 23
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 147,
+          "column": 70
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 168,
+          "column": 94
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 116,
+          "column": 63
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 91,
+          "column": 30
+        },
+        {
+          "file": "hooks/use-theme-color.ts",
+          "line": 11,
+          "column": 14
+        },
+        {
+          "file": "hooks/use-theme-color.ts",
+          "line": 11,
+          "column": 42
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 417,
+          "column": 36
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 19,
+          "column": 41
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 20,
+          "column": 26
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 32,
+          "column": 30
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 33,
+          "column": 39
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 35,
+          "column": 5
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 154,
+          "column": 46
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 155,
+          "column": 22
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 315,
+          "column": 59
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 44,
+          "column": 71
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 59,
+          "column": 201
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 14,
+          "column": 35
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 16,
+          "column": 37
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 20,
+          "column": 28
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 23,
+          "column": 36
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 27,
+          "column": 31
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 30,
+          "column": 39
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1219,
+          "column": 36
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1242,
+          "column": 27
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1251,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1275,
+          "column": 27
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1284,
+          "column": 5
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1301,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 14,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 15,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 43,
+          "column": 29
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 44,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 49,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 30,
+          "column": 67
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 64,
+          "column": 71
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 83,
+          "column": 201
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "445590f84cb76f5d",
+      "subcategory": "rate-limiting",
+      "name": "Rate Limiting Detector",
+      "description": "Learns rate limiting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/rate-limiting",
+          "patternId": "security/rate-limiting/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.7949999999999999,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 593,
+          "column": 12
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 92,
+          "column": 52
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "1a5cbbf52c1e0271",
+      "subcategory": "rate-limiting",
+      "name": "Rate Limiting Detector",
+      "description": "Learns rate limiting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/rate-limiting",
+          "patternId": "security/rate-limiting/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 594,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 596,
+          "column": 7
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 598,
+          "column": 23
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1012,
+          "column": 30
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 30,
+          "column": 7
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 154,
+          "column": 52
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 15,
+          "column": 43
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 28,
+          "column": 55
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 33,
+          "column": 85
+        },
+        {
+          "file": "lib/storage.ts",
+          "line": 37,
+          "column": 53
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "bfb54e7dfa0c2937",
+      "subcategory": "input-sanitization",
+      "name": "Input Sanitization Detector",
+      "description": "Learns input sanitization patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/input-sanitization",
+          "patternId": "security/input-sanitization/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.07,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.83,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1203,
+          "column": 54
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 183,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 12,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 12,
+          "column": 35
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 14,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 577,
+          "column": 22
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 577,
+          "column": 33
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "994be10028d8859e",
+      "subcategory": "csrf-protection",
+      "name": "CSRF Protection Detector",
+      "description": "Learns CSRF protection patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/csrf-protection",
+          "patternId": "security/csrf-protection/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.34,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 7,
+        "score": 0.77,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 14,
+          "column": 71
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 154,
+          "column": 46
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 155,
+          "column": 22
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 315,
+          "column": 59
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1219,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 14,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 49,
+          "column": 10
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 184,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 184,
+          "column": 57
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 200,
+          "column": 33
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 200,
+          "column": 60
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 203,
+          "column": 23
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 220,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 220,
+          "column": 55
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 227,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 227,
+          "column": 58
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 230,
+          "column": 21
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "a7964c814bd369aa",
+      "subcategory": "xss-prevention",
+      "name": "XSS Prevention Detector",
+      "description": "Learns XSS prevention patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/xss-prevention",
+          "patternId": "security/xss-prevention/unknown"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.7161538461538461,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/openai.ts",
+          "line": 59,
+          "column": 4
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 598,
+          "column": 11
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 139,
+          "column": 4
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 5,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 11,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "2added321971f7c3",
+      "subcategory": "secret-management",
+      "name": "Secret Management Detector",
+      "description": "Learns secret management patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/secret-management",
+          "patternId": "security/secret-management/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.06,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7755555555555556,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "lib/supabase.ts",
+          "line": 329,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 488,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 505,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 746,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 821,
+          "column": 14
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 1207,
+          "column": 14
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "2940306481a463b7",
+      "subcategory": "rate-limiting",
+      "name": "Rate Limiting Detector",
+      "description": "Learns rate limiting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/rate-limiting",
+          "patternId": "security/rate-limiting/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7075,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 2,
+          "column": 27
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "cb0b7cb0ab67c554",
+      "subcategory": "rate-limiting",
+      "name": "Rate Limiting Detector",
+      "description": "Learns rate limiting patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "security/rate-limiting",
+          "patternId": "security/rate-limiting/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.7075,
+        "level": "medium"
+      },
+      "locations": [
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 125,
+          "column": 7
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:01.908Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.277Z",
+  "checksum": "57a245c58f142f39"
+}

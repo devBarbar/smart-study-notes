@@ -2,26 +2,26 @@ import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    LayoutChangeEvent,
-    Linking,
-    ScrollView,
+  ActivityIndicator,
+  FlatList,
+  LayoutChangeEvent,
+  Linking,
+  ScrollView,
 } from "react-native";
 import {
-    useAnimatedStyle,
-    useSharedValue,
-    withSpring,
-    withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { v4 as uuid } from "uuid";
 
 import { StreamingTTSPlayer, TTSPlayerState } from "@/lib/audio";
 
 import {
-    CanvasMode,
-    CanvasStroke,
-    HandwritingCanvasHandle,
+  CanvasMode,
+  CanvasStroke,
+  HandwritingCanvasHandle,
 } from "@/components/handwriting-canvas";
 import { StudyCanvasPanel } from "@/components/study/study-canvas-panel";
 import { StudyChatCollapsed } from "@/components/study/study-chat-collapsed";
@@ -39,55 +39,55 @@ import { useMaterials } from "@/hooks/use-materials";
 import { textToStrokes } from "@/lib/handwriting-font";
 import { computeMasteryScore, computeNextReviewDate } from "@/lib/mastery";
 import {
-    ChatMessage,
-    embedQuery,
-    evaluateAnswer,
-    generateQuestions,
-    streamFeynmanChat,
+  ChatMessage,
+  embedQuery,
+  evaluateAnswer,
+  generateQuestions,
+  streamFeynmanChat,
 } from "@/lib/openai";
 import {
-    createCanvasVisualBlock,
-    estimateVisualBlockSize,
-    parseAIResponse,
+  createCanvasVisualBlock,
+  estimateVisualBlockSize,
+  parseAIResponse,
 } from "@/lib/parse-visual-response";
 import { uploadCanvasImage } from "@/lib/storage";
 import {
-    LectureFileChunk,
-    addReviewEvent,
-    countLectureChunks,
-    createSession,
-    getSessionById,
-    getStudyPlanEntry,
-    getSupabase,
-    getUserStreak,
-    listAnswerLinks,
-    listReviewEvents,
-    listSessionMessages,
-    saveAnswerLink,
-    saveFlashcard,
-    saveSessionMessage,
-    searchLectureChunks,
-    updateSession,
-    updateStudyPlanEntryMastery,
-    updateStudyPlanEntryStatus,
-    updateUserStreak,
+  LectureFileChunk,
+  addReviewEvent,
+  countLectureChunks,
+  createSession,
+  getSessionById,
+  getStudyPlanEntry,
+  getSupabase,
+  getUserStreak,
+  listAnswerLinks,
+  listReviewEvents,
+  listSessionMessages,
+  saveAnswerLink,
+  saveFlashcard,
+  saveSessionMessage,
+  searchLectureChunks,
+  updateSession,
+  updateStudyPlanEntryMastery,
+  updateStudyPlanEntryStatus,
+  updateUserStreak,
 } from "@/lib/supabase";
 import {
-    CanvasAnswerMarker,
-    CanvasBounds,
-    CanvasPage,
-    CanvasStrokeData,
-    CanvasVisualBlock as CanvasVisualBlockType,
-    Lecture,
-    Material,
-    ReviewQuality,
-    SectionStatus,
-    StudyAnswerLink,
-    StudyChatMessage,
-    StudyCitation,
-    StudyPlanEntry,
-    StudyQuestion,
-    StudySession,
+  CanvasAnswerMarker,
+  CanvasBounds,
+  CanvasPage,
+  CanvasStrokeData,
+  CanvasVisualBlock as CanvasVisualBlockType,
+  Lecture,
+  Material,
+  ReviewQuality,
+  SectionStatus,
+  StudyAnswerLink,
+  StudyChatMessage,
+  StudyCitation,
+  StudyPlanEntry,
+  StudyQuestion,
+  StudySession,
 } from "@/types";
 
 // Estimated height for chat messages for scrollToIndex
@@ -274,6 +274,7 @@ export default function StudySessionScreen() {
   const questionIndexCounterRef = useRef(0);
   const canvasQuestionCounterRef = useRef(0);
   const writtenQuestionIdsRef = useRef<Set<string>>(new Set());
+  const streamingAiMessageIdsRef = useRef<Set<string>>(new Set());
   const hasSeededQuestionWritesRef = useRef(false);
 
   // Highlight state for canvas area when clicking "View Notes" in chat
@@ -1035,6 +1036,7 @@ export default function StudySessionScreen() {
 
     messages.forEach((msg) => {
       if (msg.role !== "ai") return;
+      if (streamingAiMessageIdsRef.current.has(msg.id)) return;
       if (writtenQuestionIdsRef.current.has(msg.id)) return;
 
       const questionText = getQuestionTextForMessage(msg);
@@ -1302,6 +1304,7 @@ export default function StudySessionScreen() {
 
       // Create a placeholder AI message immediately for streaming
       const aiMsgId = uuid();
+      streamingAiMessageIdsRef.current.add(aiMsgId);
       pushMessage({ id: aiMsgId, role: "ai", text: "" }, false);
 
       try {
@@ -1379,23 +1382,21 @@ export default function StudySessionScreen() {
 
               // Track visual block IDs added for this message
               const visualBlockIds: string[] = [];
-              
+
               // Determine starting position on canvas
               const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
-              let currentBatchY = getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 40;
+              let currentBatchY =
+                getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 40;
 
-              // 1. If there's a question in the AI response, write it FIRST (on top)
-              // Create a temp message object to use the helper
-              const tempMsg: StudyChatMessage = { id: aiMsgId, role: 'ai', text: parsed.text };
+              // Extract any question from the AI response
+              const tempMsg: StudyChatMessage = {
+                id: aiMsgId,
+                role: "ai",
+                text: parsed.text,
+              };
               const questionText = getQuestionTextForMessage(tempMsg);
-              
-              if (questionText && !writtenQuestionIdsRef.current.has(aiMsgId)) {
-                writtenQuestionIdsRef.current.add(aiMsgId);
-                // writeQuestionToCanvas now returns the bottom Y coordinate
-                currentBatchY = writeQuestionToCanvas(questionText, currentBatchY);
-              }
 
-              // 2. Add visual blocks BELOW the question
+              // 1. Add visual blocks first, stacked below existing content
               if (parsed.hasVisuals) {
                 for (const partialBlock of parsed.visualBlocks) {
                   const result = addVisualBlockToCanvas(
@@ -1414,6 +1415,13 @@ export default function StudySessionScreen() {
                   parsed.visualBlocks.length,
                   "visual blocks from AI response",
                 );
+              }
+
+              // 2. Place the question after the last inserted element
+              if (questionText && !writtenQuestionIdsRef.current.has(aiMsgId)) {
+                writtenQuestionIdsRef.current.add(aiMsgId);
+                // writeQuestionToCanvas returns the bottom Y coordinate
+                currentBatchY = writeQuestionToCanvas(questionText, currentBatchY);
               }
 
               // Final update with citations, cost, and visual block references
@@ -1450,6 +1458,7 @@ export default function StudySessionScreen() {
         // Update the placeholder message with error
         updateMessage(aiMsgId, { text: t("common.errorGeneric") });
       } finally {
+        streamingAiMessageIdsRef.current.delete(aiMsgId);
         setIsChatting(false);
       }
     },

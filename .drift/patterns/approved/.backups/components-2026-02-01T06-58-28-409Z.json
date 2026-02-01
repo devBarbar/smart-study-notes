@@ -1,0 +1,7586 @@
+{
+  "version": "1.0.0",
+  "category": "components",
+  "patterns": [
+    {
+      "id": "4dc54773369339d2",
+      "subcategory": "component-structure",
+      "name": "Component Structure Detector",
+      "description": "Learns component structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/component-structure",
+          "patternId": "components/component-structure/import"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 49,
+        "score": 0.935,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 4,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 9,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 5,
+          "column": 64
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 9,
+          "column": 49
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 2,
+          "column": 81
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 7,
+          "column": 49
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 2,
+          "column": 70
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 7,
+          "column": 49
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 2,
+          "column": 64
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 5,
+          "column": 49
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 7,
+          "column": 10
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 15,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 8,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 9,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 10,
+          "column": 34
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 11,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 12,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 13,
+          "column": 68
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 5,
+          "column": 117
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 15,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 4,
+          "column": 73
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 8,
+          "column": 49
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 2,
+          "column": 71
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 8,
+          "column": 49
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 5,
+          "column": 49
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 8,
+          "column": 34
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 14,
+          "column": 11
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 15,
+          "column": 33
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 16,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 17,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 5,
+          "column": 85
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 17,
+          "column": 49
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 25,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 26,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 27,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 28,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 29,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 30,
+          "column": 44
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 31,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 32,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 33,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 368,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 33,
+          "column": 49
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 2,
+          "column": 22
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 3,
+          "column": 29
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 2,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 2,
+          "column": 33
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 3,
+          "column": 52
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 3,
+          "column": 40
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 11,
+          "column": 33
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 12,
+          "column": 31
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 3,
+          "column": 47
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 5,
+          "column": 34
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 3,
+          "column": 64
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 2,
+          "column": 22
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 6,
+          "column": 8
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 6,
+          "column": 36
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 4,
+          "column": 52
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 12,
+          "column": 38
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 2,
+          "column": 22
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 3,
+          "column": 32
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 2,
+          "column": 22
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 4,
+          "column": 41
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 4,
+          "column": 33
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 11,
+          "column": 38
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 10,
+          "column": 31
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 10,
+          "column": 49
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 4,
+          "column": 43
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 37,
+          "column": 48
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 4,
+          "column": 33
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 12,
+          "column": 38
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 2,
+          "column": 32
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 2,
+          "column": 38
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 14,
+          "column": 34
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.472Z",
+        "approvedAt": "2026-02-01T06:58:18.472Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "91b4e526073c3b4d",
+      "subcategory": "component-structure",
+      "name": "Component Structure Detector",
+      "description": "Learns component structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/component-structure",
+          "patternId": "components/component-structure/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 60,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 14,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 94,
+          "column": 5
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 102,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 235,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 23,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 22,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 86,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 92,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 52,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 77,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 42,
+          "column": 5
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 49,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 67,
+          "column": 3
+        },
+        {
+          "file": "app/auth/_layout.tsx",
+          "line": 4,
+          "column": 3
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1116,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1453,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1454,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1455,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1456,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1457,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 561,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 574,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 818,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1059,
+          "column": 17
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1099,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1192,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1370,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 322,
+          "column": 3
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 46,
+          "column": 5
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 55,
+          "column": 5
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 62,
+          "column": 3
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 10,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 289,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 297,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 306,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 313,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 349,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 217,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 357,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1210,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1985,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1994,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2062,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 150,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 241,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 30,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 36,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 42,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 98,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 148,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 189,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 239,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 360,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 135,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 151,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 161,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 175,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 247,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 310,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 358,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 407,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 108,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 163,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 246,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 280,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 357,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 364,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 371,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 378,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 385,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 393,
+          "column": 3
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 47,
+          "column": 3
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 62,
+          "column": 3
+        },
+        {
+          "file": "components/external-link.tsx",
+          "line": 8,
+          "column": 3
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 74,
+          "column": 3
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 98,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 107,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 120,
+          "column": 3
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 231,
+          "column": 5
+        },
+        {
+          "file": "components/haptic-tab.tsx",
+          "line": 6,
+          "column": 3
+        },
+        {
+          "file": "components/hello-wave.tsx",
+          "line": 4,
+          "column": 3
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 66,
+          "column": 3
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 109,
+          "column": 3
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 22,
+          "column": 3
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 47,
+          "column": 3
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 56,
+          "column": 3
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 58,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 40,
+          "column": 5
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 43,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 69,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 94,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 121,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 133,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 39,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 28,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.497Z",
+        "approvedAt": "2026-02-01T06:58:18.497Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "249a9d89ef5a1470",
+      "subcategory": "duplicate-detection",
+      "name": "Duplicate Detection Detector",
+      "description": "Learns duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/duplicate-detection",
+          "patternId": "components/duplicate-detection/import"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 36,
+        "score": 0.8999999999999999,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 4,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 9,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 8,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 9,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 10,
+          "column": 34
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 11,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 12,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 13,
+          "column": 68
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 103,
+          "column": 77
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 8,
+          "column": 34
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 14,
+          "column": 11
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 15,
+          "column": 33
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 16,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 17,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 25,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 26,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 27,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 28,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 29,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 30,
+          "column": 44
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 31,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 32,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 33,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 368,
+          "column": 54
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 11,
+          "column": 33
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 12,
+          "column": 31
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 5,
+          "column": 34
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 3,
+          "column": 32
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 10,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 14,
+          "column": 34
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 15,
+          "column": 38
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 21,
+          "column": 11
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 22,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 23,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 4,
+          "column": 41
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 4,
+          "column": 33
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 4,
+          "column": 36
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 5,
+          "column": 39
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 6,
+          "column": 34
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 7,
+          "column": 37
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 8,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 9,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-flashcard-toast.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-flashcard-toast.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-lecture-passed-toast.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-lecture-passed-toast.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 5,
+          "column": 10
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 556,
+          "column": 60
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 63,
+          "column": 65
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 136,
+          "column": 32
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 139,
+          "column": 128
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 181,
+          "column": 32
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 184,
+          "column": 128
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.520Z",
+        "approvedAt": "2026-02-01T06:58:18.520Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "bde608aac9b6f976",
+      "subcategory": "duplicate-detection",
+      "name": "Duplicate Detection Detector",
+      "description": "Learns duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/duplicate-detection",
+          "patternId": "components/duplicate-detection/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 61,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 14,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 94,
+          "column": 5
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 102,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 235,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 23,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 22,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 86,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 92,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 52,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 77,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 42,
+          "column": 5
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 49,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 67,
+          "column": 3
+        },
+        {
+          "file": "app/auth/_layout.tsx",
+          "line": 4,
+          "column": 3
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1116,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1453,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1454,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1455,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1456,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1457,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 561,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 574,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 818,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1059,
+          "column": 17
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1099,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1192,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1370,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 322,
+          "column": 3
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 46,
+          "column": 5
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 55,
+          "column": 5
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 62,
+          "column": 3
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 10,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 289,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 297,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 306,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 313,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 349,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 217,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 357,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1210,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1985,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1994,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2062,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 150,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 241,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 30,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 36,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 42,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 98,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 148,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 189,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 239,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 360,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 135,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 151,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 161,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 175,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 247,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 310,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 358,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 407,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 108,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 163,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 246,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 280,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 357,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 364,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 371,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 378,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 385,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 393,
+          "column": 3
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 47,
+          "column": 3
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 62,
+          "column": 3
+        },
+        {
+          "file": "components/external-link.tsx",
+          "line": 8,
+          "column": 3
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 74,
+          "column": 3
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 98,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 107,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 120,
+          "column": 3
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 231,
+          "column": 5
+        },
+        {
+          "file": "components/haptic-tab.tsx",
+          "line": 6,
+          "column": 3
+        },
+        {
+          "file": "components/hello-wave.tsx",
+          "line": 4,
+          "column": 3
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 66,
+          "column": 3
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 109,
+          "column": 3
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 22,
+          "column": 3
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 47,
+          "column": 3
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 56,
+          "column": 3
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 58,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 40,
+          "column": 5
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 43,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 69,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 94,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 121,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 133,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 39,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 28,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.543Z",
+        "approvedAt": "2026-02-01T06:58:18.543Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "c0023700e251a36d",
+      "subcategory": "near-duplicate",
+      "name": "Near Duplicate Detector",
+      "description": "Learns near-duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/near-duplicate",
+          "patternId": "components/near-duplicate/import"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 35,
+        "score": 0.9430769230769231,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 4,
+          "column": 30
+        },
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 9,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 8,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 9,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 10,
+          "column": 34
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 11,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 12,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 13,
+          "column": 68
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 14,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 8,
+          "column": 31
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 8,
+          "column": 34
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 14,
+          "column": 11
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 15,
+          "column": 33
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 16,
+          "column": 31
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 17,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 25,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 26,
+          "column": 37
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 27,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 28,
+          "column": 35
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 29,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 30,
+          "column": 44
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 31,
+          "column": 38
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 32,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 33,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 368,
+          "column": 54
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 11,
+          "column": 33
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 12,
+          "column": 31
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 5,
+          "column": 34
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 3,
+          "column": 32
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 10,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 14,
+          "column": 34
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 15,
+          "column": 38
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 21,
+          "column": 11
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 22,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 23,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 4,
+          "column": 41
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 4,
+          "column": 33
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 5,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-message.tsx",
+          "line": 7,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 4,
+          "column": 36
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 5,
+          "column": 39
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 6,
+          "column": 34
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 7,
+          "column": 37
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 8,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 9,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-flashcard-toast.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-flashcard-toast.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-lecture-passed-toast.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "components/study/study-lecture-passed-toast.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 4,
+          "column": 31
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 5,
+          "column": 31
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 6,
+          "column": 31
+        },
+        {
+          "file": "components/ui/icon-symbol.tsx",
+          "line": 5,
+          "column": 10
+        },
+        {
+          "file": "lib/parse-visual-response.ts",
+          "line": 63,
+          "column": 65
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 136,
+          "column": 32
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 139,
+          "column": 128
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 181,
+          "column": 32
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 184,
+          "column": 128
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.568Z",
+        "approvedAt": "2026-02-01T06:58:18.568Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ab771e0fa6c76a2c",
+      "subcategory": "near-duplicate",
+      "name": "Near Duplicate Detector",
+      "description": "Learns near-duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/near-duplicate",
+          "patternId": "components/near-duplicate/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 60,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/_layout.tsx",
+          "line": 14,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 94,
+          "column": 5
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 102,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 235,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/index.tsx",
+          "line": 23,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/sessions.tsx",
+          "line": 22,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 86,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 92,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 52,
+          "column": 9
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 77,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 42,
+          "column": 5
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 49,
+          "column": 3
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 67,
+          "column": 3
+        },
+        {
+          "file": "app/auth/_layout.tsx",
+          "line": 4,
+          "column": 3
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 130,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1116,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1453,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1454,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1455,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1456,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1457,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 561,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 574,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 818,
+          "column": 5
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1059,
+          "column": 17
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1099,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1192,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1370,
+          "column": 3
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 322,
+          "column": 3
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 46,
+          "column": 5
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 55,
+          "column": 5
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 62,
+          "column": 3
+        },
+        {
+          "file": "app/modal.tsx",
+          "line": 10,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 289,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 297,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 306,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 313,
+          "column": 3
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 349,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 217,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 357,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1210,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1985,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1994,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2062,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 150,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 241,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 30,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 36,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 42,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 98,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 148,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 189,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 239,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 360,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 135,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 151,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 161,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 175,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 247,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 310,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 358,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 26,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 407,
+          "column": 8
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 108,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 163,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 246,
+          "column": 3
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 280,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 357,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 364,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 371,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 378,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 385,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 393,
+          "column": 3
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 47,
+          "column": 3
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 62,
+          "column": 3
+        },
+        {
+          "file": "components/external-link.tsx",
+          "line": 8,
+          "column": 3
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 74,
+          "column": 3
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 98,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 107,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 120,
+          "column": 3
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 231,
+          "column": 5
+        },
+        {
+          "file": "components/haptic-tab.tsx",
+          "line": 6,
+          "column": 3
+        },
+        {
+          "file": "components/hello-wave.tsx",
+          "line": 4,
+          "column": 3
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 66,
+          "column": 3
+        },
+        {
+          "file": "components/linear-progress-bar.tsx",
+          "line": 41,
+          "column": 3
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 109,
+          "column": 3
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 22,
+          "column": 3
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 47,
+          "column": 3
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 39,
+          "column": 5
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 56,
+          "column": 3
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 58,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 40,
+          "column": 5
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 43,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 69,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 94,
+          "column": 3
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 121,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 133,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 39,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-header.tsx",
+          "line": 28,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.592Z",
+        "approvedAt": "2026-02-01T06:58:18.592Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "98b52abbce7ace80",
+      "subcategory": "component-structure",
+      "name": "Component Structure Detector",
+      "description": "Learns component structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/component-structure",
+          "patternId": "components/component-structure/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 32,
+        "score": 0.9270175438596491,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 48,
+          "column": 34
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 60,
+          "column": 29
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 89,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 29,
+          "column": 16
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 28,
+          "column": 20
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 110,
+          "column": 14
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 117,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 132,
+          "column": 53
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 136,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 191,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 229,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 245,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 250,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 273,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 297,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 317,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 503,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 538,
+          "column": 51
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 688,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 795,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 75,
+          "column": 45
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 28,
+          "column": 20
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 63,
+          "column": 18
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 127,
+          "column": 28
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 150,
+          "column": 44
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 283,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 138,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 330,
+          "column": 64
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 407,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 449,
+          "column": 43
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 513,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 578,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 605,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 714,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 753,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 786,
+          "column": 42
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 793,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 855,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 973,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1024,
+          "column": 64
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1034,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1037,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1038,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1041,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1045,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1128,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1223,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1276,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1519,
+          "column": 53
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1542,
+          "column": 45
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1595,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1596,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1599,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1600,
+          "column": 42
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1936,
+          "column": 19
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1957,
+          "column": 21
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1959,
+          "column": 18
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2018,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 279,
+          "column": 53
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1873,
+          "column": 54
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 57,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 66,
+          "column": 27
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 37,
+          "column": 15
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 43,
+          "column": 18
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 48,
+          "column": 30
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 34,
+          "column": 9
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 177,
+          "column": 38
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 18,
+          "column": 13
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 23,
+          "column": 15
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 24,
+          "column": 48
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 30,
+          "column": 20
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 31,
+          "column": 23
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 38,
+          "column": 20
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 39,
+          "column": 23
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 51,
+          "column": 38
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 52,
+          "column": 41
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 131,
+          "column": 32
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 180,
+          "column": 25
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 181,
+          "column": 22
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 182,
+          "column": 24
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 60,
+          "column": 18
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 15,
+          "column": 46
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 46,
+          "column": 23
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 64,
+          "column": 23
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 12,
+          "column": 32
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 12,
+          "column": 21
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 13,
+          "column": 32
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 42,
+          "column": 23
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 291,
+          "column": 27
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 457,
+          "column": 64
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 547,
+          "column": 21
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 549,
+          "column": 22
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 564,
+          "column": 30
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 565,
+          "column": 28
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 18,
+          "column": 16
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 60,
+          "column": 41
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 125,
+          "column": 30
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 167,
+          "column": 69
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 159,
+          "column": 32
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 175,
+          "column": 32
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.631Z",
+        "approvedAt": "2026-02-01T06:58:18.631Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "8ca0e7f6cac54887",
+      "subcategory": "duplicate-detection",
+      "name": "Duplicate Detection Detector",
+      "description": "Learns duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/duplicate-detection",
+          "patternId": "components/duplicate-detection/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 32,
+        "score": 0.9147368421052631,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 48,
+          "column": 34
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 60,
+          "column": 29
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 89,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 29,
+          "column": 16
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 28,
+          "column": 20
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 110,
+          "column": 14
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 117,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 132,
+          "column": 53
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 136,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 191,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 229,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 245,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 250,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 273,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 297,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 317,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 503,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 538,
+          "column": 51
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 688,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 795,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 75,
+          "column": 45
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 28,
+          "column": 20
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 63,
+          "column": 18
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 127,
+          "column": 28
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 150,
+          "column": 44
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 283,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 138,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 330,
+          "column": 64
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 407,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 449,
+          "column": 43
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 513,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 578,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 605,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 714,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 753,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 786,
+          "column": 42
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 793,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 855,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 973,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1024,
+          "column": 64
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1034,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1037,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1038,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1041,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1045,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1128,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1223,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1276,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1519,
+          "column": 53
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1542,
+          "column": 45
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1595,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1596,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1599,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1600,
+          "column": 42
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1936,
+          "column": 19
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1957,
+          "column": 21
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1959,
+          "column": 18
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2018,
+          "column": 32
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 57,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 66,
+          "column": 27
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 37,
+          "column": 15
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 43,
+          "column": 18
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 48,
+          "column": 30
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 177,
+          "column": 38
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 18,
+          "column": 13
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 23,
+          "column": 15
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 24,
+          "column": 48
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 30,
+          "column": 20
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 31,
+          "column": 23
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 38,
+          "column": 20
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 39,
+          "column": 23
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 51,
+          "column": 38
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 52,
+          "column": 41
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 131,
+          "column": 32
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 180,
+          "column": 25
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 181,
+          "column": 22
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 182,
+          "column": 24
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 60,
+          "column": 18
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 15,
+          "column": 46
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 46,
+          "column": 23
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 64,
+          "column": 23
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 12,
+          "column": 32
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 12,
+          "column": 21
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 13,
+          "column": 32
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 42,
+          "column": 23
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 291,
+          "column": 27
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 457,
+          "column": 64
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 457,
+          "column": 86
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 547,
+          "column": 21
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 549,
+          "column": 22
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 564,
+          "column": 30
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 565,
+          "column": 28
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 18,
+          "column": 16
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 60,
+          "column": 41
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 125,
+          "column": 30
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 167,
+          "column": 69
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 159,
+          "column": 32
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 175,
+          "column": 32
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 267,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 278,
+          "column": 35
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.655Z",
+        "approvedAt": "2026-02-01T06:58:18.655Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "2fab1f0f0c5b25db",
+      "subcategory": "near-duplicate",
+      "name": "Near Duplicate Detector",
+      "description": "Learns near-duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/near-duplicate",
+          "patternId": "components/near-duplicate/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 32,
+        "score": 0.9147368421052631,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 48,
+          "column": 34
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 60,
+          "column": 29
+        },
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 89,
+          "column": 18
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 29,
+          "column": 16
+        },
+        {
+          "file": "app/_layout.tsx",
+          "line": 28,
+          "column": 20
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 110,
+          "column": 14
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 117,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 132,
+          "column": 53
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 136,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 191,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 229,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 245,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 250,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 273,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 297,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 317,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 503,
+          "column": 19
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 538,
+          "column": 51
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 688,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 795,
+          "column": 24
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 75,
+          "column": 45
+        },
+        {
+          "file": "app/material/[id].tsx",
+          "line": 28,
+          "column": 20
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 63,
+          "column": 18
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 127,
+          "column": 28
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 150,
+          "column": 44
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 283,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 138,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 330,
+          "column": 64
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 407,
+          "column": 36
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 449,
+          "column": 43
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 513,
+          "column": 31
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 578,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 605,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 714,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 753,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 786,
+          "column": 42
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 793,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 855,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 973,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1024,
+          "column": 64
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1034,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1037,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1038,
+          "column": 54
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1041,
+          "column": 26
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1045,
+          "column": 30
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1128,
+          "column": 23
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1223,
+          "column": 24
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1276,
+          "column": 32
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1519,
+          "column": 53
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1542,
+          "column": 45
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1595,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1596,
+          "column": 28
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1599,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1600,
+          "column": 42
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1936,
+          "column": 19
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1957,
+          "column": 21
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1959,
+          "column": 18
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2018,
+          "column": 32
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 57,
+          "column": 33
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 66,
+          "column": 27
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 37,
+          "column": 15
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 43,
+          "column": 18
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 48,
+          "column": 30
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 177,
+          "column": 38
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 18,
+          "column": 13
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 23,
+          "column": 15
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 24,
+          "column": 48
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 30,
+          "column": 20
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 31,
+          "column": 23
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 38,
+          "column": 20
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 39,
+          "column": 23
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 51,
+          "column": 38
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 52,
+          "column": 41
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 131,
+          "column": 32
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 180,
+          "column": 25
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 181,
+          "column": 22
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 182,
+          "column": 24
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 60,
+          "column": 18
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 15,
+          "column": 46
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 46,
+          "column": 23
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 64,
+          "column": 23
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 12,
+          "column": 32
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 12,
+          "column": 21
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 13,
+          "column": 32
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 42,
+          "column": 23
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 291,
+          "column": 27
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 457,
+          "column": 64
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 547,
+          "column": 21
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 549,
+          "column": 22
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 564,
+          "column": 30
+        },
+        {
+          "file": "lib/handwriting-font.ts",
+          "line": 565,
+          "column": 28
+        },
+        {
+          "file": "lib/i18n.ts",
+          "line": 18,
+          "column": 16
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 60,
+          "column": 41
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 125,
+          "column": 30
+        },
+        {
+          "file": "lib/mastery.ts",
+          "line": 167,
+          "column": 69
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 159,
+          "column": 32
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 175,
+          "column": 32
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 267,
+          "column": 21
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 278,
+          "column": 35
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 335,
+          "column": 20
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.679Z",
+        "approvedAt": "2026-02-01T06:58:18.679Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "19a0b1662c2b2ac1",
+      "subcategory": "state-patterns",
+      "name": "State Patterns Detector",
+      "description": "Learns state management patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/state-patterns",
+          "patternId": "components/state-patterns/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.2,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 17,
+        "score": 0.8825,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 4,
+          "column": 32
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 1,
+          "column": 34
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 1,
+          "column": 17
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 4,
+          "column": 51
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 3,
+          "column": 19
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 4,
+          "column": 51
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 580,
+          "column": 75
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 3,
+          "column": 51
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 2,
+          "column": 26
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 2,
+          "column": 19
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 2,
+          "column": 32
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 1,
+          "column": 75
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 1,
+          "column": 29
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 4,
+          "column": 51
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 1,
+          "column": 55
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 1,
+          "column": 88
+        },
+        {
+          "file": "hooks/use-color-scheme.web.ts",
+          "line": 1,
+          "column": 21
+        },
+        {
+          "file": "lib/supabase.ts",
+          "line": 3,
+          "column": 43
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.702Z",
+        "approvedAt": "2026-02-01T06:58:18.702Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "d374c588edf627c8",
+      "subcategory": "composition",
+      "name": "Composition Detector",
+      "description": "Learns component composition patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/composition",
+          "patternId": "components/composition/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.36,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 11,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/explore.tsx",
+          "line": 213,
+          "column": 3
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 45,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 799,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 837,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1025,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1246,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1338,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1364,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 338,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 22,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 123,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 354,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 413,
+          "column": 3
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 50,
+          "column": 9
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 50,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 54,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 34,
+          "column": 3
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 24,
+          "column": 16
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.726Z",
+        "approvedAt": "2026-02-01T06:58:18.726Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "175fca753fc1eb85",
+      "subcategory": "component-structure",
+      "name": "Component Structure Detector",
+      "description": "Learns component structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/component-structure",
+          "patternId": "components/component-structure/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.68,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 12,
+        "score": 0.931111111111111,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 45,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 799,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 837,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1025,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1246,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1338,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1364,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 338,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1866,
+          "column": 11
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 22,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 113,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 204,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 123,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 252,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 354,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 43,
+          "column": 42
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 165,
+          "column": 42
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 248,
+          "column": 42
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 126,
+          "column": 40
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 132,
+          "column": 22
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 137,
+          "column": 17
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 144,
+          "column": 40
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 150,
+          "column": 22
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 155,
+          "column": 17
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 167,
+          "column": 8
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 79,
+          "column": 11
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 79,
+          "column": 32
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 50,
+          "column": 9
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 50,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 54,
+          "column": 7
+        },
+        {
+          "file": "components/study/study-styles.ts",
+          "line": 521,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-styles.ts",
+          "line": 532,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-styles.ts",
+          "line": 537,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-styles.ts",
+          "line": 550,
+          "column": 9
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.765Z",
+        "approvedAt": "2026-02-01T06:58:18.765Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "d6e0ea1d735483aa",
+      "subcategory": "duplicate-detection",
+      "name": "Duplicate Detection Detector",
+      "description": "Learns duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/duplicate-detection",
+          "patternId": "components/duplicate-detection/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.3,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 9,
+        "score": 0.8628571428571428,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 45,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 799,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 837,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1025,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1246,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1338,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1364,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 338,
+          "column": 9
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 22,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 123,
+          "column": 7
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 354,
+          "column": 9
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 50,
+          "column": 9
+        },
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 50,
+          "column": 31
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 54,
+          "column": 7
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 455,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.790Z",
+        "approvedAt": "2026-02-01T06:58:18.790Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "b9746e2a04a572b2",
+      "subcategory": "state-patterns",
+      "name": "State Patterns Detector",
+      "description": "Learns state management patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/state-patterns",
+          "patternId": "components/state-patterns/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.7,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 14,
+        "score": 0.8825,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 26,
+          "column": 41
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 38,
+          "column": 29
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 39,
+          "column": 35
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 40,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 52,
+          "column": 43
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 55,
+          "column": 47
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 56,
+          "column": 55
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 57,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 58,
+          "column": 41
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 61,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 65,
+          "column": 59
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 66,
+          "column": 45
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 67,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 69,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 36,
+          "column": 49
+        },
+        {
+          "file": "app/lecture/new.tsx",
+          "line": 38,
+          "column": 41
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 49,
+          "column": 33
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 50,
+          "column": 33
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 51,
+          "column": 45
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 54,
+          "column": 41
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 57,
+          "column": 53
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 133,
+          "column": 43
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 228,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 229,
+          "column": 51
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 230,
+          "column": 33
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 231,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 249,
+          "column": 41
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 252,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 253,
+          "column": 39
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 257,
+          "column": 45
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 262,
+          "column": 45
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 265,
+          "column": 61
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 266,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 296,
+          "column": 47
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 299,
+          "column": 47
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 300,
+          "column": 55
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 313,
+          "column": 49
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 39,
+          "column": 21
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 37,
+          "column": 51
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 30,
+          "column": 43
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 77,
+          "column": 45
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 78,
+          "column": 57
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 11,
+          "column": 31
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 38,
+          "column": 41
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 39,
+          "column": 47
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 40,
+          "column": 53
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 50,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 53,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 65,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 73,
+          "column": 9
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 82,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 101,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 118,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 127,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 145,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 149,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 158,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 166,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 170,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 180,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 188,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 190,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 193,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 201,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 203,
+          "column": 7
+        },
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 211,
+          "column": 7
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 30,
+          "column": 37
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 31,
+          "column": 35
+        },
+        {
+          "file": "hooks/use-color-scheme.web.ts",
+          "line": 8,
+          "column": 41
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.823Z",
+        "approvedAt": "2026-02-01T06:58:18.823Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "0448c178e0c0be9b",
+      "subcategory": "composition",
+      "name": "Composition Detector",
+      "description": "Learns component composition patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/composition",
+          "patternId": "components/composition/function_call"
+        }
+      },
+      "confidence": {
+        "frequency": 0.24,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 5,
+        "score": 0.8533333333333333,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 86,
+          "column": 10
+        },
+        {
+          "file": "app/(tabs)/settings.tsx",
+          "line": 92,
+          "column": 10
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1116,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1453,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1454,
+          "column": 39
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1455,
+          "column": 40
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1456,
+          "column": 38
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1457,
+          "column": 39
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 150,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 241,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 360,
+          "column": 18
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 407,
+          "column": 8
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.849Z",
+        "approvedAt": "2026-02-01T06:58:18.849Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "373e876efe085ec6",
+      "subcategory": "props-patterns",
+      "name": "Props Patterns Detector",
+      "description": "Learns props patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/props-patterns",
+          "patternId": "components/props-patterns/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 16,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 121,
+          "column": 9
+        },
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 340,
+          "column": 3
+        },
+        {
+          "file": "components/haptic-tab.tsx",
+          "line": 5,
+          "column": 27
+        },
+        {
+          "file": "components/study/study-styles.ts",
+          "line": 368,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-styles.ts",
+          "line": 378,
+          "column": 9
+        },
+        {
+          "file": "hooks/use-theme-color.ts",
+          "line": 10,
+          "column": 3
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 205,
+          "column": 19
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 235,
+          "column": 27
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 96,
+          "column": 9
+        },
+        {
+          "file": "lib/openai.ts",
+          "line": 751,
+          "column": 11
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 138,
+          "column": 17
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 44,
+          "column": 3
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 45,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 149,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 149,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 185,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 185,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 273,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 273,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 281,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 298,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 330,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 330,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 150,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 150,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 186,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 186,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 274,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 274,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 331,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/openai.ts",
+          "line": 331,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 8,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 25,
+          "column": 16
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 26,
+          "column": 16
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 27,
+          "column": 15
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 28,
+          "column": 20
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 29,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 30,
+          "column": 31
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 31,
+          "column": 14
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 36,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 36,
+          "column": 63
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 54,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 66,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 66,
+          "column": 59
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 9,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 25,
+          "column": 35
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 26,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 27,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 28,
+          "column": 40
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 29,
+          "column": 52
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 30,
+          "column": 52
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 31,
+          "column": 33
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 37,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 37,
+          "column": 65
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 55,
+          "column": 3
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 67,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/_shared/pricing.ts",
+          "line": 67,
+          "column": 64
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 183,
+          "column": 17
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 42,
+          "column": 36
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 42,
+          "column": 64
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 59,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 43,
+          "column": 37
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 43,
+          "column": 66
+        },
+        {
+          "file": "supabase/functions/_shared/usage.ts",
+          "line": 60,
+          "column": 5
+        },
+        {
+          "file": "supabase/functions/evaluate-answer/index.ts",
+          "line": 37,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/generate-lecture-metadata/index.ts",
+          "line": 27,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/generate-study-plan/index.ts",
+          "line": 117,
+          "column": 13
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 240,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 402,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 402,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 438,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 438,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 465,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 465,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 514,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 514,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 568,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 568,
+          "column": 26
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 588,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 588,
+          "column": 37
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 695,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 695,
+          "column": 39
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 825,
+          "column": 11
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 825,
+          "column": 41
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 241,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 403,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 403,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 439,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 439,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 466,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 466,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 515,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 515,
+          "column": 28
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 569,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 569,
+          "column": 27
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 589,
+          "column": 7
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 589,
+          "column": 38
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 696,
+          "column": 9
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 696,
+          "column": 40
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 826,
+          "column": 11
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.873Z",
+        "approvedAt": "2026-02-01T06:58:18.873Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "16291721f892a245",
+      "subcategory": "props-patterns",
+      "name": "Props Patterns Detector",
+      "description": "Learns props patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/props-patterns",
+          "patternId": "components/props-patterns/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.06,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/auth/sign-in.tsx",
+          "line": 122,
+          "column": 12
+        },
+        {
+          "file": "components/haptic-tab.tsx",
+          "line": 8,
+          "column": 11
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 397,
+          "column": 25
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.897Z",
+        "approvedAt": "2026-02-01T06:58:18.897Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "5df88c0ae3a7fecd",
+      "subcategory": "ref-forwarding",
+      "name": "Ref Forwarding Detector",
+      "description": "Learns ref forwarding patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/ref-forwarding",
+          "patternId": "components/ref-forwarding/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.29,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 14,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 5,
+          "column": 66
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 4,
+          "column": 43
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 4,
+          "column": 43
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 580,
+          "column": 51
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 756,
+          "column": 40
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 3,
+          "column": 43
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 93,
+          "column": 12
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 1,
+          "column": 67
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 1,
+          "column": 21
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 2,
+          "column": 10
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 4,
+          "column": 43
+        },
+        {
+          "file": "hooks/use-flashcards.ts",
+          "line": 2,
+          "column": 21
+        },
+        {
+          "file": "hooks/use-lectures.ts",
+          "line": 2,
+          "column": 21
+        },
+        {
+          "file": "hooks/use-practice-exams.ts",
+          "line": 2,
+          "column": 21
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 7,
+          "column": 411
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 17,
+          "column": 137
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.920Z",
+        "approvedAt": "2026-02-01T06:58:18.920Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "91407662b537bfa3",
+      "subcategory": "ref-forwarding",
+      "name": "Ref Forwarding Detector",
+      "description": "Learns ref forwarding patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/ref-forwarding",
+          "patternId": "components/ref-forwarding/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.54,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 10,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 37,
+          "column": 32
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 37,
+          "column": 41
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 38,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 38,
+          "column": 46
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 39,
+          "column": 37
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 39,
+          "column": 46
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 687,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1373,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1375,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1377,
+          "column": 13
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1377,
+          "column": 25
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 459,
+          "column": 15
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 272,
+          "column": 13
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 273,
+          "column": 13
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 154,
+          "column": 5
+        },
+        {
+          "file": "components/circular-readiness-graph.tsx",
+          "line": 167,
+          "column": 5
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 338,
+          "column": 5
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 232,
+          "column": 17
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 49,
+          "column": 7
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 141,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 247,
+          "column": 15
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 269,
+          "column": 13
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 276,
+          "column": 15
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 307,
+          "column": 19
+        },
+        {
+          "file": "components/study/study-chat-list.tsx",
+          "line": 50,
+          "column": 7
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 17,
+          "column": 3
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 106,
+          "column": 5
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.943Z",
+        "approvedAt": "2026-02-01T06:58:18.943Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "2915c6b4d2391ff6",
+      "subcategory": "modal-patterns",
+      "name": "Modal Patterns Detector",
+      "description": "Learns modal/dialog patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/modal-patterns",
+          "patternId": "components/modal-patterns/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.04,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 4,
+        "score": 0.8533333333333333,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 9,
+          "column": 61
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 5,
+          "column": 43
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 3,
+          "column": 10
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 3,
+          "column": 17
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.966Z",
+        "approvedAt": "2026-02-01T06:58:18.966Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "3a98c47cbb07976f",
+      "subcategory": "modal-patterns",
+      "name": "Modal Patterns Detector",
+      "description": "Learns modal/dialog patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/modal-patterns",
+          "patternId": "components/modal-patterns/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.26,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 9,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 1463,
+          "column": 9
+        },
+        {
+          "file": "app/lecture/[id].tsx",
+          "line": 502,
+          "column": 9
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 607,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 613,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 618,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 623,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 631,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 639,
+          "column": 5
+        },
+        {
+          "file": "app/practice/[examId].tsx",
+          "line": 643,
+          "column": 5
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2083,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2153,
+          "column": 11
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2105,
+          "column": 9
+        },
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 2163,
+          "column": 11
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 192,
+          "column": 5
+        },
+        {
+          "file": "components/entry-action-sheet.tsx",
+          "line": 14,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 55,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-canvas-panel.tsx",
+          "line": 77,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 19,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 48,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 128,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 128,
+          "column": 20
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 58,
+          "column": 3
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 160,
+          "column": 9
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 160,
+          "column": 25
+        },
+        {
+          "file": "components/study/study-chat-toolbar.tsx",
+          "line": 16,
+          "column": 3
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 15,
+          "column": 3
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:18.991Z",
+        "approvedAt": "2026-02-01T06:58:18.991Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "767581a79ddc3f88",
+      "subcategory": "modal-patterns",
+      "name": "Modal Patterns Detector",
+      "description": "Learns modal/dialog patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/modal-patterns",
+          "patternId": "components/modal-patterns/function_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.01,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/modal.tsx",
+          "line": 8,
+          "column": 25
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.022Z",
+        "approvedAt": "2026-02-01T06:58:19.022Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "425e928f014ab8e4",
+      "subcategory": "props-patterns",
+      "name": "Props Patterns Detector",
+      "description": "Learns props patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/props-patterns",
+          "patternId": "components/props-patterns/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.12,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.9033333333333333,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1203,
+          "column": 54
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 12,
+          "column": 24
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 12,
+          "column": 35
+        },
+        {
+          "file": "supabase/functions/embed-texts/index.ts",
+          "line": 14,
+          "column": 34
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 577,
+          "column": 22
+        },
+        {
+          "file": "supabase/functions/process-job/index.ts",
+          "line": 577,
+          "column": 33
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.045Z",
+        "approvedAt": "2026-02-01T06:58:19.045Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ae99342b8827c6bb",
+      "subcategory": "props-patterns",
+      "name": "Props Patterns Detector",
+      "description": "Learns props patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/props-patterns",
+          "patternId": "components/props-patterns/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.16,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 6,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1278,
+          "column": 64
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 1,
+          "column": 15
+        },
+        {
+          "file": "components/study/study-chat-collapsed.tsx",
+          "line": 6,
+          "column": 48
+        },
+        {
+          "file": "components/study/study-chat-input-area.tsx",
+          "line": 6,
+          "column": 48
+        },
+        {
+          "file": "components/study/study-chat-panel.tsx",
+          "line": 5,
+          "column": 67
+        },
+        {
+          "file": "components/ui/collapsible.tsx",
+          "line": 1,
+          "column": 10
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.069Z",
+        "approvedAt": "2026-02-01T06:58:19.069Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "068e8f51ab6ccc4e",
+      "subcategory": "state-patterns",
+      "name": "State Patterns Detector",
+      "description": "Learns state management patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/state-patterns",
+          "patternId": "components/state-patterns/assignment"
+        }
+      },
+      "confidence": {
+        "frequency": 0.06,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.8825,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "app/study/[sessionId].tsx",
+          "line": 1187,
+          "column": 32
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 32,
+          "column": 20
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 45,
+          "column": 11
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.092Z",
+        "approvedAt": "2026-02-01T06:58:19.092Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "ac3707e9b730432a",
+      "subcategory": "props-patterns",
+      "name": "Props Patterns Detector",
+      "description": "Learns props patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/props-patterns",
+          "patternId": "components/props-patterns/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.6,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 14,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/canvas-bullet-list.tsx",
+          "line": 12,
+          "column": 6
+        },
+        {
+          "file": "components/canvas-diagram.tsx",
+          "line": 51,
+          "column": 6
+        },
+        {
+          "file": "components/canvas-toolbar.tsx",
+          "line": 7,
+          "column": 6
+        },
+        {
+          "file": "components/canvas-visual-block.tsx",
+          "line": 23,
+          "column": 6
+        },
+        {
+          "file": "components/external-link.tsx",
+          "line": 5,
+          "column": 6
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 26,
+          "column": 6
+        },
+        {
+          "file": "components/lecture-card.tsx",
+          "line": 14,
+          "column": 6
+        },
+        {
+          "file": "components/material-card.tsx",
+          "line": 13,
+          "column": 6
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 16,
+          "column": 6
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 16,
+          "column": 14
+        },
+        {
+          "file": "components/pdf-webview.tsx",
+          "line": 11,
+          "column": 6
+        },
+        {
+          "file": "components/session-card.tsx",
+          "line": 14,
+          "column": 6
+        },
+        {
+          "file": "components/upload-buttons.tsx",
+          "line": 13,
+          "column": 6
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 14,
+          "column": 6
+        },
+        {
+          "file": "contexts/language-context.tsx",
+          "line": 24,
+          "column": 6
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.117Z",
+        "approvedAt": "2026-02-01T06:58:19.117Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "b8651a32584a4be6",
+      "subcategory": "component-structure",
+      "name": "Component Structure Detector",
+      "description": "Learns component structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/component-structure",
+          "patternId": "components/component-structure/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/external-link.tsx",
+          "line": 3,
+          "column": 15
+        },
+        {
+          "file": "components/flashcard-deck.tsx",
+          "line": 17,
+          "column": 6
+        },
+        {
+          "file": "components/themed-view.tsx",
+          "line": 1,
+          "column": 10
+        },
+        {
+          "file": "components/themed-view.tsx",
+          "line": 1,
+          "column": 21
+        },
+        {
+          "file": "components/themed-view.tsx",
+          "line": 7,
+          "column": 31
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.140Z",
+        "approvedAt": "2026-02-01T06:58:19.140Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "e2d54242a863f08c",
+      "subcategory": "duplicate-detection",
+      "name": "Duplicate Detection Detector",
+      "description": "Learns duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/duplicate-detection",
+          "patternId": "components/duplicate-detection/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/external-link.tsx",
+          "line": 3,
+          "column": 15
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.163Z",
+        "approvedAt": "2026-02-01T06:58:19.163Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "177e71d52ef13711",
+      "subcategory": "near-duplicate",
+      "name": "Near Duplicate Detector",
+      "description": "Learns near-duplicate component patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/near-duplicate",
+          "patternId": "components/near-duplicate/class_definition"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.91,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/external-link.tsx",
+          "line": 3,
+          "column": 15
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.188Z",
+        "approvedAt": "2026-02-01T06:58:19.188Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "6b7c9c3314ec1771",
+      "subcategory": "component-structure",
+      "name": "Component Structure Detector",
+      "description": "Learns component structure patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/component-structure",
+          "patternId": "components/component-structure/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.46,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 8,
+        "score": 0.9135483870967742,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 78,
+          "column": 19
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 97,
+          "column": 20
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 100,
+          "column": 19
+        },
+        {
+          "file": "components/flashcard-card.tsx",
+          "line": 152,
+          "column": 20
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 234,
+          "column": 21
+        },
+        {
+          "file": "components/handwriting-canvas.tsx",
+          "line": 251,
+          "column": 22
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 52,
+          "column": 17
+        },
+        {
+          "file": "components/parallax-scroll-view.tsx",
+          "line": 59,
+          "column": 18
+        },
+        {
+          "file": "components/skeleton-loader.tsx",
+          "line": 44,
+          "column": 15
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 204,
+          "column": 17
+        },
+        {
+          "file": "components/voice-input.tsx",
+          "line": 233,
+          "column": 18
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 7,
+          "column": 111
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 59,
+          "column": 111
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 5,
+          "column": 175
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 5,
+          "column": 191
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 30,
+          "column": 28
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 78,
+          "column": 21
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 79,
+          "column": 55
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 81,
+          "column": 31
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 83,
+          "column": 23
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 84,
+          "column": 58
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 86,
+          "column": 33
+        },
+        {
+          "file": "scripts/reset-project.js",
+          "line": 90,
+          "column": 84
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 12,
+          "column": 38
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 83,
+          "column": 111
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.217Z",
+        "approvedAt": "2026-02-01T06:58:19.217Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "e5705aba316d6611",
+      "subcategory": "composition",
+      "name": "Composition Detector",
+      "description": "Learns component composition patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/composition",
+          "patternId": "components/composition/import"
+        }
+      },
+      "confidence": {
+        "frequency": 0.1,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 3,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "components/markdown-text.tsx",
+          "line": 3,
+          "column": 32
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 136,
+          "column": 32
+        },
+        {
+          "file": "lib/prompts.ts",
+          "line": 139,
+          "column": 128
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 181,
+          "column": 32
+        },
+        {
+          "file": "supabase/functions/_shared/prompts.ts",
+          "line": 184,
+          "column": 128
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.254Z",
+        "approvedAt": "2026-02-01T06:58:19.254Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "54fb94322f3ee3d3",
+      "subcategory": "state-patterns",
+      "name": "State Patterns Detector",
+      "description": "Learns state management patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/state-patterns",
+          "patternId": "components/state-patterns/property_access"
+        }
+      },
+      "confidence": {
+        "frequency": 0.14,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 2,
+        "score": 0.8825,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "contexts/auth-context.tsx",
+          "line": 218,
+          "column": 8
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 58,
+          "column": 10
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 58,
+          "column": 28
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 59,
+          "column": 41
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 63,
+          "column": 22
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 397,
+          "column": 17
+        },
+        {
+          "file": "lib/audio.ts",
+          "line": 397,
+          "column": 41
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.279Z",
+        "approvedAt": "2026-02-01T06:58:19.279Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    },
+    {
+      "id": "5a13ba171709a30e",
+      "subcategory": "ref-forwarding",
+      "name": "Ref Forwarding Detector",
+      "description": "Learns ref forwarding patterns from your codebase",
+      "detector": {
+        "type": "regex",
+        "config": {
+          "detectorId": "components/ref-forwarding",
+          "patternId": "components/ref-forwarding/conditional"
+        }
+      },
+      "confidence": {
+        "frequency": 0.02,
+        "consistency": 0.9,
+        "age": 0,
+        "spread": 1,
+        "score": 0.95,
+        "level": "high"
+      },
+      "locations": [
+        {
+          "file": "scripts/reset-project.js",
+          "line": 92,
+          "column": 72
+        }
+      ],
+      "outliers": [],
+      "metadata": {
+        "firstSeen": "2026-02-01T06:58:01.908Z",
+        "lastSeen": "2026-02-01T06:58:19.302Z",
+        "approvedAt": "2026-02-01T06:58:19.302Z"
+      },
+      "severity": "warning",
+      "autoFixable": false
+    }
+  ],
+  "lastUpdated": "2026-02-01T06:58:28.374Z",
+  "checksum": "93c4bddfd58949c3"
+}
