@@ -1,0 +1,22 @@
+{
+  "specFolder": "specs",
+  "uiRepository": "app",
+  "conventions": {
+    "canonicalStageSourceKey": "Status",
+    "stageKeyAlias": "Stage",
+    "nextAgentKey": "Next Agent",
+    "canonicalStageValues": [
+      "DRAFT",
+      "One-Pager Drafted",
+      "One-Pager Reviewed",
+      "User Stories Created",
+      "READY FOR UI/UX",
+      "READY FOR DEVELOPMENT"
+    ],
+    "nextAgentResolution": {
+      "primaryDir": ".cursor/commands",
+      "fallbackDir": ".github/agents",
+      "extension": ".md"
+    }
+  }
+}
