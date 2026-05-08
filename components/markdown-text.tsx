@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Markdown, { MarkdownIt, RenderRules } from 'react-native-markdown-display';
-import MathView from 'react-native-math-view';
 
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import MathView from './math-view';
 
 type MarkdownTextProps = {
   content: string;
@@ -126,4 +126,3 @@ const styles = StyleSheet.create({
 });
 
 export default MarkdownText;
-

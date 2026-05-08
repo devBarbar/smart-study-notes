@@ -7,24 +7,36 @@ const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const MATERIALS_BUCKET = 'materials';
 
+const getWebStorage = () => {
+  if (
+    typeof globalThis.localStorage !== 'undefined' &&
+    typeof globalThis.localStorage.getItem === 'function' &&
+    typeof globalThis.localStorage.setItem === 'function' &&
+    typeof globalThis.localStorage.removeItem === 'function'
+  ) {
+    return globalThis.localStorage;
+  }
+  return null;
+};
+
 // Secure storage adapter for native platforms
 const ExpoSecureStoreAdapter = {
   getItem: async (key: string): Promise<string | null> => {
     if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
+      return getWebStorage()?.getItem(key) ?? null;
     }
     return SecureStore.getItemAsync(key);
   },
   setItem: async (key: string, value: string): Promise<void> => {
     if (Platform.OS === 'web') {
-      localStorage.setItem(key, value);
+      getWebStorage()?.setItem(key, value);
       return;
     }
     await SecureStore.setItemAsync(key, value);
   },
   removeItem: async (key: string): Promise<void> => {
     if (Platform.OS === 'web') {
-      localStorage.removeItem(key);
+      getWebStorage()?.removeItem(key);
       return;
     }
     await SecureStore.deleteItemAsync(key);
@@ -1634,4 +1646,3 @@ export const getFlashcardCount = async (lectureId: string): Promise<number> => {
 };
 
 export type { Session, User };
-
