@@ -41,7 +41,9 @@
         }
       ],
       "expo-secure-store",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "expo-audio",
+      "expo-asset"
     ],
     "splash": {
       "image": "./assets/splashscreen.png",

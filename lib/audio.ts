@@ -1,4 +1,4 @@
-import { Audio, AVPlaybackStatus, AVPlaybackStatusSuccess } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioStatus } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Speech from 'expo-speech';
 
@@ -35,12 +35,24 @@ export type TTSPlayerCallbacks = {
   onError?: (error: Error) => void;
 };
 
+type PlaybackSubscription = {
+  remove: () => void;
+};
+
+type AudioPlayerWithEvents = AudioPlayer & {
+  addListener: (
+    eventName: 'playbackStatusUpdate',
+    listener: (status: AudioStatus) => void
+  ) => PlaybackSubscription;
+};
+
 /**
  * Streaming TTS player using OpenAI via Supabase edge function
  * Falls back to expo-speech if streaming fails
  */
 export class StreamingTTSPlayer {
-  private sound: Audio.Sound | null = null;
+  private player: AudioPlayer | null = null;
+  private playbackSubscription: PlaybackSubscription | null = null;
   private callbacks: TTSPlayerCallbacks;
   private state: TTSPlayerState = {
     isPlaying: false,
@@ -102,7 +114,7 @@ export class StreamingTTSPlayer {
       const audioUri = await this.fetchStreamingTTS(truncatedText);
       
       if (audioUri) {
-        console.log('[StreamingTTS] Got audio URI, playing via expo-av:', audioUri);
+        console.log('[StreamingTTS] Got audio URI, playing via expo-audio:', audioUri);
         await this.playAudioFile(audioUri);
       } else {
         // Fallback to native speech
@@ -250,7 +262,7 @@ export class StreamingTTSPlayer {
   }
 
   /**
-   * Play an audio file using expo-av
+   * Play an audio file using expo-audio
    */
   private async playAudioFile(uri: string): Promise<void> {
     console.log('[StreamingTTS] playAudioFile called:', uri);
@@ -258,26 +270,27 @@ export class StreamingTTSPlayer {
     try {
       // Configure audio mode for playback
       console.log('[StreamingTTS] Setting audio mode...');
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
+        interruptionMode: 'duckOthers',
       });
 
-      // Create and load the sound
-      console.log('[StreamingTTS] Creating sound from URI...');
-      const { sound, status } = await Audio.Sound.createAsync(
-        { uri },
-        { shouldPlay: true },
+      // Create and load the player
+      console.log('[StreamingTTS] Creating player from URI...');
+      const player = createAudioPlayer({ uri }, { updateInterval: 500 });
+      this.playbackSubscription = (player as AudioPlayerWithEvents).addListener(
+        'playbackStatusUpdate',
         this.onPlaybackStatusUpdate
       );
+      this.player = player;
 
       console.log('[StreamingTTS] Sound created successfully', {
-        isLoaded: status.isLoaded,
-        durationMs: status.isLoaded ? (status as AVPlaybackStatusSuccess).durationMillis : 0,
+        isLoaded: player.isLoaded,
+        durationMs: Math.round((player.duration ?? 0) * 1000),
       });
 
-      this.sound = sound;
+      player.play();
       this.updateState({ isLoading: false, isPlaying: true });
       this.callbacks.onPlaybackStart?.();
       console.log('[StreamingTTS] OpenAI TTS playback started successfully!');
@@ -287,12 +300,10 @@ export class StreamingTTSPlayer {
     }
   }
 
-  private onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+  private onPlaybackStatusUpdate = (status: AudioStatus) => {
     if (!status.isLoaded) return;
     
-    const loadedStatus = status as AVPlaybackStatusSuccess;
-    
-    if (loadedStatus.didJustFinish) {
+    if (status.didJustFinish) {
       this.handlePlaybackEnd();
     }
   };
@@ -359,16 +370,15 @@ export class StreamingTTSPlayer {
    * Stop current playback
    */
   async stop(): Promise<void> {
-    // Stop expo-av sound
-    if (this.sound) {
+    // Stop expo-audio player
+    if (this.player) {
       try {
-        await this.sound.stopAsync();
-        await this.sound.unloadAsync();
+        this.player.pause();
       } catch {
         // Ignore cleanup errors
       }
-      this.sound = null;
     }
+    this.cleanup();
 
     // Stop native speech
     await Speech.stop();
@@ -379,14 +389,23 @@ export class StreamingTTSPlayer {
   /**
    * Cleanup resources
    */
-  private async cleanup() {
-    if (this.sound) {
+  private cleanup() {
+    if (this.playbackSubscription) {
       try {
-        await this.sound.unloadAsync();
+        this.playbackSubscription.remove();
       } catch {
         // Ignore cleanup errors
       }
-      this.sound = null;
+      this.playbackSubscription = null;
+    }
+
+    if (this.player) {
+      try {
+        this.player.remove();
+      } catch {
+        // Ignore cleanup errors
+      }
+      this.player = null;
     }
   }
 
@@ -468,4 +487,3 @@ export const diagnoseTTS = async (): Promise<{
   console.log('[StreamingTTS] Diagnostics result:', result);
   return result;
 };
-

@@ -1,10 +1,10 @@
-import { StyleSheet, Text, type StyleProp } from 'react-native';
+import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
 
 type MathViewProps = {
   math: string;
   color?: string;
   resizeMode?: string;
-  style?: StyleProp<unknown>;
+  style?: StyleProp<TextStyle>;
 };
 
 const MathView = ({ math, color, style }: MathViewProps) => (

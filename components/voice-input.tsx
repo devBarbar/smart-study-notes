@@ -1,5 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+  type AudioRecorder,
+} from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Animated, Pressable, StyleSheet, View } from 'react-native';
@@ -38,7 +44,8 @@ export const VoiceInput = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recordingRef = useRef<AudioRecorder | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const autoRearmTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -46,8 +53,8 @@ export const VoiceInput = ({
   useEffect(() => {
     const requestPermissions = async () => {
       try {
-        const { status } = await Audio.requestPermissionsAsync();
-        setPermissionGranted(status === 'granted');
+        const { granted } = await requestRecordingPermissionsAsync();
+        setPermissionGranted(granted);
       } catch (err) {
         console.warn('Failed to get audio permissions:', err);
       }
@@ -106,15 +113,14 @@ export const VoiceInput = ({
 
   const startRecording = useCallback(async () => {
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
 
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
+      recordingRef.current = audioRecorder;
       setIsRecording(true);
       
       // Announce for accessibility
@@ -125,7 +131,7 @@ export const VoiceInput = ({
       // Disable listening mode on error
       onListeningModeEnd?.();
     }
-  }, [onError, onListeningModeEnd, t]);
+  }, [audioRecorder, onError, onListeningModeEnd, t]);
 
   const stopRecording = useCallback(async () => {
     if (!recordingRef.current) return;
@@ -134,13 +140,14 @@ export const VoiceInput = ({
       setIsRecording(false);
       setIsTranscribing(true);
 
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
+      const recording = recordingRef.current;
+      await recording.stop();
+      const uri = recording.uri;
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
+      await setAudioModeAsync({
+        allowsRecording: false,
       });
+      recordingRef.current = null;
 
       if (uri) {
         // Convert local recording to data URL for queued transcription
