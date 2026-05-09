@@ -116,12 +116,8 @@ export function StudyChatPanel({
         onRestartSession={onRestartSession}
       />
       <ThemedText
-        style={{
-          color: "#94a3b8",
-          fontSize: 13,
-          marginVertical: 0,
-          marginBottom: -200,
-        }}
+        style={styles.chatSubtitle}
+        numberOfLines={1}
       >
         {studyPlanEntry
           ? t("study.focusedOn", { title: studyPlanEntry.title })

@@ -63,9 +63,8 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             flex: 2,
             backgroundColor: palette.surfaceAlt,
             borderRadius: Radii.lg,
-            paddingHorizontal: Spacing.sm,
-            paddingVertical: 4,
-            gap: 2,
+            padding: Spacing.sm,
+            gap: Spacing.xs,
             borderWidth: 1,
             borderColor: palette.border,
             ...Shadows.sm,
@@ -210,8 +209,7 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             // width and height are set dynamically via inline style
         },
         chatHeader: {
-            gap: 2,
-            marginBottom: -2,
+            gap: Spacing.xs,
         },
         chatTitleRow: {
             flexDirection: "row",
@@ -224,17 +222,20 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             gap: Spacing.xs,
 
         },
+        chatSubtitle: {
+            color: palette.textMuted,
+            fontSize: 13,
+        },
         chatToolbarScroll: {
             marginHorizontal: -4,
             flexShrink: 0,
-            marginBottom: -180,
         },
         chatToolbarContent: {
             flexDirection: "row",
             alignItems: "center",
-            gap: 2,
+            gap: Spacing.xs,
             paddingHorizontal: 4,
-            paddingVertical: 0,
+            paddingVertical: 4,
         },
         ttsToggle: {
             padding: 8,
@@ -326,7 +327,6 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         chatList: {
             flex: 1,
             marginHorizontal: -4,
-            marginBottom: -2,
         },
         chatBubble: {
             padding: 10,
@@ -377,6 +377,7 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         },
         inputArea: {
             gap: 8,
+            flexShrink: 0,
         },
         chatTextInputRow: {
             flexDirection: "row",
