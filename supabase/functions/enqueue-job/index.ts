@@ -3,6 +3,9 @@ import { corsHeaders } from "../_shared/cors.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+
+declare const EdgeRuntime: { waitUntil?: (promise: Promise<unknown>) => void };
 
 const allowedTypes = new Set([
   "plan",
@@ -13,6 +16,32 @@ const allowedTypes = new Set([
   "embed",
   "practice_exam",
 ]);
+
+const kickProcessJob = () => {
+  if (!SUPABASE_URL) return;
+
+  const token = SUPABASE_ANON_KEY ?? SUPABASE_SERVICE_ROLE_KEY;
+  if (!token) return;
+
+  const request = fetch(`${SUPABASE_URL}/functions/v1/process-job`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ source: "enqueue-job" }),
+  }).catch((error) => {
+    console.error("[enqueue-job] process-job kick failed:", error);
+  });
+
+  if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
+    EdgeRuntime.waitUntil(request);
+    return;
+  }
+
+  return request;
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -78,6 +107,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    await kickProcessJob();
+
     return new Response(
       JSON.stringify({ jobId: data.id }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -90,4 +121,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

@@ -35,9 +35,6 @@ supabase functions serve embed-texts --env-file supabase/.env.local
 Use the CLI-provided URL in the Expo app by setting `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
 
 ## Worker scheduling
-- Create a Supabase cron job to run `process-job` every minute (or as needed):
-```
-supabase cron create process-job --schedule "*/1 * * * *" --function process-job
-```
+- `enqueue-job` triggers `process-job` immediately after it creates a queued job.
+- Do not run a high-frequency cron against `process-job`; idle polling consumes Edge Function invocations even when nobody is using the app.
 - The worker uses service role permissions to pick the oldest pending job, mark it running, and write results back to `jobs` (RLS allows service_role updates). Clients subscribe to `jobs` changes via realtime.
-
