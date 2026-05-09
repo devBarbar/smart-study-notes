@@ -9,11 +9,10 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useLectures } from '@/hooks/use-lectures';
 import { buildLectureChunks, ExtractedPdfPage, extractPdfText, generateLectureMetadata, generateStudyPlan } from '@/lib/openai';
 import { uploadToStorage } from '@/lib/storage';
 import { deleteLectureChunksForLecture, saveLecture, saveLectureFiles, saveStudyPlanEntries, updateLecturePlanStatus, upsertLectureChunks } from '@/lib/supabase';
-import { LectureFile } from '@/types';
+import { Lecture, LectureFile } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 
 type PendingFile = {
@@ -38,7 +37,6 @@ export default function NewLectureScreen() {
   const [currentStep, setCurrentStep] = useState('');
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: lectures = [] } = useLectures();
   const { agentLanguage, t } = useLanguage();
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
@@ -162,7 +160,7 @@ export default function NewLectureScreen() {
       await saveLectureFiles(lectureId, uploaded);
 
       // Update local cache with pending status (plan will be added via realtime/invalidations)
-      queryClient.setQueryData(['lectures'], (prev: typeof lectures) => [
+      queryClient.setQueryData(['lectures'], (prev: Lecture[] | undefined) => [
         { 
           id: lectureId, 
           title: metadata.title, 

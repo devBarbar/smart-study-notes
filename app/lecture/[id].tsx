@@ -34,7 +34,7 @@ type TabKey = 'overview' | 'studyPlan' | 'flashcards' | 'practice' | 'materials'
 export default function LectureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: lectures = [], isFetching, refetch } = useLectures();
-  const { data: sessions = [], refetch: refetchSessions,isFetching: loadingSessions } = useSessions();
+  const { data: sessions = [], refetch: refetchSessions } = useSessions();
   const { data: practiceExams = [], refetch: refetchPracticeExams, isFetching: loadingPracticeExams } = usePracticeExams(id);
   const { data: flashcardCount = 0, refetch: refetchFlashcardCount } = useFlashcardCount(id);
   const router = useRouter();
@@ -118,7 +118,7 @@ export default function LectureDetailScreen() {
     setNotesDraft(lecture.additionalNotes ?? '');
     setReadiness(lecture.readiness ?? undefined);
     setRoadmap(lecture.roadmap ?? undefined);
-  }, [lecture?.id, lecture?.additionalNotes, lecture?.readiness, lecture?.roadmap]);
+  }, [lecture]);
 
   const notesDirty = useMemo(
     () => (notesDraft ?? '') !== (lecture?.additionalNotes ?? ''),
@@ -187,7 +187,7 @@ export default function LectureDetailScreen() {
     }
   }, [refetch, refetchSessions, refetchPracticeExams, refetchFlashcardCount]);
 
-  const startSession = async (studyPlanEntry?: StudyPlanEntry, forceNew = false) => {
+  const startSession = useCallback(async (studyPlanEntry?: StudyPlanEntry, forceNew = false) => {
     if (!lecture) return;
     
     const entryId = studyPlanEntry?.id;
@@ -223,9 +223,9 @@ export default function LectureDetailScreen() {
     } finally {
       setStartingSession(null);
     }
-  };
+  }, [lecture, router]);
   
-  const continueSession = (session: StudySession) => {
+  const continueSession = useCallback((session: StudySession) => {
     if (!lecture) return;
     
     setStartingSession(session.studyPlanEntryId || 'full');
@@ -239,7 +239,7 @@ export default function LectureDetailScreen() {
 
     router.push(`/study/${session.id}?${params.toString()}`);
     setStartingSession(null);
-  };
+  }, [lecture, router]);
 
   const goToPracticeExam = useCallback((examId: string) => {
     if (!lecture) return;
@@ -326,7 +326,7 @@ export default function LectureDetailScreen() {
     );
   }, [deletingLecture, lecture, performDeleteLecture, t]);
 
-  const generatePlan = async () => {
+  const generatePlan = useCallback(async () => {
     if (!lecture || lecture.files.length === 0) {
       Alert.alert(t('lectureDetail.alert.noMaterialsTitle'), t('lectureDetail.alert.noMaterialsBody'));
       return;
@@ -497,7 +497,7 @@ export default function LectureDetailScreen() {
     } finally {
       setGeneratingPlan(false);
     }
-  };
+  }, [agentLanguage, lecture, notesDraft, queryClient, refetch, t]);
 
   const handleSaveNotes = useCallback(async () => {
     if (!lecture) return;
@@ -555,28 +555,6 @@ export default function LectureDetailScreen() {
       }, 150);
     }
   }, [orderedPlan]);
-
-  // Loading state with skeleton
-  if (isFetching && !lecture) {
-    return (
-      <ThemedView style={styles.loadingContainer}>
-        <SkeletonHeader />
-        <View style={styles.skeletonSection}>
-          <SkeletonCard height={100} lines={2} />
-          <SkeletonEntryCard />
-          <SkeletonEntryCard />
-        </View>
-      </ThemedView>
-    );
-  }
-
-  if (!lecture) {
-    return (
-      <ThemedView style={styles.center}>
-        <ThemedText>{t('lectureDetail.notFound')}</ThemedText>
-      </ThemedView>
-    );
-  }
 
   const planOrderLookup = useMemo(() => {
     const map: Record<string, number> = {};
@@ -664,7 +642,7 @@ export default function LectureDetailScreen() {
   }, [categorizedPlan]);
 
   const hasStudyPlan = orderedPlan.length > 0;
-  const planStatus = lecture.planStatus ?? (hasStudyPlan ? 'ready' : undefined);
+  const planStatus = lecture?.planStatus ?? (hasStudyPlan ? 'ready' : undefined);
   const isPlanPending = planStatus === 'pending';
   const isPlanFailed = planStatus === 'failed';
   const showGenerateSpinner = generatingPlan || isPlanPending;
@@ -788,13 +766,35 @@ export default function LectureDetailScreen() {
         startSession();
         break;
     }
-  }, [smartAction, existingFullSession, existingEntrySessions]);
+  }, [continueSession, existingEntrySessions, existingFullSession, generatePlan, smartAction, startSession]);
 
   // Find suggested next topic for the roadmap integration
   const suggestedNextEntry = useMemo(() => {
     if (!hasStudyPlan) return null;
     return orderedPlan.find(e => e.status !== 'passed') ?? null;
   }, [hasStudyPlan, orderedPlan]);
+
+  // Loading state with skeleton
+  if (isFetching && !lecture) {
+    return (
+      <ThemedView style={styles.loadingContainer}>
+        <SkeletonHeader />
+        <View style={styles.skeletonSection}>
+          <SkeletonCard height={100} lines={2} />
+          <SkeletonEntryCard />
+          <SkeletonEntryCard />
+        </View>
+      </ThemedView>
+    );
+  }
+
+  if (!lecture) {
+    return (
+      <ThemedView style={styles.center}>
+        <ThemedText>{t('lectureDetail.notFound')}</ThemedText>
+      </ThemedView>
+    );
+  }
 
   const renderStatusBadge = (status: SectionStatus | undefined, compact = false) => {
     const value = status ?? 'not_started';

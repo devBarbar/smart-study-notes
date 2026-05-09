@@ -1,4 +1,4 @@
-import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
+import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyMisconception, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 import { createClient, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
@@ -605,6 +605,71 @@ export const listAnswerLinks = async (sessionId: string): Promise<StudyAnswerLin
   }));
 };
 
+export const saveStudyMisconceptions = async (
+  misconceptions: Omit<StudyMisconception, 'id' | 'createdAt'>[]
+) => {
+  if (misconceptions.length === 0) return;
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const payload = misconceptions
+    .map((item) => ({
+      user_id: userId,
+      lecture_id: item.lectureId ?? null,
+      study_plan_entry_id: item.studyPlanEntryId ?? null,
+      session_id: item.sessionId ?? null,
+      concept: item.concept.trim(),
+      note: item.note.trim(),
+      resolved: item.resolved ?? false,
+    }))
+    .filter((item) => item.concept && item.note);
+
+  if (payload.length === 0) return;
+  const { error } = await client.from('study_misconceptions').insert(payload);
+  if (error) {
+    if (error.code === '42P01') {
+      console.warn('[supabase] study_misconceptions table missing, skipping misconception tracking');
+      return;
+    }
+    throw error;
+  }
+};
+
+export const listStudyMisconceptions = async (
+  params: {
+    lectureId?: string;
+    studyPlanEntryId?: string;
+    limit?: number;
+  }
+): Promise<StudyMisconception[]> => {
+  const client = ensureClient();
+  let query = client
+    .from('study_misconceptions')
+    .select()
+    .eq('resolved', false)
+    .order('created_at', { ascending: false })
+    .limit(params.limit ?? 8);
+
+  if (params.lectureId) query = query.eq('lecture_id', params.lectureId);
+  if (params.studyPlanEntryId) query = query.eq('study_plan_entry_id', params.studyPlanEntryId);
+
+  const { data, error } = await query;
+  if (error) {
+    if (error.code === '42P01') return [];
+    throw error;
+  }
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    lectureId: row.lecture_id ?? undefined,
+    studyPlanEntryId: row.study_plan_entry_id ?? undefined,
+    sessionId: row.session_id ?? undefined,
+    concept: row.concept,
+    note: row.note,
+    resolved: row.resolved ?? false,
+    createdAt: row.created_at,
+  }));
+};
+
 // Study Plan CRUD functions
 
 export const saveStudyPlanEntries = async (
@@ -919,22 +984,39 @@ export const saveSessionMessage = async (
 ) => {
   const client = ensureClient();
   const userId = await requireUserId();
+  const payload = {
+    id: message.id,
+    session_id: sessionId,
+    role: message.role,
+    text: sanitizeText(message.text) ?? '',
+    question_id: message.questionId ?? null,
+    answer_link_id: message.answerLinkId ?? null,
+    citations: message.citations ?? null,
+    tutor_question: message.tutorQuestion ?? null,
+    visual_block_ids: message.visualBlockIds ?? null,
+    user_id: userId,
+  };
   const { error } = await client
     .from('session_messages')
-    .upsert(
-      {
-        id: message.id,
-        session_id: sessionId,
-        role: message.role,
-        text: sanitizeText(message.text) ?? '',
-        question_id: message.questionId ?? null,
-        answer_link_id: message.answerLinkId ?? null,
-        citations: message.citations ?? null,
-        user_id: userId,
-      },
-      { onConflict: 'id' }
-    );
+    .upsert(payload, { onConflict: 'id' });
   if (error) {
+    if (
+      error.message?.includes('tutor_question') ||
+      error.message?.includes('visual_block_ids')
+    ) {
+      const legacyPayload: Record<string, unknown> = { ...payload };
+      delete legacyPayload.tutor_question;
+      delete legacyPayload.visual_block_ids;
+      const { error: legacyError } = await client
+        .from('session_messages')
+        .upsert(legacyPayload, { onConflict: 'id' });
+      if (!legacyError) return;
+      console.warn('[supabase] saveSessionMessage legacy fallback error', {
+        message: legacyError.message,
+        code: legacyError.code,
+      });
+      throw legacyError;
+    }
     console.warn('[supabase] saveSessionMessage error', { message: error.message, code: error.code });
     throw error;
   }
@@ -964,6 +1046,8 @@ export const listSessionMessages = async (sessionId: string): Promise<StudyChatM
     questionId: row.question_id ?? undefined,
     answerLinkId: row.answer_link_id ?? undefined,
     citations: row.citations ?? undefined,
+    tutorQuestion: row.tutor_question ?? undefined,
+    visualBlockIds: row.visual_block_ids ?? undefined,
   }));
 };
 

@@ -1,20 +1,40 @@
 type StudyQuestion = {
   prompt: string;
+  targetConcepts?: string[];
+  expectedAnswerPoints?: string[];
 };
 
 export const gradingPrompt = (
   question: StudyQuestion,
   answerText?: string,
   language = "en",
+  gradingContext?: string,
 ) =>
   `You are grading a student's response for the question "${
     question.prompt
-  }". Evaluate correctness and gaps. Return:
-- summary (1-2 sentences)
-- correctness (one of: correct / partially correct / incorrect)
-- score 0-100
-- improvements (bullet list of 2-4 short tips)
-If answer is empty, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Answer in JSON. Respond in ${language} but keep JSON keys in English.`;
+  }". Evaluate correctness and gaps using the expected answer points and source context when provided.
+
+Expected answer points:
+${question.expectedAnswerPoints?.length ? question.expectedAnswerPoints.map((point) => `- ${point}`).join("\n") : "Not provided."}
+
+Target concepts:
+${question.targetConcepts?.length ? question.targetConcepts.map((concept) => `- ${concept}`).join("\n") : "Not provided."}
+
+Source context:
+${gradingContext?.trim() || "No additional source context provided."}
+
+Return JSON only:
+{
+  "summary": "1-2 sentence feedback summary",
+  "correctness": "correct | partially correct | incorrect",
+  "score": 0-100,
+  "improvements": ["2-4 short tips"],
+  "misconceptions": ["specific missing or misunderstood concepts"],
+  "followUpQuestion": "one smaller diagnostic question targeting the most important gap",
+  "sourceNotes": ["brief source-grounded notes or page references when available"]
+}
+
+The student may answer with typed text, a canvas image, or both. If typed text is empty but an image is attached, evaluate the handwritten canvas answer. If neither contains an answer, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Respond in ${language} but keep JSON keys in English.`;
 
 export const lectureMetadataPrompt = (
   fileSummaries: string,
@@ -174,6 +194,9 @@ ${materialContext}
 - End every response with exactly ONE check-in question or prompt to teach back, then stop and wait for the student's reply
 - Invite the student to jot or explain their answer on the canvas before continuing
 - When asking questions, ask ONE at a time and do not answer it yourself
+- After the visible check-in question, include a hidden \`\`\`learning_question JSON block with:
+  {"question":"same check-in question","targetConcepts":["..."],"expectedAnswerPoints":["..."]}
+  This block is parsed by the app and removed from the visible chat.
 - If the student seems lost, offer to start from the beginning
 - Adapt your explanations based on the student's level of understanding
 - Be warm and supportive, but also intellectually rigorous
@@ -244,4 +267,3 @@ Rules for visual blocks:
 - Edge styles: "solid" (default), "dashed", "dotted"
 - Layout: "vertical" (top-to-bottom), "horizontal" (left-to-right), "tree"
 - The visual block must be valid JSON inside the \`\`\`visual fence`;
-

@@ -3,8 +3,35 @@ import { StudyQuestion } from '@/types';
 export const questionPrompt = (materialTitle: string, outline: string, count: number, language = 'en') =>
   `You are a tutor using the Feynman technique. Generate ${count} short, concrete questions to test understanding of the material titled "${materialTitle}". Use the following outline or text:\n${outline}\nReturn each question as a numbered item with no explanations. Keep them concise. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when questions involve formulas or equations. Respond in ${language}.`;
 
-export const gradingPrompt = (question: StudyQuestion, answerText?: string, language = 'en') =>
-  `You are grading a student's response for the question "${question.prompt}". Evaluate correctness and gaps. Return:\n- summary (1-2 sentences)\n- correctness (one of: correct / partially correct / incorrect)\n- score 0-100\n- improvements (bullet list of 2-4 short tips)\nIf answer is empty, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Answer in JSON. Respond in ${language} but keep JSON keys in English.`;
+export const gradingPrompt = (
+  question: StudyQuestion,
+  answerText?: string,
+  language = 'en',
+  gradingContext?: string,
+) =>
+  `You are grading a student's response for the question "${question.prompt}". Evaluate correctness and gaps using the expected answer points and source context when provided.
+
+Expected answer points:
+${question.expectedAnswerPoints?.length ? question.expectedAnswerPoints.map((point) => `- ${point}`).join('\n') : 'Not provided.'}
+
+Target concepts:
+${question.targetConcepts?.length ? question.targetConcepts.map((concept) => `- ${concept}`).join('\n') : 'Not provided.'}
+
+Source context:
+${gradingContext?.trim() || 'No additional source context provided.'}
+
+Return JSON only:
+{
+  "summary": "1-2 sentence feedback summary",
+  "correctness": "correct | partially correct | incorrect",
+  "score": 0-100,
+  "improvements": ["2-4 short tips"],
+  "misconceptions": ["specific missing or misunderstood concepts"],
+  "followUpQuestion": "one smaller diagnostic question targeting the most important gap",
+  "sourceNotes": ["brief source-grounded notes or page references when available"]
+}
+
+The student may answer with typed text, a canvas image, or both. If typed text is empty but an image is attached, evaluate the handwritten canvas answer. If neither contains an answer, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Respond in ${language} but keep JSON keys in English.`;
 
 export const lectureMetadataPrompt = (fileSummaries: string, language = 'en') =>
   `You are organizing lecture materials. Based on these PDF hints:\n${fileSummaries}\nProduce a short JSON object with:\n{\n  "title": "<concise lecture title>",\n  "description": "<1-2 sentence summary>"\n}\nKeep it compact and factual. Respond in ${language} but keep JSON keys in English.`;
@@ -129,6 +156,9 @@ ${materialContext}
 - End every response with exactly ONE check-in question or prompt to teach back, then stop and wait for the student's reply
 - Invite the student to jot or explain their answer on the canvas before continuing
 - When asking questions, ask ONE at a time and do not answer it yourself
+- After the visible check-in question, include a hidden \`\`\`learning_question JSON block with:
+  {"question":"same check-in question","targetConcepts":["..."],"expectedAnswerPoints":["..."]}
+  This block is parsed by the app and removed from the visible chat.
 - If the student seems lost, offer to start from the beginning
 - Adapt your explanations based on the student's level of understanding
 - Be warm and supportive, but also intellectually rigorous

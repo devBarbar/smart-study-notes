@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
 
 import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
@@ -17,6 +18,9 @@ type StudyChatInputAreaProps = {
   onListeningModeEnd: () => void;
   ttsFinished: boolean;
   onSubmitAnswer: () => void;
+  answerDraft: string;
+  onAnswerDraftChange: (text: string) => void;
+  onSendMessage: (text: string) => void;
 };
 
 export function StudyChatInputArea({
@@ -30,9 +34,45 @@ export function StudyChatInputArea({
   onListeningModeEnd,
   ttsFinished,
   onSubmitAnswer,
+  answerDraft,
+  onAnswerDraftChange,
+  onSendMessage,
 }: StudyChatInputAreaProps) {
+  const [chatDraft, setChatDraft] = useState("");
+
+  const submitChatDraft = () => {
+    const trimmed = chatDraft.trim();
+    if (!trimmed) return;
+    setChatDraft("");
+    onSendMessage(trimmed);
+  };
+
   return (
     <View style={styles.inputArea}>
+      <View style={styles.chatTextInputRow}>
+        <TextInput
+          style={styles.chatTextInput}
+          placeholder={t("study.askTutorPlaceholder")}
+          placeholderTextColor="#64748b"
+          value={chatDraft}
+          onChangeText={setChatDraft}
+          editable={!isChatting}
+          multiline
+        />
+        <Pressable
+          style={[
+            styles.chatSendButton,
+            (!chatDraft.trim() || isChatting) && styles.disabledButton,
+          ]}
+          onPress={submitChatDraft}
+          disabled={!chatDraft.trim() || isChatting}
+          accessibilityRole="button"
+          accessibilityLabel={t("study.sendMessage")}
+        >
+          <Ionicons name="send" size={18} color="#fff" />
+        </Pressable>
+      </View>
+
       <View style={styles.voiceRow}>
         <VoiceInput
           onTranscription={onVoiceTranscription}
@@ -53,6 +93,15 @@ export function StudyChatInputArea({
 
       {currentQuestion && (
         <View style={styles.submitArea}>
+          <TextInput
+            style={styles.answerTextInput}
+            placeholder={t("study.answerPlaceholder")}
+            placeholderTextColor="#64748b"
+            value={answerDraft}
+            onChangeText={onAnswerDraftChange}
+            editable={!grading}
+            multiline
+          />
           <Pressable
             style={[styles.submitButton, grading && styles.disabledButton]}
             onPress={onSubmitAnswer}

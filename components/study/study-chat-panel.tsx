@@ -27,6 +27,7 @@ type StudyChatPanelProps = {
   loadingQuestions: boolean;
   grading: boolean;
   currentQuestion: StudyQuestion | null;
+  answerQuestion: StudyQuestion | null;
   messages: StudyChatMessage[];
   answerMarkers: CanvasAnswerMarker[];
   chatListRef: RefObject<FlatList<StudyChatMessage> | null>;
@@ -57,6 +58,8 @@ type StudyChatPanelProps = {
   onViewNotes: (answerLinkId: string) => void;
   onViewDiagram: (blockId: string) => void;
   onSubmitAnswer: () => void;
+  answerDraft: string;
+  onAnswerDraftChange: (text: string) => void;
 };
 
 export function StudyChatPanel({
@@ -71,6 +74,7 @@ export function StudyChatPanel({
   loadingQuestions,
   grading,
   currentQuestion,
+  answerQuestion,
   messages,
   answerMarkers,
   chatListRef,
@@ -94,6 +98,8 @@ export function StudyChatPanel({
   onViewNotes,
   onViewDiagram,
   onSubmitAnswer,
+  answerDraft,
+  onAnswerDraftChange,
 }: StudyChatPanelProps) {
   return (
     <View style={styles.chatColumn}>
@@ -154,13 +160,16 @@ export function StudyChatPanel({
         styles={styles}
         t={t}
         isChatting={isChatting}
-        currentQuestion={currentQuestion}
+        currentQuestion={answerQuestion}
         grading={grading}
         onVoiceTranscription={onVoiceTranscription}
         listeningMode={listeningMode}
         onListeningModeEnd={onListeningModeEnd}
         ttsFinished={ttsFinished}
         onSubmitAnswer={onSubmitAnswer}
+        answerDraft={answerDraft}
+        onAnswerDraftChange={onAnswerDraftChange}
+        onSendMessage={onSendQuickAction}
       />
     </View>
   );

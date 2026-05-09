@@ -272,7 +272,7 @@ export default function PracticeExamScreen() {
     } finally {
       setGrading(false);
     }
-  }, [agentLanguage, answers, examId, lectureId, questions, t]);
+  }, [agentLanguage, answerImages, answers, examId, lectureId, questions, t]);
 
   const activeQuestion = useMemo(
     () => questions.find((q) => q.id === activeQuestionId),
@@ -692,5 +692,4 @@ const createStyles = (palette: typeof Colors.light) =>
       fontWeight: '500',
     },
   });
-
 

@@ -138,13 +138,14 @@ type EvaluateAnswerParams = {
   answerText?: string;
   answerImageDataUrl?: string;
   lectureId?: string;
+  gradingContext?: string;
 };
 
 export const evaluateAnswer = async (
-  { question, answerText, answerImageDataUrl, lectureId }: EvaluateAnswerParams,
+  { question, answerText, answerImageDataUrl, lectureId, gradingContext }: EvaluateAnswerParams,
   language: LanguageCode = 'en'
 ): Promise<AIActionResult<StudyFeedback>> => {
-  const jobId = await enqueueJob('grade', { question, answerText, answerImageDataUrl, language, lectureId });
+  const jobId = await enqueueJob('grade', { question, answerText, answerImageDataUrl, language, lectureId, gradingContext });
   const data = await waitForJobResult<{ feedback?: StudyFeedback; costUsd?: number }>(jobId);
 
   if (data?.feedback) {
@@ -153,6 +154,9 @@ export const evaluateAnswer = async (
       correctness: data.feedback.correctness ?? 'unknown',
       score: data.feedback.score ?? undefined,
       improvements: data.feedback.improvements ?? [],
+      misconceptions: data.feedback.misconceptions ?? [],
+      followUpQuestion: data.feedback.followUpQuestion ?? undefined,
+      sourceNotes: data.feedback.sourceNotes ?? [],
       costUsd: data?.costUsd,
     };
   }

@@ -41,7 +41,7 @@ export const MarkdownText: React.FC<MarkdownTextProps> = ({ content }) => {
     });
 
     // Register math parsing so $...$ and $$...$$ become math_inline / math_block tokens
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const katexPlugin = require('markdown-it-katex');
     parser.use(katexPlugin);
     return parser;

@@ -255,6 +255,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
   },
 );
 
+HandwritingCanvas.displayName = 'HandwritingCanvas';
+
 const styles = StyleSheet.create({
   container: {
     borderRadius: 12,

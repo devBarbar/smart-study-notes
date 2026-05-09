@@ -36,7 +36,7 @@ function RootLayoutNav() {
       // Redirect to home if already authenticated
       router.replace('/');
     }
-  }, [user, segments, isLoading]);
+  }, [user, segments, isLoading, router]);
 
   if (isLoading) {
     return (

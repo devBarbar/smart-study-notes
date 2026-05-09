@@ -520,13 +520,20 @@ const handleChatStreaming = async (
 };
 
 const handleGrade = async (payload: any): Promise<JobRunResult> => {
-  const { question, answerText, answerImageDataUrl, language = "en", lectureId } = payload ?? {};
+  const {
+    question,
+    answerText,
+    answerImageDataUrl,
+    language = "en",
+    lectureId,
+    gradingContext,
+  } = payload ?? {};
   if (!question || !question.prompt) {
     throw new Error("question.prompt is required");
   }
 
   const content: any[] = [
-    { type: "text", text: gradingPrompt(question, answerText, language) },
+    { type: "text", text: gradingPrompt(question, answerText, language, gradingContext) },
   ];
 
   if (answerText) {
@@ -554,13 +561,16 @@ const handleGrade = async (payload: any): Promise<JobRunResult> => {
 
   return {
     result: {
-      feedback: {
-        summary: feedback.summary ?? "No summary",
-        correctness: feedback.correctness ?? "unknown",
-        score: feedback.score ?? undefined,
-        improvements: Array.isArray(feedback.improvements) ? feedback.improvements : [],
+        feedback: {
+          summary: feedback.summary ?? "No summary",
+          correctness: feedback.correctness ?? "unknown",
+          score: feedback.score ?? undefined,
+          improvements: Array.isArray(feedback.improvements) ? feedback.improvements : [],
+          misconceptions: Array.isArray(feedback.misconceptions) ? feedback.misconceptions : [],
+          followUpQuestion: typeof feedback.followUpQuestion === "string" ? feedback.followUpQuestion : undefined,
+          sourceNotes: Array.isArray(feedback.sourceNotes) ? feedback.sourceNotes : [],
+        },
       },
-    },
     usage: {
       feature: "grade",
       model: chat.model ?? null,

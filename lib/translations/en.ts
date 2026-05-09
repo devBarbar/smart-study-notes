@@ -175,8 +175,6 @@ const en = {
   'lectureDetail.examTopicBadge': 'Exam Topic',
   'lectureDetail.professorFocus': "Prof's Focus",
   'lectureDetail.tapToScroll': 'Tap a topic to scroll to its study plan entry',
-  'lectureDetail.review': 'Review',
-  'lectureDetail.startAgain': 'Start again',
   'lectureDetail.reviewSessionHint': 'Continue your previous session',
   'lectureDetail.startAgainHint': 'Start fresh with a new session',
   'lectureDetail.continueSessionHint': 'Pick up where you left off',
@@ -266,6 +264,8 @@ const en = {
   'study.typedNotes': 'Typed notes',
   'study.aiTutor': 'AI Tutor',
   'study.aiSubtitle': 'Ask questions, get explanations, learn with the Feynman method',
+  'study.askTutorPlaceholder': 'Ask the tutor...',
+  'study.sendMessage': 'Send message',
   'study.focusedOn': 'Focused on: {{title}}',
   'study.explainThis': 'Explain this',
   'study.quizMe': 'Quiz me',
@@ -283,7 +283,8 @@ const en = {
   'study.answerSaved': 'Answer saved',
   'study.thinking': 'Thinking...',
   'study.submitAnswer': 'Submit answer',
-  'study.gradingHint': 'Your canvas and notes will be graded',
+  'study.answerPlaceholder': 'Write your answer here, separate from your notes...',
+  'study.gradingHint': 'Your canvas and answer text will be graded',
   'study.answerSectionTitle': 'Your Answers',
   'study.firstQuestionIntro': "Let's test your understanding! Here's your first question:\n\n{{question}}",
   'study.nextQuestionIntro': 'Next question:\n\n{{question}}',
@@ -294,6 +295,8 @@ const en = {
   'study.feedback.incorrect': "Let's work on this together.",
   'study.feedback.improveIntro': 'To improve:',
   'study.feedback.askExplain': 'Would you like me to explain any part of this in more detail?',
+  'study.feedback.sourceIntro': 'Source check:',
+  'study.feedback.followUpIntro': 'Try this next:',
   'study.scoreLabel': 'Score: {{score}}/100',
   'study.pageLabel': 'Page {{number}}',
   'study.pageTitleLabel': 'Page title:',
@@ -325,4 +328,3 @@ const en = {
 };
 
 export default en;
-

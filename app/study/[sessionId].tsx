@@ -50,6 +50,7 @@ import {
   estimateVisualBlockSize,
   parseAIResponse,
 } from "@/lib/parse-visual-response";
+import { parseLearningResponse } from "@/lib/parse-learning-response";
 import { uploadCanvasImage } from "@/lib/storage";
 import {
   LectureFileChunk,
@@ -63,8 +64,10 @@ import {
   listAnswerLinks,
   listReviewEvents,
   listSessionMessages,
+  listStudyMisconceptions,
   saveAnswerLink,
   saveFlashcard,
+  saveStudyMisconceptions,
   saveSessionMessage,
   searchLectureChunks,
   updateSession,
@@ -132,7 +135,7 @@ export default function StudySessionScreen() {
   const { t, agentLanguage } = useLanguage();
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? "light"];
+  const palette = Colors[colorScheme === "dark" ? "dark" : "light"];
   const styles = useMemo(() => createStudyStyles(palette), [palette]);
 
   const material = useMemo<Material | undefined>(
@@ -156,6 +159,7 @@ export default function StudySessionScreen() {
     null,
   );
   const [loadingEntry, setLoadingEntry] = useState(false);
+  const [recentMisconceptions, setRecentMisconceptions] = useState<string[]>([]);
 
   // Load study plan entry if specified
   useEffect(() => {
@@ -229,8 +233,17 @@ export default function StudySessionScreen() {
       );
     }
 
+    if (recentMisconceptions.length > 0) {
+      parts.push(
+        `\n## Recent Misconceptions To Revisit\n${recentMisconceptions
+          .slice(0, 6)
+          .map((item) => `- ${item}`)
+          .join("\n")}`,
+      );
+    }
+
     return parts.join("\n\n");
-  }, [lecture, material, studyPlanEntry]);
+  }, [lecture, material, studyPlanEntry, recentMisconceptions]);
 
   // Simple outline for display (not for AI context)
   const studyOutline = useMemo(() => {
@@ -251,6 +264,7 @@ export default function StudySessionScreen() {
   const [messages, setMessages] = useState<StudyChatMessage[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [answerText, setAnswerText] = useState("");
+  const [answerDraft, setAnswerDraft] = useState("");
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [grading, setGrading] = useState(false);
   const [isChatting, setIsChatting] = useState(false);
@@ -751,6 +765,10 @@ export default function StudySessionScreen() {
 
   const getQuestionTextForMessage = useCallback(
     (message: StudyChatMessage): string | null => {
+      if (message.tutorQuestion?.question) {
+        return message.tutorQuestion.question.trim();
+      }
+
       if (message.questionId) {
         const matched = questions.find((q) => q.id === message.questionId);
         if (matched?.prompt) {
@@ -1006,6 +1024,26 @@ export default function StudySessionScreen() {
     };
     loadLinks();
   }, [sessionId]);
+
+  useEffect(() => {
+    const loadMisconceptions = async () => {
+      if (!lectureId) return;
+      try {
+        const rows = await listStudyMisconceptions({
+          lectureId,
+          studyPlanEntryId: studyPlanEntryId || undefined,
+          limit: 8,
+        });
+        setRecentMisconceptions(
+          rows.map((row) => `${row.concept}: ${row.note}`).filter(Boolean),
+        );
+      } catch (err) {
+        console.warn("[study] Failed to load misconceptions:", err);
+      }
+    };
+
+    loadMisconceptions();
+  }, [lectureId, studyPlanEntryId]);
 
   // Rebuild answer markers whenever messages or links change
   useEffect(() => {
@@ -1297,6 +1335,58 @@ export default function StudySessionScreen() {
     [],
   );
 
+  const fetchRelevantChunks = useCallback(
+    async (query: string, matchCount = 6): Promise<LectureFileChunk[]> => {
+      if (!lectureId || !lecture) return [];
+
+      try {
+        const chunkCount = await countLectureChunks(lectureId);
+        if ((chunkCount ?? 0) <= 0) return [];
+
+        const queryEmbedding = await embedQuery(
+          studyPlanEntry ? `${studyPlanEntry.title}\n${query}` : query,
+        );
+        const chunks = await searchLectureChunks(
+          queryEmbedding,
+          [lectureId],
+          matchCount,
+          0.15,
+        );
+        if (chunks.length > 0) {
+          console.log("[study] retrieval matches", {
+            matches: chunks.length,
+            topSimilarity: chunks[0]?.similarity,
+          });
+        }
+        return chunks;
+      } catch (err) {
+        console.warn("[study] retrieval failed, falling back to full context", err);
+        return [];
+      }
+    },
+    [lecture, lectureId, studyPlanEntry],
+  );
+
+  const chunksToContextBlock = useCallback(
+    (chunks: LectureFileChunk[]) =>
+      `Use the following source snippets. Prefer citing the most relevant ones and keep answers concise.\n\n${chunks
+        .map((chunk, idx) => `[${idx + 1}] (p${chunk.pageNumber}) ${chunk.content}`)
+        .join("\n\n")}`,
+    [],
+  );
+
+  const chunksToCitations = useCallback(
+    (chunks: LectureFileChunk[]): StudyCitation[] =>
+      chunks.slice(0, 6).map((chunk) => ({
+        chunkId: chunk.id,
+        lectureId: chunk.lectureId,
+        lectureFileId: chunk.lectureFileId,
+        pageNumber: chunk.pageNumber,
+        similarity: chunk.similarity,
+      })),
+    [],
+  );
+
   // Send message to Feynman AI with FULL material context (streaming enabled)
   const sendToFeynmanAI = useCallback(
     async (userMessage: string, transcriptionCostUsd?: number) => {
@@ -1333,56 +1423,16 @@ export default function StudySessionScreen() {
       pushMessage({ id: aiMsgId, role: "ai", text: "" }, false);
 
       try {
-        let retrievedChunks: LectureFileChunk[] = [];
-        if (lectureId && lecture) {
-          try {
-            const chunkCount = await countLectureChunks(lectureId);
-            if ((chunkCount ?? 0) > 0) {
-              const queryEmbedding = await embedQuery(
-                studyPlanEntry
-                  ? `${studyPlanEntry.title}\n${userMessage}`
-                  : userMessage,
-              );
-              retrievedChunks = await searchLectureChunks(
-                queryEmbedding,
-                [lectureId],
-                6,
-                0.15,
-              );
-              if (retrievedChunks.length > 0) {
-                console.log("[study] retrieval matches", {
-                  matches: retrievedChunks.length,
-                  topSimilarity: retrievedChunks[0]?.similarity,
-                });
-              }
-            }
-          } catch (err) {
-            console.warn(
-              "[study] retrieval failed, falling back to full context",
-              err,
-            );
-          }
-        }
+        const retrievedChunks = await fetchRelevantChunks(userMessage, 6);
 
         const contextBlock =
           retrievedChunks.length > 0
-            ? `Use the following source snippets. Prefer citing the most relevant ones and keep answers concise.\n\n${retrievedChunks
-                .map(
-                  (chunk, idx) =>
-                    `[${idx + 1}] (p${chunk.pageNumber}) ${chunk.content}`,
-                )
-                .join("\n\n")}`
+            ? chunksToContextBlock(retrievedChunks)
             : fullMaterialContext;
 
         const citations: StudyCitation[] | undefined =
           retrievedChunks.length > 0
-            ? retrievedChunks.slice(0, 6).map((chunk) => ({
-                chunkId: chunk.id,
-                lectureId: chunk.lectureId,
-                lectureFileId: chunk.lectureFileId,
-                pageNumber: chunk.pageNumber,
-                similarity: chunk.similarity,
-              }))
+            ? chunksToCitations(retrievedChunks)
             : undefined;
 
         // Use streaming chat - update message as chunks arrive
@@ -1397,8 +1447,8 @@ export default function StudySessionScreen() {
               updateMessage(aiMsgId, { text: partialText });
             },
             onDone: (result) => {
-              // Parse the response for visual blocks
-              const parsed = parseAIResponse(result.message);
+              const learningParsed = parseLearningResponse(result.message);
+              const parsed = parseAIResponse(learningParsed.text);
 
               // Add cost footer if available
               const costSuffix = result.costUsd
@@ -1418,8 +1468,11 @@ export default function StudySessionScreen() {
                 id: aiMsgId,
                 role: "ai",
                 text: parsed.text,
+                tutorQuestion: learningParsed.tutorQuestion,
               };
-              const questionText = getQuestionTextForMessage(tempMsg);
+              const questionText =
+                learningParsed.tutorQuestion?.question ||
+                getQuestionTextForMessage(tempMsg);
 
               // 1. Add visual blocks first, stacked below existing content
               if (parsed.hasVisuals) {
@@ -1455,6 +1508,7 @@ export default function StudySessionScreen() {
                 role: "ai",
                 text: parsed.text + costSuffix, // Use cleaned text without visual blocks
                 citations,
+                tutorQuestion: learningParsed.tutorQuestion,
                 visualBlockIds:
                   visualBlockIds.length > 0 ? visualBlockIds : undefined,
               };
@@ -1474,9 +1528,11 @@ export default function StudySessionScreen() {
         );
 
         // Add AI response to chat history (without cost suffix)
+        const historyLearningParsed = parseLearningResponse(chatResult.message);
+        const historyParsed = parseAIResponse(historyLearningParsed.text);
         setChatHistory((prev) => [
           ...prev,
-          { role: "assistant", content: chatResult.message },
+          { role: "assistant", content: historyParsed.text },
         ]);
       } catch (error) {
         console.warn("Feynman chat error:", error);
@@ -1489,17 +1545,23 @@ export default function StudySessionScreen() {
     },
     [
       agentLanguage,
+      activeVisualBlocks,
+      canvasStrokes,
       chatHistory,
+      chunksToCitations,
+      chunksToContextBlock,
+      fetchRelevantChunks,
       fullMaterialContext,
-      lecture,
+      getMaxYWithVisualBlocks,
+      getQuestionTextForMessage,
       lectureId,
       pushMessage,
       updateMessage,
       speakMessage,
-      studyPlanEntry,
       t,
       sessionId,
       addVisualBlockToCanvas,
+      writeQuestionToCanvas,
     ],
   );
 
@@ -1534,6 +1596,10 @@ export default function StudySessionScreen() {
             question: generated[0].prompt,
           }),
           questionId: generated[0].id,
+          tutorQuestion: {
+            question: generated[0].prompt,
+            targetConcepts: studyPlanEntry?.keyConcepts,
+          },
         });
         setCurrentQuestion(generated[0]);
       }
@@ -1555,6 +1621,10 @@ export default function StudySessionScreen() {
       role: "ai",
       text: t("study.nextQuestionIntro", { question: next.prompt }),
       questionId: next.id,
+      tutorQuestion: {
+        question: next.prompt,
+        targetConcepts: studyPlanEntry?.keyConcepts,
+      },
     });
   };
 
@@ -1565,13 +1635,30 @@ export default function StudySessionScreen() {
     // Use current formal question or create one from the last AI message
     const questionToEvaluate: StudyQuestion = currentQuestion || {
       id: lastAiMessage?.id || uuid(),
-      prompt: lastAiMessage?.text || t("study.defaultCheckPrompt"),
+      prompt:
+        lastAiMessage?.tutorQuestion?.question ||
+        (lastAiMessage ? getQuestionTextForMessage(lastAiMessage) : null) ||
+        lastAiMessage?.text ||
+        t("study.defaultCheckPrompt"),
+      targetConcepts: lastAiMessage?.tutorQuestion?.targetConcepts,
+      expectedAnswerPoints: lastAiMessage?.tutorQuestion?.expectedAnswerPoints,
     };
 
     if (!lastAiMessage && !currentQuestion) return;
 
     setGrading(true);
     try {
+      const gradingChunks = await fetchRelevantChunks(
+        `${questionToEvaluate.prompt}\n${answerDraft || answerText}`,
+        6,
+      );
+      const gradingContext =
+        gradingChunks.length > 0
+          ? chunksToContextBlock(gradingChunks)
+          : fullMaterialContext;
+      const gradingCitations =
+        gradingChunks.length > 0 ? chunksToCitations(gradingChunks) : undefined;
+
       const imageUri = await canvasRef.current?.exportAsImage();
       const base64 = imageUri
         ? await FileSystem.readAsStringAsync(imageUri, {
@@ -1582,9 +1669,10 @@ export default function StudySessionScreen() {
       const feedback = await evaluateAnswer(
         {
           question: questionToEvaluate,
-          answerText,
+          answerText: answerDraft,
           answerImageDataUrl: dataUrl,
           lectureId,
+          gradingContext,
         },
         agentLanguage,
       );
@@ -1608,7 +1696,7 @@ export default function StudySessionScreen() {
         sessionId: sessionId as string,
         questionId: questionToEvaluate.id,
         pageId: activePageId,
-        answerText,
+        answerText: answerDraft,
         answerImageUri: uploadedImageUri,
         canvasBounds: canvasBounds ?? undefined,
         createdAt: new Date().toISOString(),
@@ -1758,6 +1846,26 @@ export default function StudySessionScreen() {
       const isPassed =
         (feedback.score !== undefined && feedback.score >= 80) ||
         feedback.correctness === "correct";
+
+      if (!isPassed && feedback.misconceptions?.length && lectureId) {
+        const savedMisconceptions = feedback.misconceptions.map((item) => ({
+          lectureId,
+          studyPlanEntryId: studyPlanEntryId ?? undefined,
+          sessionId: sessionId as string,
+          concept: item,
+          note: feedback.summary,
+        }));
+        try {
+          await saveStudyMisconceptions(savedMisconceptions);
+          setRecentMisconceptions((prev) => [
+            ...savedMisconceptions.map((item) => `${item.concept}: ${item.note}`),
+            ...prev,
+          ].slice(0, 8));
+        } catch (err) {
+          console.warn("[study] Failed to save misconceptions:", err);
+        }
+      }
+
       if (isPassed && lectureId) {
         try {
           // Collect AI explanation from previous messages (up to 3 messages before the question)
@@ -1792,7 +1900,7 @@ export default function StudySessionScreen() {
             sessionId: sessionId as string,
             studyPlanEntryId: studyPlanEntryId ?? undefined,
             questionText,
-            answerText: answerText || undefined,
+            answerText: answerDraft || undefined,
             answerImageUri: uploadedImageUri,
             aiExplanation: fallbackExplanation || undefined,
             visualBlocks:
@@ -1815,7 +1923,7 @@ export default function StudySessionScreen() {
         {
           id: uuid(),
           role: "user",
-          text: answerText || t("study.handwrittenAnswerPlaceholder"),
+          text: answerDraft || t("study.handwrittenAnswerPlaceholder"),
           questionId: questionToEvaluate.id,
           answerLinkId: linkId,
         },
@@ -1829,26 +1937,59 @@ export default function StudySessionScreen() {
             ? t("study.feedback.partial")
             : t("study.feedback.incorrect");
 
-      const scoreText = feedback.score
+      const scoreText = typeof feedback.score === "number"
         ? `\n\n${t("study.scoreLabel", { score: feedback.score })}`
         : "";
       const improvementsText =
         feedback.improvements && feedback.improvements.length
           ? `\n\n${t("study.feedback.improveIntro")}\n${feedback.improvements.map((i) => `• ${i}`).join("\n")}`
           : "";
+      const sourceNotesText =
+        feedback.sourceNotes && feedback.sourceNotes.length
+          ? `\n\n${t("study.feedback.sourceIntro")}\n${feedback.sourceNotes.map((i) => `• ${i}`).join("\n")}`
+          : "";
+      const followUpText =
+        !isPassed && feedback.followUpQuestion
+          ? `\n\n${t("study.feedback.followUpIntro")}\n${feedback.followUpQuestion}`
+          : "";
       const costText = feedback.costUsd
         ? `\n\n_${t("cost.label", { value: feedback.costUsd.toFixed(4) })}_`
         : "";
 
-      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${improvementsText}\n\n${t("study.feedback.askExplain")}${costText}`;
+      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${sourceNotesText}${improvementsText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
+
+      const followUpQuestion: StudyQuestion | null =
+        !isPassed && feedback.followUpQuestion
+          ? {
+              id: `follow-up-${uuid()}`,
+              prompt: feedback.followUpQuestion,
+              targetConcepts:
+                questionToEvaluate.targetConcepts || feedback.misconceptions,
+              expectedAnswerPoints: questionToEvaluate.expectedAnswerPoints,
+            }
+          : null;
 
       pushMessage({
         id: uuid(),
         role: "ai",
         text: feedbackText,
-        questionId: questionToEvaluate.id,
+        questionId: followUpQuestion?.id ?? questionToEvaluate.id,
         answerLinkId: linkId,
+        citations: gradingCitations,
+        tutorQuestion: followUpQuestion
+          ? {
+              question: followUpQuestion.prompt,
+              targetConcepts: followUpQuestion.targetConcepts,
+              expectedAnswerPoints: followUpQuestion.expectedAnswerPoints,
+            }
+          : undefined,
       });
+
+      if (followUpQuestion) {
+        setQuestions((prev) => [...prev, followUpQuestion]);
+        setCurrentQuestion(followUpQuestion);
+      }
+      setAnswerDraft("");
     } catch (error) {
       console.warn(error);
     } finally {
@@ -1857,7 +1998,7 @@ export default function StudySessionScreen() {
   };
 
   // Request explanation with visual diagram
-  const requestExplanation = () => {
+  const requestExplanation = useCallback(() => {
     const visualInstruction =
       "IMPORTANT: Include a visual diagram on the canvas showing how the concepts connect (use the ```visual block format). This helps me understand the relationships visually.";
 
@@ -1865,7 +2006,7 @@ export default function StudySessionScreen() {
       ? `Give me a concise (1-2 short paragraphs) explanation of the first key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply—I will answer on the canvas.`
       : `Give me a concise (1-2 short paragraphs) explanation of the first key idea in this topic. Cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
     sendToFeynmanAI(topicFocus);
-  };
+  }, [sendToFeynmanAI, studyPlanEntry]);
 
   // Auto-trigger explanation when starting a new session
   useEffect(() => {
@@ -1882,7 +2023,7 @@ export default function StudySessionScreen() {
       // Trigger the explanation automatically
       requestExplanation();
     }
-  }, [loadingMessages, loadingEntry, studyTitle, messages.length]);
+  }, [loadingMessages, loadingEntry, studyTitle, messages.length, requestExplanation]);
 
   // Scroll chat to specific question message (called from canvas markers)
   const scrollToQuestionMessage = useCallback(
@@ -2022,6 +2163,24 @@ export default function StudySessionScreen() {
     }),
     [],
   );
+
+  const answerableQuestion = useMemo<StudyQuestion | null>(() => {
+    if (currentQuestion) return currentQuestion;
+    const lastAiQuestionMessage = [...messages]
+      .reverse()
+      .find((message) => message.role === "ai" && getQuestionTextForMessage(message));
+    if (!lastAiQuestionMessage) return null;
+
+    return {
+      id: lastAiQuestionMessage.id,
+      prompt:
+        lastAiQuestionMessage.tutorQuestion?.question ||
+        getQuestionTextForMessage(lastAiQuestionMessage) ||
+        t("study.defaultCheckPrompt"),
+      targetConcepts: lastAiQuestionMessage.tutorQuestion?.targetConcepts,
+      expectedAnswerPoints: lastAiQuestionMessage.tutorQuestion?.expectedAnswerPoints,
+    };
+  }, [currentQuestion, getQuestionTextForMessage, messages, t]);
 
   // Toggle AI tutor visibility
   const toggleTutor = useCallback(() => {
@@ -2185,6 +2344,7 @@ export default function StudySessionScreen() {
           loadingQuestions={loadingQuestions}
           grading={grading}
           currentQuestion={currentQuestion}
+          answerQuestion={answerableQuestion}
           messages={messages}
           answerMarkers={answerMarkers}
           chatListRef={chatListRef}
@@ -2208,6 +2368,8 @@ export default function StudySessionScreen() {
           onViewNotes={scrollToCanvasAnswer}
           onViewDiagram={handleViewDiagram}
           onSubmitAnswer={submitAnswer}
+          answerDraft={answerDraft}
+          onAnswerDraftChange={setAnswerDraft}
         />
       )}
 

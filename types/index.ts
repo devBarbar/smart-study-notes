@@ -213,6 +213,8 @@ export type StudyQuestion = {
   id: string;
   prompt: string;
   sectionTitle?: string;
+  targetConcepts?: string[];
+  expectedAnswerPoints?: string[];
 };
 
 export type StudyFeedback = {
@@ -220,6 +222,9 @@ export type StudyFeedback = {
   correctness: string;
   score?: number;
   improvements?: string[];
+  misconceptions?: string[];
+  followUpQuestion?: string;
+  sourceNotes?: string[];
 };
 
 export type StudyAnswerLink = {
@@ -240,6 +245,7 @@ export type StudyChatMessage = {
   questionId?: string;
   answerLinkId?: string;
   citations?: StudyCitation[];
+  tutorQuestion?: TutorQuestionMetadata;
   /** IDs of visual blocks rendered on canvas for this message */
   visualBlockIds?: string[];
 };
@@ -300,6 +306,23 @@ export type StudyCitation = {
   sourceBBox?: CanvasBounds;
 };
 
+export type TutorQuestionMetadata = {
+  question: string;
+  targetConcepts?: string[];
+  expectedAnswerPoints?: string[];
+};
+
+export type StudyMisconception = {
+  id?: string;
+  lectureId?: string;
+  studyPlanEntryId?: string;
+  sessionId?: string;
+  concept: string;
+  note: string;
+  resolved?: boolean;
+  createdAt?: string;
+};
+
 export type ReviewQuality = 'correct' | 'incorrect' | 'partial' | 'skipped';
 
 export type ReviewEvent = {
@@ -341,4 +364,3 @@ export type Flashcard = {
   easeFactor: number;
   createdAt: string;
 };
-

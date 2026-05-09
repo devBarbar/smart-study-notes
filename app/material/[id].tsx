@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { v4 as uuid } from 'uuid';
 
@@ -114,4 +114,3 @@ const createStyles = (palette: typeof Colors.light) =>
       borderRadius: Radii.lg,
     },
   });
-

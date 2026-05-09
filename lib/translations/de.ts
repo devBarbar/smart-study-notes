@@ -264,6 +264,8 @@ const de = {
   'study.typedNotes': 'Getippte Notizen',
   'study.aiTutor': 'KI-Tutor',
   'study.aiSubtitle': 'Stelle Fragen, erhalte Erklärungen, lerne mit der Feynman-Methode',
+  'study.askTutorPlaceholder': 'Frag den Tutor...',
+  'study.sendMessage': 'Nachricht senden',
   'study.focusedOn': 'Fokus auf: {{title}}',
   'study.explainThis': 'Erkläre das',
   'study.quizMe': 'Teste mich',
@@ -281,7 +283,8 @@ const de = {
   'study.answerSaved': 'Antwort gespeichert',
   'study.thinking': 'Denke nach...',
   'study.submitAnswer': 'Antwort senden',
-  'study.gradingHint': 'Dein Canvas und deine Notizen werden bewertet',
+  'study.answerPlaceholder': 'Schreibe deine Antwort hier, getrennt von deinen Notizen...',
+  'study.gradingHint': 'Dein Canvas und deine Antwort werden bewertet',
   'study.answerSectionTitle': 'Deine Antworten',
   'study.firstQuestionIntro': 'Lass uns dein Verständnis testen! Hier ist deine erste Frage:\n\n{{question}}',
   'study.nextQuestionIntro': 'Nächste Frage:\n\n{{question}}',
@@ -292,6 +295,8 @@ const de = {
   'study.feedback.incorrect': 'Lass uns gemeinsam daran arbeiten.',
   'study.feedback.improveIntro': 'Zum Verbessern:',
   'study.feedback.askExplain': 'Soll ich einen Teil davon genauer erklären?',
+  'study.feedback.sourceIntro': 'Quellencheck:',
+  'study.feedback.followUpIntro': 'Versuch als Nächstes:',
   'study.scoreLabel': 'Punktzahl: {{score}}/100',
   'study.pageLabel': 'Seite {{number}}',
   'study.pageTitleLabel': 'Seitentitel:',
@@ -323,4 +328,3 @@ const de = {
 };
 
 export default de;
-

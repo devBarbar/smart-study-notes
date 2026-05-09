@@ -71,22 +71,6 @@ export const VoiceInput = ({
     };
   }, []);
 
-  // Auto-rearm recording in listening mode when TTS finishes
-  useEffect(() => {
-    if (listeningMode && ttsFinished && permissionGranted && !isRecording && !isTranscribing && !disabled) {
-      // Small delay before auto-rearm to let user process the response
-      autoRearmTimeoutRef.current = setTimeout(() => {
-        startRecording();
-      }, 500);
-    }
-
-    return () => {
-      if (autoRearmTimeoutRef.current) {
-        clearTimeout(autoRearmTimeoutRef.current);
-      }
-    };
-  }, [listeningMode, ttsFinished, permissionGranted, isRecording, isTranscribing, disabled]);
-
   // Pulse animation when recording
   useEffect(() => {
     if (isRecording) {
@@ -132,6 +116,22 @@ export const VoiceInput = ({
       onListeningModeEnd?.();
     }
   }, [audioRecorder, onError, onListeningModeEnd, t]);
+
+  // Auto-rearm recording in listening mode when TTS finishes
+  useEffect(() => {
+    if (listeningMode && ttsFinished && permissionGranted && !isRecording && !isTranscribing && !disabled) {
+      // Small delay before auto-rearm to let user process the response
+      autoRearmTimeoutRef.current = setTimeout(() => {
+        startRecording();
+      }, 500);
+    }
+
+    return () => {
+      if (autoRearmTimeoutRef.current) {
+        clearTimeout(autoRearmTimeoutRef.current);
+      }
+    };
+  }, [disabled, isRecording, isTranscribing, listeningMode, permissionGranted, startRecording, ttsFinished]);
 
   const stopRecording = useCallback(async () => {
     if (!recordingRef.current) return;
