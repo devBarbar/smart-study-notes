@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   buildLearningPathPrompt,
+  findUndercoveredSources,
   parseLearningPath,
   sortLearningPathEntries,
   type ParsedPlanEntry,
@@ -20,6 +21,14 @@ test('learning path prompt asks for modules, prerequisites, and source refs', ()
     'en',
     {
       sourceFiles: ['lecture-01.pdf', 'exam.pdf'],
+      sourceCoverageRequirements: [
+        {
+          fileName: 'exam.pdf',
+          currentRefs: 0,
+          requiredRefs: 2,
+          reason: 'practice or exam material needs dedicated review coverage',
+        },
+      ],
       minEntries: 28,
       maxEntries: 45,
     },
@@ -31,6 +40,7 @@ test('learning path prompt asks for modules, prerequisites, and source refs', ()
   assert.match(prompt, /Professor emphasized definitions/);
   assert.match(prompt, /28-45 entries/);
   assert.match(prompt, /lecture-01\.pdf/);
+  assert.match(prompt, /exam\.pdf: at least 2 distinct entries/);
   assert.match(prompt, /Every uploaded source file/);
   assert.match(prompt, /dedicated practice\/review sessions/);
 });
@@ -106,4 +116,45 @@ test('sortLearningPathEntries keeps prerequisites before high-priority dependent
   const sorted = sortLearningPathEntries(entries);
   assert.equal(sorted[0].clientId, 'foundation');
   assert.equal(sorted[1].clientId, 'advanced-topic');
+});
+
+test('findUndercoveredSources requires extra references for dense and practice PDFs', () => {
+  const parsed = parseLearningPath(JSON.stringify({
+    modules: [
+      { id: 'm1', title: 'Foundations' },
+    ],
+    entries: [
+      {
+        id: 'storage',
+        moduleId: 'm1',
+        title: 'Storage overview',
+        keyConcepts: ['SSD'],
+        prerequisites: [],
+        sourceRefs: [{ fileName: 'storage.pdf' }],
+      },
+      {
+        id: 'exam-review',
+        moduleId: 'm1',
+        title: 'Mock exam review',
+        keyConcepts: ['practice'],
+        prerequisites: [],
+        sourceRefs: [{ fileName: 'mockexam.pdf' }],
+      },
+    ],
+  }));
+
+  const gaps = findUndercoveredSources(parsed, [
+    { fileName: 'storage.pdf', textLength: 70000 },
+    { fileName: 'mockexam.pdf', textLength: 8000, isExam: true },
+    { fileName: 'short.pdf', textLength: 1000 },
+  ]);
+
+  assert.deepEqual(
+    gaps.map((gap) => [gap.fileName, gap.currentRefs, gap.requiredRefs]),
+    [
+      ['storage.pdf', 1, 3],
+      ['mockexam.pdf', 1, 2],
+      ['short.pdf', 0, 1],
+    ],
+  );
 });

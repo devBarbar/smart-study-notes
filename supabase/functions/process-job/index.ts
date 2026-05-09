@@ -24,9 +24,12 @@ import {
 import {
   buildConceptInventoryPrompt,
   buildLearningPathPrompt,
+  findUndercoveredSources,
   parseLearningPath,
   ParsedPlanEntry,
   PlanSettings,
+  SourceCoverageGap,
+  SourceCoverageInput,
 } from "../_shared/study-plan-v2.ts";
 import { insertUsageLog } from "../_shared/usage.ts";
 
@@ -281,6 +284,60 @@ const assertCompleteSourceCoverage = (
     throw new Error(`Learning path missed uploaded source files: ${missing.join(", ")}`);
   }
 };
+
+const assertSourceCoverageQuality = (
+  parsedPath: ReturnType<typeof parseLearningPath>,
+  sources: SourceCoverageInput[],
+) => {
+  const undercovered = findUndercoveredSources(parsedPath, sources);
+  if (undercovered.length > 0) {
+    throw new Error(
+      `Learning path undercovered uploaded source files: ${undercovered
+        .map((gap) => `${gap.fileName} (${gap.currentRefs}/${gap.requiredRefs})`)
+        .join(", ")}`,
+    );
+  }
+};
+
+const buildCoverageRepairMaterial = (
+  gaps: SourceCoverageGap[],
+  files: Array<{ name?: string | null; extracted_text?: string | null; is_exam?: boolean | null }>,
+) => gaps
+  .map((gap) => {
+    const file = files.find((item) => normalizeFileName(item.name) === normalizeFileName(gap.fileName));
+    const text = sanitizeForDatabase(String(file?.extracted_text ?? ""));
+    const excerpt = text ? truncateToTokenLimit(text, 900) : "No extracted text excerpt available.";
+    return `=== ${gap.fileName} (${gap.currentRefs}/${gap.requiredRefs} refs, ${gap.reason}) ===\n${excerpt}`;
+  })
+  .join("\n\n");
+
+const learningPathPromptJson = (parsedPath: ReturnType<typeof parseLearningPath>) => ({
+  modules: parsedPath.modules.map((module) => ({
+    id: module.clientId,
+    title: module.title,
+    summary: module.summary,
+    estimatedMinutes: module.estimatedMinutes,
+  })),
+  entries: parsedPath.entries.map((entry) => ({
+    id: entry.clientId,
+    moduleId: entry.moduleClientId,
+    title: entry.title,
+    description: entry.description,
+    learningObjective: entry.learningObjective,
+    keyConcepts: entry.keyConcepts,
+    category: entry.category,
+    importanceTier: entry.importanceTier,
+    priorityScore: entry.priorityScore,
+    difficulty: entry.difficulty,
+    estimatedMinutes: entry.estimatedMinutes,
+    prerequisites: entry.prerequisiteClientIds,
+    sequenceReason: entry.sequenceReason,
+    fromExamSource: entry.fromExamSource,
+    examRelevance: entry.examRelevance,
+    mentionedInNotes: entry.mentionedInNotes,
+    sourceRefs: entry.sourceRefs,
+  })),
+});
 
 const handlePlan = async (payload: any): Promise<JobRunResult> => {
   const { extractedTexts = [], language = "en", options = {} } = payload ?? {};
@@ -794,12 +851,21 @@ const handleLecturePlanSynthesize = async (
 
   const { data: files, error: filesError } = await supabase
     .from("lecture_files")
-    .select("name")
+    .select("name,extracted_text,is_exam")
     .eq("lecture_id", lectureId)
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
   if (filesError) throw filesError;
-  const sourceFiles = (files ?? []).map((file: any) => String(file.name)).filter(Boolean);
+  const sourceFiles: string[] = (files ?? [])
+    .map((file: any) => String(file.name ?? "").trim())
+    .filter((fileName: string) => Boolean(fileName));
+  const sourceCoverageInputs: SourceCoverageInput[] = (files ?? [])
+    .map((file: any) => ({
+      fileName: String(file.name ?? "").trim(),
+      textLength: String(file.extracted_text ?? "").length,
+      isExam: Boolean(file.is_exam),
+    }))
+    .filter((source: SourceCoverageInput) => Boolean(source.fileName));
 
   const { data: inventoryJobs, error: inventoryError } = await supabase
     .from("jobs")
@@ -819,18 +885,19 @@ const handleLecturePlanSynthesize = async (
     .join("\n\n");
 
   const entryTarget = sourceFiles.length >= 25
-    ? { minEntries: 32, maxEntries: 52, minModules: 7, maxModules: 12 }
+    ? { minEntries: 36, maxEntries: 56, minModules: 7, maxModules: 12 }
     : sourceFiles.length >= 12
       ? { minEntries: 20, maxEntries: 36, minModules: 5, maxModules: 10 }
       : { minEntries: 10, maxEntries: 24, minModules: 3, maxModules: 8 };
 
   const pathPrompt = buildLearningPathPrompt(conceptInventory, planSettings, language, {
     sourceFiles,
+    sourceCoverageRequirements: findUndercoveredSources({ entries: [] }, sourceCoverageInputs),
     ...entryTarget,
   });
   const pathChat = await callChat([{ type: "text", text: pathPrompt }], {
     reasoningEffort: "medium",
-    timeoutMs: 240000,
+    timeoutMs: 480000,
   });
   usage = aggregateUsage(usage, {
     feature: "lecture_plan_v2",
@@ -864,7 +931,7 @@ Return a complete replacement JSON only. Keep prerequisite ordering, keep sessio
 
     const repairChat = await callChat([{ type: "text", text: repairPrompt }], {
       reasoningEffort: "medium",
-      timeoutMs: 240000,
+      timeoutMs: 480000,
     });
     usage = aggregateUsage(usage, {
       feature: "lecture_plan_v2",
@@ -883,6 +950,43 @@ Return a complete replacement JSON only. Keep prerequisite ordering, keep sessio
     missingSourceFiles = missingSourceFilesForPath(parsedPath, sourceFiles);
   }
   assertCompleteSourceCoverage(parsedPath, sourceFiles);
+  let undercoveredSources = findUndercoveredSources(parsedPath, sourceCoverageInputs);
+  if (undercoveredSources.length > 0) {
+    const coverageRepairPrompt = `The generated learning path references every uploaded PDF, but some PDFs are under-covered. Expand the plan so these sources get enough distinct, focused study sessions.
+
+Under-covered source files:
+${undercoveredSources.map((gap) => `- ${gap.fileName}: ${gap.currentRefs}/${gap.requiredRefs} current references. ${gap.reason}.`).join("\n")}
+
+Relevant source excerpts:
+${buildCoverageRepairMaterial(undercoveredSources, files ?? [])}
+
+Current JSON:
+${JSON.stringify(learningPathPromptJson(parsedPath), null, 2)}
+
+Return a complete replacement JSON only. Keep prerequisite ordering and the existing module-based structure. Add or split entries for distinct teachable concepts from the under-covered PDFs; do not satisfy coverage by attaching sourceRefs to unrelated broad sessions. Every listed under-covered file must appear in at least its required number of distinct entries. Keep sessions close to ${planSettings.preferredSessionMinutes ?? 45} minutes. Target ${Math.max(entryTarget.minEntries, parsedPath.entries.length + undercoveredSources.length)}-${Math.max(entryTarget.maxEntries, parsedPath.entries.length + undercoveredSources.length * 2)} entries across ${entryTarget.minModules}-${entryTarget.maxModules} modules.`;
+
+    const coverageRepairChat = await callChat([{ type: "text", text: coverageRepairPrompt }], {
+      reasoningEffort: "medium",
+      timeoutMs: 480000,
+    });
+    usage = aggregateUsage(usage, {
+      feature: "lecture_plan_v2",
+      model: coverageRepairChat.model,
+      usage: coverageRepairChat.usage,
+      costUsd: coverageRepairChat.costUsd,
+      inputCostUsd: coverageRepairChat.inputCostUsd,
+      outputCostUsd: coverageRepairChat.outputCostUsd,
+      lectureId,
+      metadata: { pass: "coverage-expansion", undercoveredSourceFiles: undercoveredSources.length },
+    });
+    parsedPath = parseLearningPath(coverageRepairChat.message);
+    if (parsedPath.warnings.some((warning) => warning.toLowerCase().includes("fallback"))) {
+      throw new Error("AI coverage expansion did not return valid learning path JSON");
+    }
+    assertCompleteSourceCoverage(parsedPath, sourceFiles);
+    undercoveredSources = findUndercoveredSources(parsedPath, sourceCoverageInputs);
+  }
+  assertSourceCoverageQuality(parsedPath, sourceCoverageInputs);
   return await saveLecturePlanFromParsedPath(supabase, lectureId, userId, parsedPath, warnings, usage);
 };
 

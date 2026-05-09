@@ -52,10 +52,24 @@ export type ParsedLearningPath = {
 
 export type LearningPathPromptOptions = {
   sourceFiles?: string[];
+  sourceCoverageRequirements?: SourceCoverageGap[];
   minEntries?: number;
   maxEntries?: number;
   minModules?: number;
   maxModules?: number;
+};
+
+export type SourceCoverageInput = {
+  fileName: string;
+  textLength?: number;
+  isExam?: boolean;
+};
+
+export type SourceCoverageGap = {
+  fileName: string;
+  currentRefs: number;
+  requiredRefs: number;
+  reason: string;
 };
 
 const defaultPriority: Record<ParsedPlanEntry["importanceTier"], number> = {
@@ -133,6 +147,59 @@ const sourceRefs = (value: unknown): SourceRef[] | undefined => {
   return refs.length > 0 ? refs : undefined;
 };
 
+const isPracticeSource = (fileName: string) =>
+  /\b(exam|mock|practice|exercise|sheet|solution|aufgabe|klausur|probe)\b/i.test(fileName);
+
+export const requiredSourceReferenceCount = (source: SourceCoverageInput): number => {
+  const length = Math.max(0, Number(source.textLength ?? 0));
+  if (source.isExam || isPracticeSource(source.fileName)) return 2;
+  if (length >= 60000) return 3;
+  if (length >= 20000) return 2;
+  return 1;
+};
+
+export const sourceReferenceCounts = (
+  parsedPath: Pick<ParsedLearningPath, "entries">,
+): Map<string, number> => {
+  const counts = new Map<string, number>();
+  parsedPath.entries.forEach((entry) => {
+    const filesForEntry = new Set<string>();
+    (entry.sourceRefs ?? []).forEach((ref) => {
+      const fileName = typeof ref.fileName === "string" ? ref.fileName.trim().toLowerCase() : "";
+      if (fileName) filesForEntry.add(fileName);
+    });
+    filesForEntry.forEach((fileName) => counts.set(fileName, (counts.get(fileName) ?? 0) + 1));
+  });
+  return counts;
+};
+
+export const findUndercoveredSources = (
+  parsedPath: Pick<ParsedLearningPath, "entries">,
+  sources: SourceCoverageInput[],
+): SourceCoverageGap[] => {
+  const counts = sourceReferenceCounts(parsedPath);
+  return sources
+    .map((source) => {
+      const requiredRefs = requiredSourceReferenceCount(source);
+      const currentRefs = counts.get(source.fileName.trim().toLowerCase()) ?? 0;
+      if (currentRefs >= requiredRefs) return null;
+      const reason = source.isExam || isPracticeSource(source.fileName)
+        ? "practice or exam material needs dedicated review coverage"
+        : (source.textLength ?? 0) >= 60000
+          ? "large source needs multiple focused sessions"
+          : (source.textLength ?? 0) >= 20000
+            ? "substantial source needs more than one focused session"
+            : "source must be represented";
+      return {
+        fileName: source.fileName,
+        currentRefs,
+        requiredRefs,
+        reason,
+      };
+    })
+    .filter((gap): gap is SourceCoverageGap => Boolean(gap));
+};
+
 export const buildConceptInventoryPrompt = (
   materialContent: string,
   planSettings: PlanSettings,
@@ -180,6 +247,9 @@ ${JSON.stringify(planSettings, null, 2)}
 Uploaded source files that must be represented in the final plan:
 ${(options.sourceFiles ?? []).map((fileName) => `- ${fileName}`).join("\n") || "- Not provided"}
 
+Minimum source coverage requirements:
+${(options.sourceCoverageRequirements ?? []).map((gap) => `- ${gap.fileName}: at least ${gap.requiredRefs} distinct entries because ${gap.reason}.`).join("\n") || "- Every uploaded file needs at least one sourceRefs entry."}
+
 Concept inventory:
 ${conceptInventory}
 
@@ -223,6 +293,7 @@ Rules:
 - Each entry is one focused study session.
 - For exam files, create dedicated practice/review sessions instead of only folding exam signals into concept sessions.
 - Every uploaded source file listed above must appear at least once in sourceRefs using the exact fileName.
+- Files listed under minimum source coverage requirements must appear in at least that many distinct entries; create or split sessions for their distinct teachable concepts instead of attaching sourceRefs to unrelated broad sessions.
 - Use more than one sourceRef on an entry when a session synthesizes related material across multiple files.
 - Sort by prerequisites first, then setup weak areas, then exam/professor signal, then difficulty.
 - Include sequenceReason for every entry.
