@@ -17,12 +17,22 @@ test('learning path prompt asks for modules, prerequisites, and source refs', ()
       weakAreas: ['proofs'],
       additionalNotes: 'Professor emphasized definitions.',
     },
+    'en',
+    {
+      sourceFiles: ['lecture-01.pdf', 'exam.pdf'],
+      minEntries: 28,
+      maxEntries: 45,
+    },
   );
 
   assert.match(prompt, /"modules"/);
   assert.match(prompt, /"prerequisites"/);
   assert.match(prompt, /"sourceRefs"/);
   assert.match(prompt, /Professor emphasized definitions/);
+  assert.match(prompt, /28-45 entries/);
+  assert.match(prompt, /lecture-01\.pdf/);
+  assert.match(prompt, /Every uploaded source file/);
+  assert.match(prompt, /dedicated practice\/review sessions/);
 });
 
 test('parseLearningPath preserves source flags and path fields', () => {

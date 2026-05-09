@@ -50,6 +50,14 @@ export type ParsedLearningPath = {
   warnings: string[];
 };
 
+export type LearningPathPromptOptions = {
+  sourceFiles?: string[];
+  minEntries?: number;
+  maxEntries?: number;
+  minModules?: number;
+  maxModules?: number;
+};
+
 const defaultPriority: Record<ParsedPlanEntry["importanceTier"], number> = {
   core: 90,
   "high-yield": 70,
@@ -163,10 +171,14 @@ export const buildLearningPathPrompt = (
   conceptInventory: string,
   planSettings: PlanSettings,
   language = "en",
+  options: LearningPathPromptOptions = {},
 ) => `You are creating a module-based study path optimized for learning flow.
 
 Student setup:
 ${JSON.stringify(planSettings, null, 2)}
+
+Uploaded source files that must be represented in the final plan:
+${(options.sourceFiles ?? []).map((fileName) => `- ${fileName}`).join("\n") || "- Not provided"}
 
 Concept inventory:
 ${conceptInventory}
@@ -207,8 +219,11 @@ Return JSON only:
 }
 
 Rules:
-- Build 2-6 modules and 6-16 entries depending on material breadth.
+- Build ${options.minModules ?? 6}-${options.maxModules ?? 10} modules and ${options.minEntries ?? 28}-${options.maxEntries ?? 45} entries for broad multi-PDF lectures.
 - Each entry is one focused study session.
+- For exam files, create dedicated practice/review sessions instead of only folding exam signals into concept sessions.
+- Every uploaded source file listed above must appear at least once in sourceRefs using the exact fileName.
+- Use more than one sourceRef on an entry when a session synthesizes related material across multiple files.
 - Sort by prerequisites first, then setup weak areas, then exam/professor signal, then difficulty.
 - Include sequenceReason for every entry.
 - Respond in ${language} but keep JSON keys in English.`;

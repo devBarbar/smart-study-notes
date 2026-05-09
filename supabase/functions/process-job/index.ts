@@ -255,6 +255,33 @@ const aggregateUsage = (
   metadata: { ...(current?.metadata ?? {}), ...(next.metadata ?? {}) },
 });
 
+const normalizeFileName = (value: unknown) => String(value ?? "").trim().toLowerCase();
+
+const missingSourceFilesForPath = (
+  parsedPath: ReturnType<typeof parseLearningPath>,
+  sourceFiles: string[],
+) => {
+  const referenced = new Set<string>();
+  parsedPath.entries.forEach((entry) => {
+    (entry.sourceRefs ?? []).forEach((ref) => {
+      const fileName = normalizeFileName(ref.fileName);
+      if (fileName) referenced.add(fileName);
+    });
+  });
+
+  return sourceFiles.filter((fileName) => !referenced.has(normalizeFileName(fileName)));
+};
+
+const assertCompleteSourceCoverage = (
+  parsedPath: ReturnType<typeof parseLearningPath>,
+  sourceFiles: string[],
+) => {
+  const missing = missingSourceFilesForPath(parsedPath, sourceFiles);
+  if (missing.length > 0) {
+    throw new Error(`Learning path missed uploaded source files: ${missing.join(", ")}`);
+  }
+};
+
 const handlePlan = async (payload: any): Promise<JobRunResult> => {
   const { extractedTexts = [], language = "en", options = {} } = payload ?? {};
 
@@ -765,6 +792,15 @@ const handleLecturePlanSynthesize = async (
     planSettings.additionalNotes = lecture.additional_notes;
   }
 
+  const { data: files, error: filesError } = await supabase
+    .from("lecture_files")
+    .select("name")
+    .eq("lecture_id", lectureId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (filesError) throw filesError;
+  const sourceFiles = (files ?? []).map((file: any) => String(file.name)).filter(Boolean);
+
   const { data: inventoryJobs, error: inventoryError } = await supabase
     .from("jobs")
     .select("payload,result,created_at")
@@ -782,10 +818,19 @@ const handleLecturePlanSynthesize = async (
     .map((job: any) => `=== Concept inventory from ${job.payload?.label ?? "material batch"} ===\n${job.result?.inventory ?? ""}`)
     .join("\n\n");
 
-  const pathPrompt = buildLearningPathPrompt(conceptInventory, planSettings, language);
+  const entryTarget = sourceFiles.length >= 25
+    ? { minEntries: 32, maxEntries: 52, minModules: 7, maxModules: 12 }
+    : sourceFiles.length >= 12
+      ? { minEntries: 20, maxEntries: 36, minModules: 5, maxModules: 10 }
+      : { minEntries: 10, maxEntries: 24, minModules: 3, maxModules: 8 };
+
+  const pathPrompt = buildLearningPathPrompt(conceptInventory, planSettings, language, {
+    sourceFiles,
+    ...entryTarget,
+  });
   const pathChat = await callChat([{ type: "text", text: pathPrompt }], {
     reasoningEffort: "medium",
-    timeoutMs: 180000,
+    timeoutMs: 240000,
   });
   usage = aggregateUsage(usage, {
     feature: "lecture_plan_v2",
@@ -798,10 +843,46 @@ const handleLecturePlanSynthesize = async (
     metadata: { pass: "path", inventoryChunks: totalChunks },
   });
 
-  const parsedPath = parseLearningPath(pathChat.message);
+  let parsedPath = parseLearningPath(pathChat.message);
   if (parsedPath.warnings.some((warning) => warning.toLowerCase().includes("fallback"))) {
     throw new Error("AI path synthesis did not return valid learning path JSON");
   }
+  let missingSourceFiles = missingSourceFilesForPath(parsedPath, sourceFiles);
+  if (missingSourceFiles.length > 0) {
+    const repairPrompt = `The generated learning path is too compressed and missed uploaded source files.
+
+Missing source files:
+${missingSourceFiles.map((fileName) => `- ${fileName}`).join("\n")}
+
+All uploaded source files:
+${sourceFiles.map((fileName) => `- ${fileName}`).join("\n")}
+
+Current JSON:
+${pathChat.message}
+
+Return a complete replacement JSON only. Keep prerequisite ordering, keep session-sized entries, include dedicated exam-practice/review sessions, and ensure every uploaded source file appears at least once in sourceRefs using the exact fileName. Target ${entryTarget.minEntries}-${entryTarget.maxEntries} entries across ${entryTarget.minModules}-${entryTarget.maxModules} modules.`;
+
+    const repairChat = await callChat([{ type: "text", text: repairPrompt }], {
+      reasoningEffort: "medium",
+      timeoutMs: 240000,
+    });
+    usage = aggregateUsage(usage, {
+      feature: "lecture_plan_v2",
+      model: repairChat.model,
+      usage: repairChat.usage,
+      costUsd: repairChat.costUsd,
+      inputCostUsd: repairChat.inputCostUsd,
+      outputCostUsd: repairChat.outputCostUsd,
+      lectureId,
+      metadata: { pass: "coverage-repair", missingSourceFiles: missingSourceFiles.length },
+    });
+    parsedPath = parseLearningPath(repairChat.message);
+    if (parsedPath.warnings.some((warning) => warning.toLowerCase().includes("fallback"))) {
+      throw new Error("AI path repair did not return valid learning path JSON");
+    }
+    missingSourceFiles = missingSourceFilesForPath(parsedPath, sourceFiles);
+  }
+  assertCompleteSourceCoverage(parsedPath, sourceFiles);
   return await saveLecturePlanFromParsedPath(supabase, lectureId, userId, parsedPath, warnings, usage);
 };
 
@@ -1419,7 +1500,11 @@ Deno.serve(async (req: Request) => {
     let result: any = null;
 
     try {
-      if (locked.type === "plan" || locked.type === "lecture_plan_v2") {
+      if (
+        locked.type === "plan" ||
+        locked.type === "lecture_plan_v2" ||
+        locked.type === "lecture_plan_synthesize"
+      ) {
         console.log("[process-job] Scheduling background job:", locked.id);
         const backgroundPromise = processPlanJob(supabase, locked as Job);
         try {
