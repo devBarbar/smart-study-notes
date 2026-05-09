@@ -41,6 +41,12 @@ export type EmbeddingResponse = {
   outputCostUsd?: number;
 };
 
+export type ChatRequestOptions = {
+  maxOutputTokens?: number;
+  reasoningEffort?: string;
+  timeoutMs?: number;
+};
+
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-5.5";
 const OPENAI_REASONING_EFFORT = Deno.env.get("OPENAI_REASONING_EFFORT")?.trim() || "high";
@@ -48,6 +54,8 @@ const OPENAI_EMBED_MODEL =
   Deno.env.get("OPENAI_EMBED_MODEL")?.trim() || "text-embedding-3-large";
 const OPENAI_EMBED_DIMENSIONS_RAW = Deno.env.get("OPENAI_EMBED_DIMENSIONS")?.trim();
 const OPENAI_EMBED_DIMENSIONS = Number(OPENAI_EMBED_DIMENSIONS_RAW || "1536");
+const OPENAI_CHAT_TIMEOUT_MS = Number(Deno.env.get("OPENAI_CHAT_TIMEOUT_MS") || "120000");
+const OPENAI_EMBED_TIMEOUT_MS = Number(Deno.env.get("OPENAI_EMBED_TIMEOUT_MS") || "90000");
 
 export const requireOpenAIKey = () => {
   if (!OPENAI_API_KEY) {
@@ -154,22 +162,47 @@ const assertResponseSucceeded = (data: any) => {
   }
 };
 
-export const callChat = async (content: ChatCompletionContent[]): Promise<ChatResponse> => {
+const fetchWithTimeout = async (
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+  label: string,
+) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)} seconds`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+export const callChat = async (
+  content: ChatCompletionContent[],
+  options: ChatRequestOptions = {},
+): Promise<ChatResponse> => {
   const apiKey = requireOpenAIKey();
   const model = OPENAI_MODEL;
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const body: Record<string, unknown> = {
+    model,
+    input: [{ role: "user", content: toResponseContent(content) }],
+    reasoning: { effort: options.reasoningEffort ?? OPENAI_REASONING_EFFORT },
+    store: false,
+  };
+  if (options.maxOutputTokens) body.max_output_tokens = options.maxOutputTokens;
+  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      input: [{ role: "user", content: toResponseContent(content) }],
-      reasoning: { effort: OPENAI_REASONING_EFFORT },
-      store: false,
-    }),
-  });
+    body: JSON.stringify(body),
+  }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, "OpenAI chat request");
 
   if (!response.ok) {
     const message = await response.text();
@@ -196,7 +229,7 @@ export const callChatWithMessages = async (
 ): Promise<ChatResponse> => {
   const apiKey = requireOpenAIKey();
   const model = OPENAI_MODEL;
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -209,7 +242,7 @@ export const callChatWithMessages = async (
       reasoning: { effort: OPENAI_REASONING_EFFORT },
       store: false,
     }),
-  });
+  }, OPENAI_CHAT_TIMEOUT_MS, "OpenAI chat request");
 
   if (!response.ok) {
     const message = await response.text();
@@ -246,7 +279,7 @@ export const callChatWithMessagesStream = async (
 ): Promise<ChatResponse> => {
   const apiKey = requireOpenAIKey();
   const model = OPENAI_MODEL;
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -260,7 +293,7 @@ export const callChatWithMessagesStream = async (
       store: false,
       stream: true,
     }),
-  });
+  }, OPENAI_CHAT_TIMEOUT_MS, "OpenAI chat stream");
 
   if (!response.ok) {
     const message = await response.text();
@@ -346,14 +379,14 @@ export const embedTexts = async (inputs: string[]): Promise<EmbeddingResponse> =
 
   for (let i = 0; i < inputs.length; i += batchSize) {
     const slice = inputs.slice(i, i + batchSize);
-    const response = await fetch("https://api.openai.com/v1/embeddings", {
+    const response = await fetchWithTimeout("https://api.openai.com/v1/embeddings", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify(buildEmbeddingRequestBody(model, slice, dimensions)),
-    });
+    }, OPENAI_EMBED_TIMEOUT_MS, "OpenAI embeddings request");
 
     if (!response.ok) {
       const message = await response.text();

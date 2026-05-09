@@ -35,6 +35,7 @@ declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 const OPENAI_TRANSCRIBE_MODEL = Deno.env.get("OPENAI_TRANSCRIBE_MODEL")?.trim() || "gpt-4o-transcribe";
 
 type Job = {
@@ -67,6 +68,44 @@ const noJobResponse = () =>
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const kickProcessJob = (jobId?: string) => {
+  if (!SUPABASE_URL) return;
+  const token = SUPABASE_ANON_KEY ?? SUPABASE_SERVICE_ROLE_KEY;
+  if (!token) return;
+
+  const request = fetch(`${SUPABASE_URL}/functions/v1/process-job`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: token,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ source: "process-job", jobId }),
+  }).catch((error) => console.error("[process-job] follow-up kick failed", error));
+
+  try {
+    EdgeRuntime.waitUntil(request);
+  } catch {
+    return request;
+  }
+};
+
+const enqueueInternalJob = async (
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  type: string,
+  payload: Record<string, unknown>,
+) => {
+  const { data, error } = await supabase
+    .from("jobs")
+    .insert({ type, payload, status: "pending", user_id: userId })
+    .select("id")
+    .single();
+  if (error) throw error;
+  kickProcessJob(data.id);
+  return data.id as string;
+};
 
 const decodeDataUrl = (dataUrl: string): Uint8Array => {
   const matches = dataUrl.match(/^data:(.*?);base64,(.*)$/);
@@ -117,6 +156,53 @@ const splitTextForEmbeddings = (text: string, maxChars = 1600, overlap = 200): s
     start += advanceBy;
   }
   return chunks;
+};
+
+type PlanMaterialChunk = {
+  index: number;
+  label: string;
+  content: string;
+};
+
+const buildLecturePlanMaterialChunks = (
+  extractedTexts: { fileName: string; text: string; isExam?: boolean }[],
+): PlanMaterialChunk[] => {
+  const materialChunks: PlanMaterialChunk[] = [];
+  const maxChunkChars = 22000;
+  let currentLabels: string[] = [];
+  let currentSections: string[] = [];
+  let currentLength = 0;
+
+  const flushCurrent = () => {
+    if (currentSections.length === 0) return;
+    materialChunks.push({
+      index: materialChunks.length,
+      label: currentLabels.join(", "),
+      content: currentSections.join("\n\n"),
+    });
+    currentLabels = [];
+    currentSections = [];
+    currentLength = 0;
+  };
+
+  extractedTexts.forEach((item) => {
+    const chunks = chunkText(item.text || `PDF Document: ${item.fileName}.`, maxChunkChars, 800);
+    chunks.forEach((chunk, index) => {
+      const label = `${item.fileName}${item.isExam ? " (Past Exam)" : ""}${
+        chunks.length > 1 ? ` part ${index + 1}/${chunks.length}` : ""
+      }`;
+      const section = `=== ${label} ===\n${chunk}`;
+      if (currentLength > 0 && currentLength + section.length + 2 > maxChunkChars) {
+        flushCurrent();
+      }
+      currentLabels.push(label);
+      currentSections.push(section);
+      currentLength += section.length + 2;
+    });
+  });
+
+  flushCurrent();
+  return materialChunks;
 };
 
 const extractPdfPages = async (pdfUrl: string): Promise<ExtractedPage[]> => {
@@ -378,7 +464,6 @@ const handleLecturePlanV2 = async (
     .eq("id", lectureId);
 
   const extractedTexts: { fileName: string; text: string; isExam?: boolean }[] = [];
-  const extractedPagesByFile = new Map<string, ExtractedPage[]>();
 
   for (const file of files as LecturePlanFile[]) {
     let pages: ExtractedPage[] = [];
@@ -399,7 +484,6 @@ const handleLecturePlanV2 = async (
     }
 
     const fullText = pages.map((page) => page.text).join("\n\n");
-    extractedPagesByFile.set(file.id, pages);
     extractedTexts.push({
       fileName: file.name,
       text: fullText || `PDF Document: ${file.name}.`,
@@ -411,47 +495,63 @@ const handleLecturePlanV2 = async (
     warnings.push("No PDF text could be extracted; generated from file names.");
   }
 
-  const combinedContent = extractedTexts
-    .map((item) => `=== ${item.fileName}${item.isExam ? " (Past Exam)" : ""} ===\n${item.text}`)
-    .join("\n\n");
+  const runId = crypto.randomUUID();
+  const materialChunks = buildLecturePlanMaterialChunks(extractedTexts);
+  if (materialChunks.length === 0) throw new Error("No lecture text available for AI planning");
 
-  const truncatedContent = truncateToTokenLimit(combinedContent, 120000);
-  const inventoryPrompt = buildConceptInventoryPrompt(truncatedContent, planSettings, payload?.language ?? "en");
-  const inventoryChat = await callChat([{ type: "text", text: inventoryPrompt }]);
-  usage = aggregateUsage(usage, {
-    feature: "lecture_plan_v2",
-    model: inventoryChat.model,
-    usage: inventoryChat.usage,
-    costUsd: inventoryChat.costUsd,
-    inputCostUsd: inventoryChat.inputCostUsd,
-    outputCostUsd: inventoryChat.outputCostUsd,
-    lectureId,
-    metadata: { pass: "inventory" },
-  });
+  for (const chunk of materialChunks) {
+    await enqueueInternalJob(supabase, userId, "lecture_plan_inventory", {
+      lectureId,
+      runId,
+      chunkIndex: chunk.index,
+      totalChunks: materialChunks.length,
+      label: chunk.label,
+      content: chunk.content,
+      planSettings,
+      language: payload?.language ?? "en",
+    });
+  }
 
-  const pathPrompt = buildLearningPathPrompt(inventoryChat.message, planSettings, payload?.language ?? "en");
-  const pathChat = await callChat([{ type: "text", text: pathPrompt }]);
-  usage = aggregateUsage(usage, {
-    feature: "lecture_plan_v2",
-    model: pathChat.model,
-    usage: pathChat.usage,
-    costUsd: pathChat.costUsd,
-    inputCostUsd: pathChat.inputCostUsd,
-    outputCostUsd: pathChat.outputCostUsd,
-    lectureId,
-    metadata: { pass: "path" },
-  });
+  return {
+    result: {
+      inventoryJobsCreated: materialChunks.length,
+      warnings,
+    },
+    usage: {
+      ...usage,
+      feature: "lecture_plan_v2",
+      lectureId,
+      metadata: {
+        ...(usage?.metadata ?? {}),
+        inventoryJobsCreated: materialChunks.length,
+        sourceDocuments: extractedTexts.length,
+        warnings: warnings.length,
+      },
+    },
+  };
+};
 
-  const parsedPath = parseLearningPath(pathChat.message);
+const saveLecturePlanFromParsedPath = async (
+  supabase: ReturnType<typeof createClient>,
+  lectureId: string,
+  userId: string,
+  parsedPath: ReturnType<typeof parseLearningPath>,
+  warnings: string[],
+  usage: UsageLogPayload | undefined,
+): Promise<JobRunResult> => {
   warnings.push(...parsedPath.warnings);
+
+  const { data: files, error: filesError } = await supabase
+    .from("lecture_files")
+    .select("id,name,extracted_text")
+    .eq("lecture_id", lectureId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (filesError) throw filesError;
 
   await supabase.from("study_plan_entries").delete().eq("lecture_id", lectureId).eq("user_id", userId);
   await supabase.from("study_plan_modules").delete().eq("lecture_id", lectureId).eq("user_id", userId);
-  if (regenerate) {
-    await supabase.from("lecture_file_chunks").delete().eq("lecture_id", lectureId);
-  } else {
-    await supabase.from("lecture_file_chunks").delete().eq("lecture_id", lectureId);
-  }
+  await supabase.from("lecture_file_chunks").delete().eq("lecture_id", lectureId);
 
   const moduleIdByClientId = new Map<string, string>();
   const moduleRows = parsedPath.modules.map((module) => {
@@ -508,20 +608,18 @@ const handleLecturePlanV2 = async (
   if (entryInsertError) throw entryInsertError;
 
   const chunkRows: any[] = [];
-  for (const file of files as LecturePlanFile[]) {
-    const pages = extractedPagesByFile.get(file.id) ?? [];
-    for (const page of pages) {
-      splitTextForEmbeddings(page.text).forEach((content, chunkIndex) => {
-        chunkRows.push({
-          lecture_id: lectureId,
-          lecture_file_id: file.id,
-          page_number: page.pageNumber,
-          chunk_index: chunkIndex,
-          content,
-          content_hash: hashText(`${file.id}:${page.pageNumber}:${chunkIndex}:${content}`),
-        });
+  for (const file of files ?? []) {
+    const text = sanitizeForDatabase(String((file as any).extracted_text ?? ""));
+    splitTextForEmbeddings(text).forEach((content, chunkIndex) => {
+      chunkRows.push({
+        lecture_id: lectureId,
+        lecture_file_id: (file as any).id,
+        page_number: 1,
+        chunk_index: chunkIndex,
+        content,
+        content_hash: hashText(`${(file as any).id}:1:${chunkIndex}:${content}`),
       });
-    }
+    });
   }
 
   if (chunkRows.length > 0) {
@@ -574,6 +672,124 @@ const handleLecturePlanV2 = async (
       },
     },
   };
+};
+
+const handleLecturePlanInventory = async (
+  payload: any,
+  _supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+): Promise<JobRunResult> => {
+  const {
+    lectureId,
+    chunkIndex,
+    totalChunks,
+    label,
+    content,
+    planSettings,
+    language = "en",
+  } = payload ?? {};
+  if (!lectureId || typeof content !== "string") {
+    throw new Error("lectureId and content are required for inventory generation");
+  }
+  if (!userId) throw new Error("User context required for lecture plan inventory");
+
+  const inventoryPrompt = buildConceptInventoryPrompt(content, planSettings ?? {}, language);
+  const chat = await callChat([{ type: "text", text: inventoryPrompt }], {
+    reasoningEffort: "low",
+    timeoutMs: 120000,
+  });
+
+  return {
+    result: {
+      inventory: chat.message,
+      chunkIndex,
+      totalChunks,
+      label,
+    },
+    usage: {
+      feature: "lecture_plan_v2",
+      model: chat.model,
+      usage: chat.usage,
+      costUsd: chat.costUsd,
+      inputCostUsd: chat.inputCostUsd,
+      outputCostUsd: chat.outputCostUsd,
+      lectureId,
+      metadata: { pass: "inventory", chunkIndex, totalChunks, label },
+    },
+  };
+};
+
+const handleLecturePlanSynthesize = async (
+  payload: any,
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+): Promise<JobRunResult> => {
+  const { lectureId, runId, totalChunks, language = "en" } = payload ?? {};
+  if (!lectureId || !runId) throw new Error("lectureId and runId are required for synthesis");
+  if (!userId) throw new Error("User context required for lecture plan synthesis");
+
+  let usage: UsageLogPayload | undefined = {
+    feature: "lecture_plan_v2",
+    lectureId,
+    costUsd: 0,
+  };
+  const warnings: string[] = [];
+
+  const { data: lecture, error: lectureError } = await supabase
+    .from("lectures")
+    .select("id,additional_notes,plan_settings")
+    .eq("id", lectureId)
+    .eq("user_id", userId)
+    .single();
+  if (lectureError) throw lectureError;
+
+  const planSettings: PlanSettings = {
+    preferredSessionMinutes: 45,
+    targetGrade: "pass",
+    ...((lecture.plan_settings as PlanSettings | null) ?? {}),
+  };
+  if (!planSettings.additionalNotes && lecture.additional_notes) {
+    planSettings.additionalNotes = lecture.additional_notes;
+  }
+
+  const { data: inventoryJobs, error: inventoryError } = await supabase
+    .from("jobs")
+    .select("payload,result,created_at")
+    .eq("type", "lecture_plan_inventory")
+    .eq("status", "succeeded")
+    .contains("payload", { lectureId, runId })
+    .order("created_at", { ascending: true });
+  if (inventoryError) throw inventoryError;
+  if ((inventoryJobs?.length ?? 0) !== Number(totalChunks)) {
+    throw new Error(`Missing inventory results (${inventoryJobs?.length ?? 0}/${totalChunks})`);
+  }
+
+  const conceptInventory = (inventoryJobs ?? [])
+    .sort((a: any, b: any) => Number(a.payload?.chunkIndex ?? 0) - Number(b.payload?.chunkIndex ?? 0))
+    .map((job: any) => `=== Concept inventory from ${job.payload?.label ?? "material batch"} ===\n${job.result?.inventory ?? ""}`)
+    .join("\n\n");
+
+  const pathPrompt = buildLearningPathPrompt(conceptInventory, planSettings, language);
+  const pathChat = await callChat([{ type: "text", text: pathPrompt }], {
+    reasoningEffort: "medium",
+    timeoutMs: 180000,
+  });
+  usage = aggregateUsage(usage, {
+    feature: "lecture_plan_v2",
+    model: pathChat.model,
+    usage: pathChat.usage,
+    costUsd: pathChat.costUsd,
+    inputCostUsd: pathChat.inputCostUsd,
+    outputCostUsd: pathChat.outputCostUsd,
+    lectureId,
+    metadata: { pass: "path", inventoryChunks: totalChunks },
+  });
+
+  const parsedPath = parseLearningPath(pathChat.message);
+  if (parsedPath.warnings.some((warning) => warning.toLowerCase().includes("fallback"))) {
+    throw new Error("AI path synthesis did not return valid learning path JSON");
+  }
+  return await saveLecturePlanFromParsedPath(supabase, lectureId, userId, parsedPath, warnings, usage);
 };
 
 const handlePracticeExam = async (
@@ -1012,9 +1228,46 @@ const runJob = async (
       return await handlePracticeExam(job.payload, supabase, job.user_id);
     case "lecture_plan_v2":
       return await handleLecturePlanV2(job.payload, supabase, job.user_id);
+    case "lecture_plan_inventory":
+      return await handleLecturePlanInventory(job.payload, supabase, job.user_id);
+    case "lecture_plan_synthesize":
+      return await handleLecturePlanSynthesize(job.payload, supabase, job.user_id);
     default:
       throw new Error(`Unknown job type: ${job.type}`);
   }
+};
+
+const enqueueSynthesisIfReady = async (
+  supabase: ReturnType<typeof createClient>,
+  inventoryJob: Job,
+) => {
+  const { lectureId, runId, totalChunks, language = "en" } = inventoryJob.payload ?? {};
+  if (!lectureId || !runId || !totalChunks || !inventoryJob.user_id) return;
+
+  const { count: succeededCount, error: countError } = await supabase
+    .from("jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("type", "lecture_plan_inventory")
+    .eq("status", "succeeded")
+    .contains("payload", { lectureId, runId });
+  if (countError) throw countError;
+  if ((succeededCount ?? 0) !== Number(totalChunks)) return;
+
+  const { count: existingCount, error: existingError } = await supabase
+    .from("jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("type", "lecture_plan_synthesize")
+    .in("status", ["pending", "running", "succeeded"])
+    .contains("payload", { lectureId, runId });
+  if (existingError) throw existingError;
+  if ((existingCount ?? 0) > 0) return;
+
+  await enqueueInternalJob(supabase, inventoryJob.user_id, "lecture_plan_synthesize", {
+    lectureId,
+    runId,
+    totalChunks,
+    language,
+  });
 };
 
 const processPlanJob = async (supabase: ReturnType<typeof createClient>, locked: Job) => {
@@ -1054,9 +1307,13 @@ const processPlanJob = async (supabase: ReturnType<typeof createClient>, locked:
       console.error("[process-job] update success error (plan)", updateError);
       throw updateError;
     }
+
+    if (locked.type === "lecture_plan_v2") {
+      kickProcessJob();
+    }
   } catch (jobError: any) {
     console.error("[process-job] background job failed", jobError);
-    if (locked.type === "lecture_plan_v2") {
+    if (locked.type.startsWith("lecture_plan")) {
       const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
       if (lectureId) {
         await supabase
@@ -1205,9 +1462,14 @@ Deno.serve(async (req: Request) => {
         console.error("[process-job] update success error", updateError);
         throw updateError;
       }
+
+      if (locked.type === "lecture_plan_inventory") {
+        await enqueueSynthesisIfReady(supabase, locked as Job);
+        kickProcessJob();
+      }
     } catch (jobError: any) {
       console.error("[process-job] job failed", jobError);
-      if (locked.type === "lecture_plan_v2") {
+      if (locked.type.startsWith("lecture_plan")) {
         const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
         if (lectureId) {
           await supabase

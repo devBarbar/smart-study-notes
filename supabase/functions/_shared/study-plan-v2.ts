@@ -157,7 +157,7 @@ Return JSON only:
   ]
 }
 
-Keep only teachable concepts that matter for a study path. Respond in ${language} but keep JSON keys in English.`;
+Keep only teachable concepts that matter for a study path. Aim for 8-14 concepts for this material batch, merging repeated ideas instead of listing every slide detail. Respond in ${language} but keep JSON keys in English.`;
 
 export const buildLearningPathPrompt = (
   conceptInventory: string,
