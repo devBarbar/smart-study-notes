@@ -606,6 +606,17 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             borderWidth: 1,
             borderColor: `${palette.primary}33`,
         },
+        citationSourceBadge: {
+            backgroundColor: `${palette.primary}18`,
+            borderRadius: Radii.sm,
+            paddingVertical: 2,
+            paddingHorizontal: 5,
+        },
+        citationSourceBadgeText: {
+            color: palette.primary,
+            fontSize: 10,
+            fontWeight: "700",
+        },
         citationChipText: {
             color: palette.primary,
             flexShrink: 1,

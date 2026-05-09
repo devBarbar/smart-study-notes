@@ -82,6 +82,7 @@ import {
   CanvasStrokeData,
   CanvasVisualBlock as CanvasVisualBlockType,
   Lecture,
+  LectureFile,
   Material,
   ReviewQuality,
   SectionStatus,
@@ -122,6 +123,116 @@ const cleanSourceFileName = (nameOrUri: string) => {
   );
 };
 
+type CitationSourceType = NonNullable<StudyCitation["sourceType"]>;
+
+type CitationSourceMetadata = {
+  name: string;
+  sourceType: CitationSourceType;
+};
+
+const PRACTICE_SOURCE_PATTERN =
+  /\b(exercise|sheet|worksheet|practice|assignment|aufgabe|uebung|übung)\b/i;
+const EXAM_SOURCE_PATTERN = /\b(exam|mock|klausur|probe)\b/i;
+
+const getCitationSourceType = (file?: LectureFile): CitationSourceType => {
+  if (!file?.isExam) return "lecture";
+
+  const name = cleanSourceFileName(file.name || file.uri);
+  if (PRACTICE_SOURCE_PATTERN.test(name) && !EXAM_SOURCE_PATTERN.test(name)) {
+    return "exercise";
+  }
+
+  return "past_exam";
+};
+
+const uniqueChunksBySourcePage = (chunks: LectureFileChunk[]) => {
+  const seen = new Set<string>();
+  return chunks.filter((chunk) => {
+    const key = `${chunk.lectureFileId}-${chunk.pageNumber ?? "unknown"}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const tokenizeForCitationOverlap = (text: string) =>
+  new Set(
+    text
+      .toLowerCase()
+      .split(/[^a-z0-9äöüß]+/i)
+      .filter((word) => word.length >= 5),
+  );
+
+const rankChunksByAnswerOverlap = (
+  chunks: LectureFileChunk[],
+  answerText?: string,
+) => {
+  if (!answerText?.trim()) return chunks;
+
+  const answerTerms = tokenizeForCitationOverlap(answerText);
+  if (answerTerms.size === 0) return chunks;
+
+  const ranked = chunks
+    .map((chunk, index) => {
+      const chunkTerms = tokenizeForCitationOverlap(chunk.content);
+      let overlap = 0;
+      chunkTerms.forEach((term) => {
+        if (answerTerms.has(term)) overlap += 1;
+      });
+
+      return {
+        chunk,
+        index,
+        score: overlap * 10 + (chunk.similarity ?? 0),
+      };
+    })
+    .filter((item) => item.score > (item.chunk.similarity ?? 0));
+
+  if (ranked.length === 0) return chunks;
+
+  const rankedIds = new Set(ranked.map((item) => item.chunk.id));
+  return [
+    ...ranked
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .map((item) => item.chunk),
+    ...chunks.filter((chunk) => !rankedIds.has(chunk.id)),
+  ];
+};
+
+const balanceCitationChunks = (
+  chunks: LectureFileChunk[],
+  maxCount = 6,
+  answerText?: string,
+) => {
+  const uniqueChunks = uniqueChunksBySourcePage(
+    rankChunksByAnswerOverlap(chunks, answerText),
+  );
+  const lectureChunks = uniqueChunks.filter(
+    (chunk) => chunk.sourceType === "lecture" || !chunk.sourceType,
+  );
+  const supportingChunks = uniqueChunks.filter(
+    (chunk) => chunk.sourceType === "exercise" || chunk.sourceType === "past_exam",
+  );
+
+  const selected: LectureFileChunk[] = [];
+  const addChunks = (sourceChunks: LectureFileChunk[], limit: number) => {
+    for (const chunk of sourceChunks) {
+      if (selected.length >= maxCount || limit <= 0) break;
+      if (selected.some((existing) => existing.id === chunk.id)) continue;
+      selected.push(chunk);
+      limit -= 1;
+    }
+  };
+
+  const lectureTarget = lectureChunks.length > 0 ? Math.min(4, maxCount) : 0;
+  addChunks(lectureChunks, lectureTarget);
+  addChunks(supportingChunks, maxCount - selected.length);
+  addChunks(lectureChunks, maxCount - selected.length);
+  addChunks(uniqueChunks, maxCount - selected.length);
+
+  return selected;
+};
+
 export default function StudySessionScreen() {
   const { sessionId, materialId, lectureId, studyPlanEntryId } =
     useLocalSearchParams<{
@@ -146,13 +257,24 @@ export default function StudySessionScreen() {
     () => lectures.find((l) => l.id === lectureId),
     [lectures, lectureId],
   );
+  const citationFileMetadata = useMemo(() => {
+    const metadata = new Map<string, CitationSourceMetadata>();
+    lecture?.files.forEach((file) => {
+      metadata.set(file.id, {
+        name: cleanSourceFileName(file.name || file.uri),
+        sourceType: getCitationSourceType(file),
+      });
+    });
+    return metadata;
+  }, [lecture?.files]);
+
   const citationFileNames = useMemo(() => {
     const names = new Map<string, string>();
-    lecture?.files.forEach((file) => {
-      names.set(file.id, cleanSourceFileName(file.name || file.uri));
+    citationFileMetadata.forEach((metadata, fileId) => {
+      names.set(fileId, metadata.name);
     });
     return names;
-  }, [lecture?.files]);
+  }, [citationFileMetadata]);
 
   // Study plan entry for focused study
   const [studyPlanEntry, setStudyPlanEntry] = useState<StudyPlanEntry | null>(
@@ -1335,6 +1457,21 @@ export default function StudySessionScreen() {
     [],
   );
 
+  const buildRetrievalQuery = useCallback(
+    (query: string) => {
+      const focusParts = [
+        lecture?.title,
+        studyPlanEntry?.title,
+        studyPlanEntry?.description,
+        studyPlanEntry?.keyConcepts?.join(", "),
+        query,
+      ].filter(Boolean);
+
+      return focusParts.join("\n");
+    },
+    [lecture?.title, studyPlanEntry],
+  );
+
   const fetchRelevantChunks = useCallback(
     async (query: string, matchCount = 6): Promise<LectureFileChunk[]> => {
       if (!lectureId || !lecture) return [];
@@ -1343,53 +1480,78 @@ export default function StudySessionScreen() {
         const chunkCount = await countLectureChunks(lectureId);
         if ((chunkCount ?? 0) <= 0) return [];
 
-        const queryEmbedding = await embedQuery(
-          studyPlanEntry ? `${studyPlanEntry.title}\n${query}` : query,
-        );
+        const queryEmbedding = await embedQuery(buildRetrievalQuery(query));
         const chunks = await searchLectureChunks(
           queryEmbedding,
           [lectureId],
-          matchCount,
+          Math.max(matchCount * 3, 18),
           0.15,
+        ).then((matches) =>
+          matches.map((chunk) => ({
+            ...chunk,
+            sourceType:
+              citationFileMetadata.get(chunk.lectureFileId)?.sourceType ??
+              "lecture",
+          })),
         );
         if (chunks.length > 0) {
           console.log("[study] retrieval matches", {
             matches: chunks.length,
             topSimilarity: chunks[0]?.similarity,
+            lectureMatches: chunks.filter((chunk) => chunk.sourceType === "lecture")
+              .length,
+            supportingMatches: chunks.filter(
+              (chunk) =>
+                chunk.sourceType === "exercise" ||
+                chunk.sourceType === "past_exam",
+            ).length,
           });
         }
-        return chunks;
+        return balanceCitationChunks(chunks, matchCount);
       } catch (err) {
         console.warn("[study] retrieval failed, falling back to full context", err);
         return [];
       }
     },
-    [lecture, lectureId, studyPlanEntry],
+    [buildRetrievalQuery, citationFileMetadata, lecture, lectureId],
   );
 
   const chunksToContextBlock = useCallback(
     (chunks: LectureFileChunk[]) =>
-      `Use the following source snippets. Prefer citing the most relevant ones and keep answers concise.\n\n${chunks
-        .map((chunk, idx) => `[${idx + 1}] (p${chunk.pageNumber}) ${chunk.content}`)
+      `Use the following source snippets. Prefer lecture material for explanations, and use exercises or past exams as supporting high-yield examples. Cite only snippets that directly support the answer and keep answers concise.\n\n${chunks
+        .map((chunk, idx) => {
+          const source = citationFileMetadata.get(chunk.lectureFileId);
+          const sourceName = source?.name ?? "Source";
+          const sourceType = source?.sourceType ?? chunk.sourceType ?? "lecture";
+          return `[${idx + 1}] ${sourceType.replace("_", " ")}: ${sourceName} (p${chunk.pageNumber}) ${chunk.content}`;
+        })
         .join("\n\n")}`,
-    [],
+    [citationFileMetadata],
   );
 
   const chunksToCitations = useCallback(
-    (chunks: LectureFileChunk[]): StudyCitation[] =>
-      chunks.slice(0, 6).map((chunk) => ({
+    (chunks: LectureFileChunk[], answerText?: string): StudyCitation[] =>
+      balanceCitationChunks(chunks, 6, answerText).map((chunk) => ({
         chunkId: chunk.id,
         lectureId: chunk.lectureId,
         lectureFileId: chunk.lectureFileId,
         pageNumber: chunk.pageNumber,
         similarity: chunk.similarity,
+        sourceType:
+          chunk.sourceType ??
+          citationFileMetadata.get(chunk.lectureFileId)?.sourceType ??
+          "lecture",
       })),
-    [],
+    [citationFileMetadata],
   );
 
   // Send message to Feynman AI with FULL material context (streaming enabled)
   const sendToFeynmanAI = useCallback(
-    async (userMessage: string, transcriptionCostUsd?: number) => {
+    async (
+      userMessage: string,
+      transcriptionCostUsd?: number,
+      retrievalQuery?: string,
+    ) => {
       if (!userMessage.trim()) return;
 
       // Add transcription cost suffix if provided (from voice input)
@@ -1423,17 +1585,15 @@ export default function StudySessionScreen() {
       pushMessage({ id: aiMsgId, role: "ai", text: "" }, false);
 
       try {
-        const retrievedChunks = await fetchRelevantChunks(userMessage, 6);
+        const retrievedChunks = await fetchRelevantChunks(
+          retrievalQuery ?? userMessage,
+          6,
+        );
 
         const contextBlock =
           retrievedChunks.length > 0
             ? chunksToContextBlock(retrievedChunks)
             : fullMaterialContext;
-
-        const citations: StudyCitation[] | undefined =
-          retrievedChunks.length > 0
-            ? chunksToCitations(retrievedChunks)
-            : undefined;
 
         // Use streaming chat - update message as chunks arrive
         const chatResult = await streamFeynmanChat(
@@ -1503,6 +1663,11 @@ export default function StudySessionScreen() {
               }
 
               // Final update with citations, cost, and visual block references
+              const citations: StudyCitation[] | undefined =
+                retrievedChunks.length > 0
+                  ? chunksToCitations(retrievedChunks, parsed.text)
+                  : undefined;
+
               const finalMessage: StudyChatMessage = {
                 id: aiMsgId,
                 role: "ai",
@@ -2001,12 +2166,31 @@ export default function StudySessionScreen() {
   const requestExplanation = useCallback(() => {
     const visualInstruction =
       "IMPORTANT: Include a visual diagram on the canvas showing how the concepts connect (use the ```visual block format). This helps me understand the relationships visually.";
+    const retrievalFocus = studyPlanEntry
+      ? [
+          studyPlanEntry.title,
+          studyPlanEntry.description,
+          studyPlanEntry.keyConcepts?.join(", "),
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : [
+          lecture?.title,
+          lecture?.description,
+          lecture?.files
+            .filter((file) => !file.isExam)
+            .slice(0, 4)
+            .map((file) => cleanSourceFileName(file.name || file.uri))
+            .join(", "),
+        ]
+          .filter(Boolean)
+          .join("\n");
 
     const topicFocus = studyPlanEntry
       ? `Give me a concise (1-2 short paragraphs) explanation of the first key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply—I will answer on the canvas.`
       : `Give me a concise (1-2 short paragraphs) explanation of the first key idea in this topic. Cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
-    sendToFeynmanAI(topicFocus);
-  }, [sendToFeynmanAI, studyPlanEntry]);
+    sendToFeynmanAI(topicFocus, undefined, retrievalFocus || topicFocus);
+  }, [lecture, sendToFeynmanAI, studyPlanEntry]);
 
   // Auto-trigger explanation when starting a new session
   useEffect(() => {
@@ -2137,6 +2321,22 @@ export default function StudySessionScreen() {
       return citation.pageNumber ? `Source p. ${citation.pageNumber}` : "Source";
     },
     [citationFileNames],
+  );
+
+  const getCitationSourceLabel = useCallback(
+    (citation: StudyCitation) => {
+      const sourceType =
+        citation.sourceType ||
+        (citation.lectureFileId
+          ? citationFileMetadata.get(citation.lectureFileId)?.sourceType
+          : undefined) ||
+        "lecture";
+
+      if (sourceType === "past_exam") return t("study.citationPastExam");
+      if (sourceType === "exercise") return t("study.citationExercise");
+      return t("study.citationLecture");
+    },
+    [citationFileMetadata, t],
   );
 
   const openCitationSource = useCallback(
@@ -2363,6 +2563,7 @@ export default function StudySessionScreen() {
           onListeningModeEnd={() => setListeningMode(false)}
           ttsFinished={!isSpeaking && listeningMode}
           getCitationLabel={getCitationLabel}
+          getCitationSourceLabel={getCitationSourceLabel}
           onReplayMessage={speakMessage}
           onOpenCitation={openCitationSource}
           onViewNotes={scrollToCanvasAnswer}

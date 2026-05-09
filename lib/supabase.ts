@@ -167,6 +167,7 @@ export type LectureFileChunk = {
   chunkIndex: number;
   content: string;
   similarity?: number;
+  sourceType?: 'lecture' | 'exercise' | 'past_exam';
   sourceBBox?: CanvasBounds;
 };
 

@@ -23,6 +23,7 @@ type StudyChatListProps = {
   isSpeaking: boolean;
   activeTtsMessageId: string | null;
   getCitationLabel: (citation: StudyCitation) => string;
+  getCitationSourceLabel: (citation: StudyCitation) => string;
   onReplayMessage: (text: string, messageId: string) => void;
   onStopSpeaking: () => void;
   onOpenCitation: (citation: StudyCitation) => void;
@@ -41,6 +42,7 @@ export function StudyChatList({
   isSpeaking,
   activeTtsMessageId,
   getCitationLabel,
+  getCitationSourceLabel,
   onReplayMessage,
   onStopSpeaking,
   onOpenCitation,
@@ -71,6 +73,7 @@ export function StudyChatList({
             onReplay={onReplayMessage}
             onStopSpeaking={onStopSpeaking}
             onOpenCitation={onOpenCitation}
+            getCitationSourceLabel={getCitationSourceLabel}
             onViewNotes={onViewNotes}
             onViewDiagram={onViewDiagram}
           />

@@ -53,6 +53,7 @@ type StudyChatPanelProps = {
   onListeningModeEnd: () => void;
   ttsFinished: boolean;
   getCitationLabel: (citation: StudyCitation) => string;
+  getCitationSourceLabel: (citation: StudyCitation) => string;
   onReplayMessage: (text: string, messageId: string) => void;
   onOpenCitation: (citation: StudyCitation) => void;
   onViewNotes: (answerLinkId: string) => void;
@@ -93,6 +94,7 @@ export function StudyChatPanel({
   onListeningModeEnd,
   ttsFinished,
   getCitationLabel,
+  getCitationSourceLabel,
   onReplayMessage,
   onOpenCitation,
   onViewNotes,
@@ -149,6 +151,7 @@ export function StudyChatPanel({
         isSpeaking={isSpeaking}
         activeTtsMessageId={activeTtsMessageId}
         getCitationLabel={getCitationLabel}
+        getCitationSourceLabel={getCitationSourceLabel}
         onReplayMessage={onReplayMessage}
         onStopSpeaking={onStopSpeaking}
         onOpenCitation={onOpenCitation}

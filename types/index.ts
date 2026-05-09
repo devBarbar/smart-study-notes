@@ -338,6 +338,7 @@ export type StudyCitation = {
   lectureFileId?: string;
   pageNumber?: number;
   similarity?: number;
+  sourceType?: 'lecture' | 'exercise' | 'past_exam';
   sourceBBox?: CanvasBounds;
 };
 

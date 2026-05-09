@@ -13,6 +13,7 @@ type StudyChatMessageProps = {
   styles: StudyStyles;
   t: (key: string, params?: Record<string, any>) => string;
   getCitationLabel: (citation: StudyCitation) => string;
+  getCitationSourceLabel: (citation: StudyCitation) => string;
   ttsEnabled: boolean;
   isSpeaking: boolean;
   activeTtsMessageId: string | null;
@@ -29,6 +30,7 @@ export function StudyChatMessageItem({
   styles,
   t,
   getCitationLabel,
+  getCitationSourceLabel,
   ttsEnabled,
   isSpeaking,
   activeTtsMessageId,
@@ -106,6 +108,11 @@ export function StudyChatMessageItem({
               onPress={() => onOpenCitation(citation)}
             >
               <Ionicons name="book-outline" size={12} color="#0ea5e9" />
+              <View style={styles.citationSourceBadge}>
+                <ThemedText style={styles.citationSourceBadgeText}>
+                  {getCitationSourceLabel(citation)}
+                </ThemedText>
+              </View>
               <ThemedText
                 style={styles.citationChipText}
                 numberOfLines={1}
