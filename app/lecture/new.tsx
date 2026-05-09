@@ -9,10 +9,10 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { buildLectureChunks, ExtractedPdfPage, extractPdfText, generateLectureMetadata, generateStudyPlan } from '@/lib/openai';
+import { generateLectureMetadata } from '@/lib/openai';
 import { uploadToStorage } from '@/lib/storage';
-import { deleteLectureChunksForLecture, saveLecture, saveLectureFiles, saveStudyPlanEntries, updateLecturePlanStatus, upsertLectureChunks } from '@/lib/supabase';
-import { Lecture, LectureFile } from '@/types';
+import { enqueueLecturePlanGeneration, saveLecture, saveLectureFiles } from '@/lib/supabase';
+import { Lecture, LectureFile, PlanSettings } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 
 type PendingFile = {
@@ -25,21 +25,27 @@ type PendingFile = {
 type UploadStatus = 
   | 'idle'
   | 'uploading'
-  | 'extracting'
   | 'generating-metadata'
-  | 'generating-plan'
-  | 'saving';
+  | 'saving'
+  | 'queueing';
 
 export default function NewLectureScreen() {
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [additionalNotes, setAdditionalNotes] = useState('');
+  const [examDate, setExamDate] = useState('');
+  const [targetGrade, setTargetGrade] = useState<PlanSettings['targetGrade']>('pass');
+  const [weeklyStudyMinutes, setWeeklyStudyMinutes] = useState('');
+  const [preferredSessionMinutes, setPreferredSessionMinutes] = useState('45');
+  const [currentLevel, setCurrentLevel] = useState<NonNullable<PlanSettings['currentLevel']>>('some-background');
+  const [weakAreas, setWeakAreas] = useState('');
   const [status, setStatus] = useState<UploadStatus>('idle');
   const [currentStep, setCurrentStep] = useState('');
   const router = useRouter();
   const queryClient = useQueryClient();
   const { agentLanguage, t } = useLanguage();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const palette = Colors[scheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const isProcessing = status !== 'idle';
@@ -74,6 +80,21 @@ export default function NewLectureScreen() {
     
     const lectureId = uuid();
     const trimmedNotes = additionalNotes.trim();
+    const planSettings: PlanSettings = {
+      targetGrade,
+      preferredSessionMinutes: Math.max(15, Math.min(180, Number(preferredSessionMinutes) || 45)),
+      currentLevel,
+      additionalNotes: trimmedNotes || undefined,
+    };
+    if (examDate.trim()) planSettings.examDate = examDate.trim();
+    if (Number(weeklyStudyMinutes) > 0) {
+      planSettings.weeklyStudyMinutes = Math.max(30, Math.min(6000, Number(weeklyStudyMinutes)));
+    }
+    const parsedWeakAreas = weakAreas
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (parsedWeakAreas.length > 0) planSettings.weakAreas = parsedWeakAreas;
     
     try {
       // Step 1: Upload files to storage
@@ -98,52 +119,19 @@ export default function NewLectureScreen() {
         });
       }
 
-      // Step 2: Try to extract text from PDFs (optional - may fail if edge function not deployed)
-      setStatus('extracting');
-      const extractedTexts: { fileName: string; text: string; isExam?: boolean }[] = [];
-      const extractedPages: Record<string, ExtractedPdfPage[] | undefined> = {};
-      let extractionSucceeded = false;
-      const extractionStartedAt = Date.now();
-      
-      for (let i = 0; i < uploaded.length; i++) {
-        const file = uploaded[i];
-        setCurrentStep(
-          t('lectureNew.status.extractingFile', { current: i + 1, total: uploaded.length, name: file.name })
-        );
-        try {
-          const extraction = await extractPdfText(file.uri);
-          const text = extraction.text;
-          extractedTexts.push({ fileName: file.name, text, isExam: Boolean(file.isExam) });
-          extractedPages[file.id] = extraction.pages;
-          // Update the uploaded file with extracted text
-          uploaded[i] = { ...file, extractedText: text, isExam: Boolean(file.isExam) };
-          if (text.length > 0) extractionSucceeded = true;
-        } catch (err) {
-          console.warn(`[lecture] Failed to extract text from ${file.name}:`, err);
-          // Continue with other files even if one fails
-          extractedTexts.push({ fileName: file.name, text: '', isExam: Boolean(file.isExam) });
-        }
-      }
-      console.log('[lecture-new] extraction complete', {
-        lectureId,
-        files: uploaded.length,
-        extractionSucceeded,
-        durationMs: Date.now() - extractionStartedAt,
-      });
-
-      // Step 3: Generate lecture metadata using file names + extracted content
+      // Step 2: Generate lecture metadata from filenames. Heavy extraction runs server-side.
       setStatus('generating-metadata');
       setCurrentStep(t('lectureNew.status.metadata'));
       
       const metadata = await generateLectureMetadata(
-        files.map((f, idx) => ({ 
+        files.map((f) => ({
           name: f.name,
-          notes: extractedTexts[idx]?.text?.slice(0, 500) // Include first 500 chars as context
+          notes: f.isExam ? 'Marked as past exam' : undefined,
         })),
         agentLanguage
       );
 
-      // Step 4: Save lecture and files, mark plan generation pending, then navigate
+      // Step 3: Save lecture and files, then enqueue server-owned plan generation.
       setStatus('saving');
       setCurrentStep(t('lectureNew.status.saving'));
       
@@ -152,6 +140,7 @@ export default function NewLectureScreen() {
         title: metadata.title,
         description: metadata.description,
         additionalNotes: trimmedNotes || null,
+        planSettings,
         planStatus: 'pending',
         planGeneratedAt: null,
         planError: null,
@@ -167,7 +156,9 @@ export default function NewLectureScreen() {
           description: metadata.description, 
           createdAt: new Date().toISOString(), 
           additionalNotes: trimmedNotes || undefined,
+          planSettings,
           files: uploaded,
+          studyPlanModules: undefined,
           studyPlan: undefined,
           planStatus: 'pending',
           planGeneratedAt: null,
@@ -176,122 +167,11 @@ export default function NewLectureScreen() {
         ...(prev ?? []),
       ]);
 
+      setStatus('queueing');
+      setCurrentStep(t('lectureNew.status.plan'));
+      await enqueueLecturePlanGeneration(lectureId);
+      queryClient.invalidateQueries({ queryKey: ['lectures'] });
       router.replace(`/lecture/${lectureId}`);
-
-      // Kick off study plan generation in the background
-      const runPlanGeneration = async () => {
-        const generationStartedAt = Date.now();
-        console.log('[lecture-new] study plan generation started', {
-          lectureId,
-          files: uploaded.length,
-          extractionSucceeded,
-        });
-
-      const indexEmbeddings = async () => {
-        try {
-          const allChunks: {
-            lectureId: string;
-            lectureFileId: string;
-            pageNumber: number;
-            chunkIndex: number;
-            content: string;
-            embedding: number[];
-            contentHash?: string;
-          }[] = [];
-          for (const file of uploaded) {
-            const chunks = await buildLectureChunks(lectureId, file, extractedPages[file.id]);
-            chunks.forEach((chunk) =>
-              allChunks.push({
-                lectureId,
-                lectureFileId: file.id,
-                pageNumber: chunk.pageNumber,
-                chunkIndex: chunk.chunkIndex,
-                content: chunk.content,
-                embedding: chunk.embedding,
-                contentHash: chunk.contentHash,
-              })
-            );
-          }
-
-          if (allChunks.length > 0) {
-            await deleteLectureChunksForLecture(lectureId);
-            await upsertLectureChunks(allChunks);
-            console.log('[lecture-new] embeddings indexed', { chunks: allChunks.length });
-          }
-        } catch (err) {
-          console.warn('[lecture-new] embedding indexing failed', err);
-        }
-      };
-
-      const embeddingsPromise = indexEmbeddings();
-
-        let studyPlanEntries: Awaited<ReturnType<typeof generateStudyPlan>>['entries'] = [];
-        let planCostUsd: number | undefined;
-        try {
-          if (extractionSucceeded) {
-            const planResult = await generateStudyPlan(extractedTexts, agentLanguage, {
-              additionalNotes: trimmedNotes || undefined,
-              thresholds: { pass: 50, good: 70, ace: 80 },
-              lectureId,
-            });
-            studyPlanEntries = planResult.entries;
-            planCostUsd = planResult.costUsd;
-          } else {
-            console.log('[lecture-new] PDF extraction failed, generating study plan from file names');
-            const planResult = await generateStudyPlan(
-              files.map(f => ({ fileName: f.name, text: `File: ${f.name}`, isExam: Boolean(f.isExam) })),
-              agentLanguage,
-              { additionalNotes: trimmedNotes || undefined, thresholds: { pass: 50, good: 70, ace: 80 }, lectureId }
-            );
-            studyPlanEntries = planResult.entries;
-            planCostUsd = planResult.costUsd;
-          }
-          console.log('[lecture-new] study plan generation succeeded', {
-            lectureId,
-            entries: studyPlanEntries.length,
-            costUsd: planCostUsd,
-            durationMs: Date.now() - generationStartedAt,
-          });
-
-          if (studyPlanEntries.length > 0) {
-            await saveStudyPlanEntries(lectureId, studyPlanEntries);
-          }
-
-          await updateLecturePlanStatus(lectureId, {
-            planStatus: 'ready',
-            planGeneratedAt: new Date().toISOString(),
-            planError: null,
-          });
-
-          await embeddingsPromise;
-        } catch (planError: any) {
-          const message = planError?.message ?? String(planError);
-          console.warn('[lecture-new] study plan generation failed', {
-            lectureId,
-            message,
-            durationMs: Date.now() - generationStartedAt,
-            stack: planError?.stack,
-          });
-
-          await updateLecturePlanStatus(lectureId, {
-            planStatus: 'failed',
-            planGeneratedAt: null,
-            planError: message?.slice(0, 500),
-          });
-        }
-        try {
-          await embeddingsPromise;
-        } catch (err) {
-          console.warn('[lecture-new] embedding indexing (post-error) failed', err);
-        } finally {
-          // Ensure lecture list refreshes when status changes
-          queryClient.invalidateQueries({ queryKey: ['lectures'] });
-        }
-      };
-
-      runPlanGeneration().catch((err) => {
-        console.warn('[lecture-new] unhandled plan generation error', { lectureId, message: err?.message ?? String(err) });
-      });
     } catch (error) {
       console.warn('[lecture] upload failed', error);
       setCurrentStep(t('lectureNew.status.failed'));
@@ -304,11 +184,9 @@ export default function NewLectureScreen() {
     switch (status) {
       case 'uploading':
         return t('lectureNew.status.uploading');
-      case 'extracting':
-        return t('lectureNew.status.extracting');
       case 'generating-metadata':
         return t('lectureNew.status.metadata');
-      case 'generating-plan':
+      case 'queueing':
         return t('lectureNew.status.plan');
       case 'saving':
         return t('lectureNew.status.saving');
@@ -363,6 +241,73 @@ export default function NewLectureScreen() {
       <ThemedText tone="muted" style={{ marginBottom: 6 }}>
         {t('lectureNew.additionalNotesHint')}
       </ThemedText>
+      <ThemedView style={styles.setupPanel}>
+        <ThemedText type="defaultSemiBold">Learning path setup</ThemedText>
+        <View style={styles.setupGrid}>
+          <TextInput
+            style={styles.setupInput}
+            placeholder="Exam date (YYYY-MM-DD)"
+            placeholderTextColor={palette.textMuted}
+            value={examDate}
+            onChangeText={setExamDate}
+            editable={!isProcessing}
+          />
+          <TextInput
+            style={styles.setupInput}
+            placeholder="Weekly minutes"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="number-pad"
+            value={weeklyStudyMinutes}
+            onChangeText={setWeeklyStudyMinutes}
+            editable={!isProcessing}
+          />
+          <TextInput
+            style={styles.setupInput}
+            placeholder="Session minutes"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="number-pad"
+            value={preferredSessionMinutes}
+            onChangeText={setPreferredSessionMinutes}
+            editable={!isProcessing}
+          />
+          <TextInput
+            style={styles.setupInput}
+            placeholder="Weak areas, comma separated"
+            placeholderTextColor={palette.textMuted}
+            value={weakAreas}
+            onChangeText={setWeakAreas}
+            editable={!isProcessing}
+          />
+        </View>
+        <View style={styles.segmentRow}>
+          {(['pass', '2.0', '1.3'] as const).map((grade) => (
+            <Pressable
+              key={grade}
+              style={[styles.segmentButton, targetGrade === grade && styles.segmentButtonActive]}
+              onPress={() => setTargetGrade(grade)}
+              disabled={isProcessing}
+            >
+              <ThemedText style={[styles.segmentText, targetGrade === grade && styles.segmentTextActive]}>
+                {grade === 'pass' ? 'Pass' : grade}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.segmentRow}>
+          {(['beginner', 'some-background', 'advanced'] as const).map((level) => (
+            <Pressable
+              key={level}
+              style={[styles.segmentButton, currentLevel === level && styles.segmentButtonActive]}
+              onPress={() => setCurrentLevel(level)}
+              disabled={isProcessing}
+            >
+              <ThemedText style={[styles.segmentText, currentLevel === level && styles.segmentTextActive]}>
+                {level === 'some-background' ? 'Some background' : level}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      </ThemedView>
       <TextInput
         style={styles.notesInput}
         placeholder={t('lectureNew.additionalNotesPlaceholder')}
@@ -399,9 +344,8 @@ export default function NewLectureScreen() {
             <View style={[
               styles.progressFill, 
               { width: status === 'uploading' ? '20%' 
-                : status === 'extracting' ? '40%'
                 : status === 'generating-metadata' ? '60%'
-                : status === 'generating-plan' ? '80%'
+                : status === 'queueing' ? '80%'
                 : '95%'
               }
             ]} />
@@ -453,6 +397,54 @@ const createStyles = (palette: typeof Colors.light) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: Spacing.sm,
+    },
+    setupPanel: {
+      width: '100%',
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: Radii.md,
+      padding: 12,
+      gap: Spacing.sm,
+      backgroundColor: palette.surface,
+    },
+    setupGrid: {
+      gap: Spacing.sm,
+    },
+    setupInput: {
+      width: '100%',
+      borderRadius: Radii.sm,
+      borderWidth: 1,
+      borderColor: palette.border,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      color: palette.text,
+      backgroundColor: palette.surfaceAlt,
+    },
+    segmentRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.xs,
+    },
+    segmentButton: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: Radii.sm,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      backgroundColor: palette.surface,
+    },
+    segmentButtonActive: {
+      borderColor: `${palette.primary}66`,
+      backgroundColor: `${palette.primary}14`,
+    },
+    segmentText: {
+      color: palette.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'capitalize',
+    },
+    segmentTextActive: {
+      color: palette.primary,
     },
     examBadge: {
       borderWidth: 1,

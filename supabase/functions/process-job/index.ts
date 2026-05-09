@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import pLimit from "npm:p-limit";
+import { getDocumentProxy } from "npm:unpdf";
 import { corsHeaders } from "../_shared/cors.ts";
 import {
   callChat,
@@ -20,6 +21,13 @@ import {
   practiceExamPrompt,
   studyPlanPrompt,
 } from "../_shared/prompts.ts";
+import {
+  buildConceptInventoryPrompt,
+  buildLearningPathPrompt,
+  parseLearningPath,
+  ParsedPlanEntry,
+  PlanSettings,
+} from "../_shared/study-plan-v2.ts";
 import { insertUsageLog } from "../_shared/usage.ts";
 
 // EdgeRuntime is available in Supabase Edge Functions for background work
@@ -72,6 +80,80 @@ const decodeDataUrl = (dataUrl: string): Uint8Array => {
   }
   return bytes;
 };
+
+type ExtractedPage = { pageNumber: number; text: string };
+type LecturePlanFile = {
+  id: string;
+  name: string;
+  uri: string;
+  extracted_text?: string | null;
+  is_exam?: boolean | null;
+};
+
+const hashText = (input: string): string => {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash << 5) + hash + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return `h${(hash >>> 0).toString(16)}`;
+};
+
+const splitTextForEmbeddings = (text: string, maxChars = 1600, overlap = 200): string[] => {
+  if (text.length <= maxChars) return text.trim() ? [text.trim()] : [];
+  const chunks: string[] = [];
+  let start = 0;
+  while (start < text.length) {
+    const sliceEnd = Math.min(start + maxChars, text.length);
+    let chunk = text.slice(start, sliceEnd);
+    if (sliceEnd < text.length) {
+      const lastBreak = chunk.lastIndexOf("\n\n");
+      if (lastBreak > maxChars * 0.6) chunk = chunk.slice(0, lastBreak);
+    }
+    const trimmed = chunk.trim();
+    if (trimmed) chunks.push(trimmed);
+    const advanceBy = chunk.length > overlap ? chunk.length - overlap : chunk.length;
+    if (advanceBy <= 0) break;
+    start += advanceBy;
+  }
+  return chunks;
+};
+
+const extractPdfPages = async (pdfUrl: string): Promise<ExtractedPage[]> => {
+  const pdfResponse = await fetch(pdfUrl);
+  if (!pdfResponse.ok) throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);
+  const pdfBuffer = await pdfResponse.arrayBuffer();
+  const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
+  const pages: ExtractedPage[] = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    const page = await pdf.getPage(pageNumber);
+    const textContent = await page.getTextContent();
+    const text = (textContent.items ?? [])
+      .map((item: any) => ("str" in item ? item.str : ""))
+      .join(" ");
+    const sanitized = sanitizeForDatabase(text);
+    if (sanitized) pages.push({ pageNumber, text: sanitized });
+  }
+  return pages;
+};
+
+const aggregateUsage = (
+  current: UsageLogPayload | undefined,
+  next: Partial<UsageLogPayload>,
+): UsageLogPayload => ({
+  feature: current?.feature ?? next.feature ?? "lecture_plan_v2",
+  model: next.model ?? current?.model ?? null,
+  usage: {
+    promptTokens: (current?.usage?.promptTokens ?? 0) + (next.usage?.promptTokens ?? 0),
+    completionTokens: (current?.usage?.completionTokens ?? 0) + (next.usage?.completionTokens ?? 0),
+    totalTokens: (current?.usage?.totalTokens ?? 0) + (next.usage?.totalTokens ?? 0),
+  },
+  costUsd: (current?.costUsd ?? 0) + (next.costUsd ?? 0),
+  inputCostUsd: (current?.inputCostUsd ?? 0) + (next.inputCostUsd ?? 0),
+  outputCostUsd: (current?.outputCostUsd ?? 0) + (next.outputCostUsd ?? 0),
+  lectureId: next.lectureId ?? current?.lectureId ?? null,
+  metadata: { ...(current?.metadata ?? {}), ...(next.metadata ?? {}) },
+});
 
 const handlePlan = async (payload: any): Promise<JobRunResult> => {
   const { extractedTexts = [], language = "en", options = {} } = payload ?? {};
@@ -243,6 +325,253 @@ const handlePlan = async (payload: any): Promise<JobRunResult> => {
       costUsd: (totalInputCost || 0) + (totalOutputCost || 0),
       lectureId: payload?.lectureId ?? payload?.lecture_id ?? null,
       metadata: { chunks: chunks.length },
+    },
+  };
+};
+
+const handleLecturePlanV2 = async (
+  payload: any,
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+): Promise<JobRunResult> => {
+  const { lectureId, regenerate = false } = payload ?? {};
+  if (!lectureId) throw new Error("lectureId is required");
+  if (!userId) throw new Error("User context required for lecture plan generation");
+
+  let usage: UsageLogPayload | undefined = {
+    feature: "lecture_plan_v2",
+    lectureId,
+    costUsd: 0,
+  };
+  const warnings: string[] = [];
+
+  const { data: lecture, error: lectureError } = await supabase
+    .from("lectures")
+    .select("id,title,additional_notes,plan_settings")
+    .eq("id", lectureId)
+    .eq("user_id", userId)
+    .single();
+  if (lectureError) throw lectureError;
+  if (!lecture) throw new Error("Lecture not found");
+
+  const { data: files, error: filesError } = await supabase
+    .from("lecture_files")
+    .select("id,name,uri,extracted_text,is_exam")
+    .eq("lecture_id", lectureId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (filesError) throw filesError;
+  if (!files?.length) throw new Error("Lecture has no files");
+
+  const planSettings: PlanSettings = {
+    preferredSessionMinutes: 45,
+    targetGrade: "pass",
+    ...((lecture.plan_settings as PlanSettings | null) ?? {}),
+  };
+  if (!planSettings.additionalNotes && lecture.additional_notes) {
+    planSettings.additionalNotes = lecture.additional_notes;
+  }
+
+  await supabase
+    .from("lectures")
+    .update({ plan_status: "pending", plan_generated_at: null, plan_error: null })
+    .eq("id", lectureId);
+
+  const extractedTexts: { fileName: string; text: string; isExam?: boolean }[] = [];
+  const extractedPagesByFile = new Map<string, ExtractedPage[]>();
+
+  for (const file of files as LecturePlanFile[]) {
+    let pages: ExtractedPage[] = [];
+    if (file.extracted_text?.trim()) {
+      pages = [{ pageNumber: 1, text: sanitizeForDatabase(file.extracted_text) }];
+    } else {
+      try {
+        pages = await extractPdfPages(file.uri);
+        const fullText = pages.map((page) => page.text).join("\n\n");
+        await supabase
+          .from("lecture_files")
+          .update({ extracted_text: fullText })
+          .eq("id", file.id)
+          .eq("user_id", userId);
+      } catch (error: any) {
+        warnings.push(`Could not extract ${file.name}: ${error?.message ?? String(error)}`);
+      }
+    }
+
+    const fullText = pages.map((page) => page.text).join("\n\n");
+    extractedPagesByFile.set(file.id, pages);
+    extractedTexts.push({
+      fileName: file.name,
+      text: fullText || `PDF Document: ${file.name}.`,
+      isExam: Boolean(file.is_exam),
+    });
+  }
+
+  if (!extractedTexts.some((item) => item.text && !item.text.startsWith("PDF Document:"))) {
+    warnings.push("No PDF text could be extracted; generated from file names.");
+  }
+
+  const combinedContent = extractedTexts
+    .map((item) => `=== ${item.fileName}${item.isExam ? " (Past Exam)" : ""} ===\n${item.text}`)
+    .join("\n\n");
+
+  const truncatedContent = truncateToTokenLimit(combinedContent, 120000);
+  const inventoryPrompt = buildConceptInventoryPrompt(truncatedContent, planSettings, payload?.language ?? "en");
+  const inventoryChat = await callChat([{ type: "text", text: inventoryPrompt }]);
+  usage = aggregateUsage(usage, {
+    feature: "lecture_plan_v2",
+    model: inventoryChat.model,
+    usage: inventoryChat.usage,
+    costUsd: inventoryChat.costUsd,
+    inputCostUsd: inventoryChat.inputCostUsd,
+    outputCostUsd: inventoryChat.outputCostUsd,
+    lectureId,
+    metadata: { pass: "inventory" },
+  });
+
+  const pathPrompt = buildLearningPathPrompt(inventoryChat.message, planSettings, payload?.language ?? "en");
+  const pathChat = await callChat([{ type: "text", text: pathPrompt }]);
+  usage = aggregateUsage(usage, {
+    feature: "lecture_plan_v2",
+    model: pathChat.model,
+    usage: pathChat.usage,
+    costUsd: pathChat.costUsd,
+    inputCostUsd: pathChat.inputCostUsd,
+    outputCostUsd: pathChat.outputCostUsd,
+    lectureId,
+    metadata: { pass: "path" },
+  });
+
+  const parsedPath = parseLearningPath(pathChat.message);
+  warnings.push(...parsedPath.warnings);
+
+  await supabase.from("study_plan_entries").delete().eq("lecture_id", lectureId).eq("user_id", userId);
+  await supabase.from("study_plan_modules").delete().eq("lecture_id", lectureId).eq("user_id", userId);
+  if (regenerate) {
+    await supabase.from("lecture_file_chunks").delete().eq("lecture_id", lectureId);
+  } else {
+    await supabase.from("lecture_file_chunks").delete().eq("lecture_id", lectureId);
+  }
+
+  const moduleIdByClientId = new Map<string, string>();
+  const moduleRows = parsedPath.modules.map((module) => {
+    const id = crypto.randomUUID();
+    moduleIdByClientId.set(module.clientId, id);
+    return {
+      id,
+      lecture_id: lectureId,
+      user_id: userId,
+      title: module.title,
+      summary: module.summary ?? null,
+      order_index: module.orderIndex,
+      estimated_minutes: module.estimatedMinutes ?? null,
+    };
+  });
+
+  const { error: moduleInsertError } = await supabase.from("study_plan_modules").insert(moduleRows);
+  if (moduleInsertError) throw moduleInsertError;
+
+  const entryIdByClientId = new Map<string, string>();
+  parsedPath.entries.forEach((entry) => entryIdByClientId.set(entry.clientId, crypto.randomUUID()));
+
+  const entryRows = parsedPath.entries.map((entry: ParsedPlanEntry) => {
+    const moduleId = moduleIdByClientId.get(entry.moduleClientId) ?? moduleRows[0]?.id ?? null;
+    const prerequisiteEntryIds = entry.prerequisiteClientIds
+      .map((id) => entryIdByClientId.get(id))
+      .filter((id): id is string => Boolean(id));
+    return {
+      id: entryIdByClientId.get(entry.clientId),
+      lecture_id: lectureId,
+      user_id: userId,
+      module_id: moduleId,
+      title: entry.title,
+      description: entry.description ?? null,
+      key_concepts: entry.keyConcepts ?? [],
+      order_index: entry.orderIndex,
+      category: entry.category ?? null,
+      importance_tier: entry.importanceTier ?? "core",
+      priority_score: entry.priorityScore ?? 0,
+      status: "not_started",
+      from_exam_source: entry.fromExamSource ?? false,
+      exam_relevance: entry.examRelevance ?? null,
+      mentioned_in_notes: entry.mentionedInNotes ?? false,
+      prerequisite_entry_ids: prerequisiteEntryIds,
+      learning_objective: entry.learningObjective ?? null,
+      estimated_minutes: entry.estimatedMinutes ?? null,
+      difficulty: entry.difficulty ?? null,
+      sequence_reason: entry.sequenceReason ?? null,
+      source_refs: entry.sourceRefs ?? null,
+    };
+  });
+
+  const { error: entryInsertError } = await supabase.from("study_plan_entries").insert(entryRows);
+  if (entryInsertError) throw entryInsertError;
+
+  const chunkRows: any[] = [];
+  for (const file of files as LecturePlanFile[]) {
+    const pages = extractedPagesByFile.get(file.id) ?? [];
+    for (const page of pages) {
+      splitTextForEmbeddings(page.text).forEach((content, chunkIndex) => {
+        chunkRows.push({
+          lecture_id: lectureId,
+          lecture_file_id: file.id,
+          page_number: page.pageNumber,
+          chunk_index: chunkIndex,
+          content,
+          content_hash: hashText(`${file.id}:${page.pageNumber}:${chunkIndex}:${content}`),
+        });
+      });
+    }
+  }
+
+  if (chunkRows.length > 0) {
+    const embeddingResult = await embedTexts(chunkRows.map((chunk) => chunk.content));
+    usage = aggregateUsage(usage, {
+      feature: "lecture_plan_v2",
+      model: embeddingResult.model,
+      usage: embeddingResult.usage,
+      costUsd: embeddingResult.costUsd,
+      inputCostUsd: embeddingResult.inputCostUsd,
+      outputCostUsd: embeddingResult.outputCostUsd,
+      lectureId,
+      metadata: { chunks: chunkRows.length },
+    });
+    const rowsWithEmbeddings = chunkRows.map((chunk, idx) => ({
+      ...chunk,
+      embedding: embeddingResult.embeddings[idx],
+    }));
+    const { error: chunkInsertError } = await supabase
+      .from("lecture_file_chunks")
+      .upsert(rowsWithEmbeddings, { onConflict: "content_hash" });
+    if (chunkInsertError) warnings.push(`Embedding index failed: ${chunkInsertError.message}`);
+  }
+
+  await supabase
+    .from("lectures")
+    .update({
+      plan_status: "ready",
+      plan_generated_at: new Date().toISOString(),
+      plan_error: warnings.length > 0 ? warnings.join(" | ").slice(0, 500) : null,
+    })
+    .eq("id", lectureId)
+    .eq("user_id", userId);
+
+  return {
+    result: {
+      modulesCreated: moduleRows.length,
+      entriesCreated: entryRows.length,
+      warnings,
+    },
+    usage: {
+      ...usage,
+      feature: "lecture_plan_v2",
+      lectureId,
+      metadata: {
+        ...(usage?.metadata ?? {}),
+        modules: moduleRows.length,
+        entries: entryRows.length,
+        warnings: warnings.length,
+      },
     },
   };
 };
@@ -681,6 +1010,8 @@ const runJob = async (
       return await handleEmbed(job.payload);
     case "practice_exam":
       return await handlePracticeExam(job.payload, supabase, job.user_id);
+    case "lecture_plan_v2":
+      return await handleLecturePlanV2(job.payload, supabase, job.user_id);
     default:
       throw new Error(`Unknown job type: ${job.type}`);
   }
@@ -724,7 +1055,20 @@ const processPlanJob = async (supabase: ReturnType<typeof createClient>, locked:
       throw updateError;
     }
   } catch (jobError: any) {
-    console.error("[process-job] plan job failed", jobError);
+    console.error("[process-job] background job failed", jobError);
+    if (locked.type === "lecture_plan_v2") {
+      const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
+      if (lectureId) {
+        await supabase
+          .from("lectures")
+          .update({
+            plan_status: "failed",
+            plan_generated_at: null,
+            plan_error: jobError?.message?.slice(0, 500) ?? "Job failed",
+          })
+          .eq("id", lectureId);
+      }
+    }
     await supabase
       .from("jobs")
       .update({
@@ -797,8 +1141,8 @@ Deno.serve(async (req: Request) => {
     let result: any = null;
 
     try {
-      if (locked.type === "plan") {
-        console.log("[process-job] Scheduling plan job in background:", locked.id);
+      if (locked.type === "plan" || locked.type === "lecture_plan_v2") {
+        console.log("[process-job] Scheduling background job:", locked.id);
         const backgroundPromise = processPlanJob(supabase, locked as Job);
         try {
           EdgeRuntime.waitUntil(backgroundPromise);
@@ -806,9 +1150,8 @@ Deno.serve(async (req: Request) => {
           console.warn("[process-job] EdgeRuntime.waitUntil unavailable, running inline", err);
           await backgroundPromise;
         }
-        // Clients should keep polling for up to ~30m while the background plan job completes.
         return new Response(
-          JSON.stringify({ message: "plan job scheduled", id: locked.id }),
+          JSON.stringify({ message: "background job scheduled", id: locked.id }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -856,6 +1199,19 @@ Deno.serve(async (req: Request) => {
       }
     } catch (jobError: any) {
       console.error("[process-job] job failed", jobError);
+      if (locked.type === "lecture_plan_v2") {
+        const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
+        if (lectureId) {
+          await supabase
+            .from("lectures")
+            .update({
+              plan_status: "failed",
+              plan_generated_at: null,
+              plan_error: jobError?.message?.slice(0, 500) ?? "Job failed",
+            })
+            .eq("id", lectureId);
+        }
+      }
       await supabase
         .from("jobs")
         .update({

@@ -1,4 +1,4 @@
-import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyMisconception, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
+import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanSettings, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, SourceRef, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyMisconception, StudyPlanEntry, StudyPlanModule, StudyReadiness, StudySession } from '@/types';
 import { createClient, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
@@ -346,6 +346,52 @@ export const updateSession = async (sessionId: string, patch: Partial<StudySessi
 
 export const getSupabase = () => supabase;
 
+const getAccessToken = async (): Promise<string | null> => {
+  const client = ensureClient();
+  try {
+    const { data } = await client.auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const callSupabaseFunction = async <T = any>(
+  functionName: string,
+  payload: Record<string, unknown>
+): Promise<T> => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error('Supabase functions are not configured.');
+  }
+  const accessToken = await getAccessToken();
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken ?? SUPABASE_ANON_KEY}`,
+      apikey: SUPABASE_ANON_KEY,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `Supabase function ${functionName} failed.`);
+  }
+  return (await response.json()) as T;
+};
+
+export const enqueueLecturePlanGeneration = async (
+  lectureId: string,
+  regenerate = false
+): Promise<string> => {
+  const data = await callSupabaseFunction<{ jobId: string }>('enqueue-job', {
+    type: 'lecture_plan_v2',
+    payload: { lectureId, regenerate },
+  });
+  if (!data?.jobId) throw new Error('Failed to enqueue lecture plan generation');
+  return data.jobId;
+};
+
 const extractMaterialPath = (uri: string): string | null => {
   if (!uri) return null;
   if (uri.startsWith(`${MATERIALS_BUCKET}/`)) {
@@ -367,21 +413,71 @@ const extractMaterialPath = (uri: string): string | null => {
   return null;
 };
 
+const normalizeStringArray = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  return value.map((item) => String(item)).filter(Boolean);
+};
+
+const mapStudyPlanEntry = (entry: any): StudyPlanEntry => ({
+  id: entry.id,
+  lectureId: entry.lecture_id,
+  moduleId: entry.module_id ?? undefined,
+  title: entry.title,
+  description: entry.description ?? undefined,
+  keyConcepts: entry.key_concepts ?? [],
+  orderIndex: entry.order_index ?? 0,
+  category: entry.category ?? undefined,
+  importanceTier: (entry.importance_tier as StudyPlanEntry['importanceTier']) ?? 'core',
+  priorityScore: entry.priority_score ?? 0,
+  status: (entry.status as SectionStatus | null) ?? 'not_started',
+  statusScore: entry.status_score ?? undefined,
+  statusUpdatedAt: entry.status_updated_at ?? undefined,
+  masteryScore: entry.mastery_score ?? undefined,
+  nextReviewAt: entry.next_review_at ?? undefined,
+  reviewCount: entry.review_count ?? undefined,
+  easeFactor: entry.ease_factor ?? undefined,
+  fromExamSource: entry.from_exam_source ?? false,
+  examRelevance: entry.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
+  mentionedInNotes: entry.mentioned_in_notes ?? false,
+  prerequisiteEntryIds: normalizeStringArray(entry.prerequisite_entry_ids),
+  learningObjective: entry.learning_objective ?? undefined,
+  estimatedMinutes: entry.estimated_minutes ?? undefined,
+  difficulty: entry.difficulty as StudyPlanEntry['difficulty'] ?? undefined,
+  sequenceReason: entry.sequence_reason ?? undefined,
+  sourceRefs: (entry.source_refs as SourceRef[] | null) ?? undefined,
+  createdAt: entry.created_at,
+});
+
+const mapStudyPlanModule = (module: any): StudyPlanModule => ({
+  id: module.id,
+  lectureId: module.lecture_id,
+  title: module.title,
+  summary: module.summary ?? undefined,
+  orderIndex: module.order_index ?? 0,
+  estimatedMinutes: module.estimated_minutes ?? undefined,
+  createdAt: module.created_at,
+});
+
 export const listLectures = async (): Promise<Lecture[]> => {
   const client = ensureClient();
   const [
     { data: lectures, error: lectureError }, 
     { data: files, error: fileError },
-    { data: studyPlanEntries, error: studyPlanError }
+    { data: studyPlanEntries, error: studyPlanError },
+    { data: studyPlanModuleRows, error: studyPlanModulesError }
   ] = await Promise.all([
     client.from('lectures').select().order('created_at', { ascending: false }),
     client.from('lecture_files').select(),
     client.from('study_plan_entries').select().order('order_index', { ascending: true }),
+    client.from('study_plan_modules').select().order('order_index', { ascending: true }),
   ]);
   if (lectureError) throw lectureError;
   if (fileError) throw fileError;
   if (studyPlanError) {
     console.warn('[supabase] study_plan_entries query failed (table may not exist yet):', studyPlanError.message);
+  }
+  if (studyPlanModulesError && studyPlanModulesError.code !== '42P01') {
+    console.warn('[supabase] study_plan_modules query failed:', studyPlanModulesError.message);
   }
 
   return (lectures ?? []).map((row) => {
@@ -398,30 +494,13 @@ export const listLectures = async (): Promise<Lecture[]> => {
         createdAt: file.created_at,
       }));
 
+    const studyPlanModules = (studyPlanModulesError ? [] : studyPlanModuleRows ?? [])
+      .filter((module) => module.lecture_id === row.id)
+      .map<StudyPlanModule>(mapStudyPlanModule);
+
     const studyPlan = (studyPlanEntries ?? [])
       .filter((entry) => entry.lecture_id === row.id)
-      .map<StudyPlanEntry>((entry) => ({
-        id: entry.id,
-        lectureId: entry.lecture_id,
-        title: entry.title,
-        description: entry.description ?? undefined,
-        keyConcepts: entry.key_concepts ?? [],
-        orderIndex: entry.order_index ?? 0,
-        category: entry.category ?? undefined,
-        importanceTier: (entry.importance_tier as StudyPlanEntry['importanceTier']) ?? 'core',
-        priorityScore: entry.priority_score ?? 0,
-        status: (entry.status as SectionStatus | null) ?? 'not_started',
-        statusScore: entry.status_score ?? undefined,
-        statusUpdatedAt: entry.status_updated_at ?? undefined,
-        masteryScore: entry.mastery_score ?? undefined,
-        nextReviewAt: entry.next_review_at ?? undefined,
-        reviewCount: entry.review_count ?? undefined,
-        easeFactor: entry.ease_factor ?? undefined,
-        fromExamSource: entry.from_exam_source ?? false,
-        examRelevance: entry.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
-        mentionedInNotes: entry.mentioned_in_notes ?? false,
-        createdAt: entry.created_at,
-      }));
+      .map<StudyPlanEntry>(mapStudyPlanEntry);
 
     return {
       id: row.id,
@@ -429,7 +508,9 @@ export const listLectures = async (): Promise<Lecture[]> => {
       description: row.description ?? '',
       createdAt: row.created_at,
       additionalNotes: row.additional_notes ?? undefined,
+      planSettings: (row.plan_settings as PlanSettings | null) ?? undefined,
       files: lectureFiles,
+      studyPlanModules: studyPlanModules.length > 0 ? studyPlanModules : undefined,
       studyPlan: studyPlan.length > 0 ? studyPlan : undefined,
       roadmap: (row.roadmap as RoadmapStep[] | null) ?? undefined,
       readiness: (row.readiness as StudyReadiness | null) ?? undefined,
@@ -442,6 +523,7 @@ export const listLectures = async (): Promise<Lecture[]> => {
 
 type SaveLectureInput = Pick<Lecture, 'id' | 'title' | 'description'> & {
   additionalNotes?: string | null;
+  planSettings?: PlanSettings | null;
   roadmap?: RoadmapStep[] | null;
   readiness?: StudyReadiness | null;
   planStatus?: PlanStatus;
@@ -462,6 +544,9 @@ export const saveLecture = async (lecture: SaveLectureInput) => {
   if (lecture.additionalNotes !== undefined) {
     payload.additional_notes = sanitizeText(lecture.additionalNotes);
   }
+  if (lecture.planSettings !== undefined) {
+    payload.plan_settings = lecture.planSettings ?? null;
+  }
   if (lecture.roadmap !== undefined) {
     payload.roadmap = lecture.roadmap ?? null;
   }
@@ -473,6 +558,21 @@ export const saveLecture = async (lecture: SaveLectureInput) => {
   if (lecture.planError !== undefined) payload.plan_error = sanitizeText(lecture.planError);
 
   const { error } = await client.from('lectures').upsert(payload);
+  if (error) throw error;
+};
+
+export const saveLecturePlanSettings = async (lectureId: string, settings: PlanSettings | null) => {
+  const client = ensureClient();
+  await requireUserId();
+  const additionalNotes =
+    settings?.additionalNotes !== undefined ? sanitizeText(settings.additionalNotes) : undefined;
+  const patch: Record<string, unknown> = {
+    plan_settings: settings ?? null,
+  };
+  if (additionalNotes !== undefined) {
+    patch.additional_notes = additionalNotes;
+  }
+  const { error } = await client.from('lectures').update(patch).eq('id', lectureId);
   if (error) throw error;
 };
 
@@ -683,6 +783,7 @@ export const saveStudyPlanEntries = async (
   const payload = entries.map((entry) => {
     const record: Record<string, unknown> = {
       lecture_id: lectureId,
+      module_id: entry.moduleId ?? null,
       title: entry.title,
       description: entry.description ?? null,
       key_concepts: entry.keyConcepts ?? [],
@@ -695,6 +796,12 @@ export const saveStudyPlanEntries = async (
       from_exam_source: entry.fromExamSource ?? false,
       exam_relevance: entry.examRelevance ?? null,
       mentioned_in_notes: entry.mentionedInNotes ?? false,
+      prerequisite_entry_ids: entry.prerequisiteEntryIds ?? [],
+      learning_objective: entry.learningObjective ?? null,
+      estimated_minutes: entry.estimatedMinutes ?? null,
+      difficulty: entry.difficulty ?? null,
+      sequence_reason: entry.sequenceReason ?? null,
+      source_refs: entry.sourceRefs ?? null,
     };
 
     if (entry.statusScore !== undefined) record.status_score = entry.statusScore;
@@ -721,28 +828,7 @@ export const getStudyPlanEntries = async (lectureId: string): Promise<StudyPlanE
   
   if (error) throw error;
   
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    lectureId: row.lecture_id,
-    title: row.title,
-    description: row.description ?? undefined,
-    keyConcepts: row.key_concepts ?? [],
-    orderIndex: row.order_index ?? 0,
-    category: row.category ?? undefined,
-    importanceTier: (row.importance_tier as StudyPlanEntry['importanceTier']) ?? 'core',
-    priorityScore: row.priority_score ?? 0,
-    status: (row.status as SectionStatus | null) ?? 'not_started',
-    statusScore: row.status_score ?? undefined,
-    statusUpdatedAt: row.status_updated_at ?? undefined,
-    masteryScore: row.mastery_score ?? undefined,
-    nextReviewAt: row.next_review_at ?? undefined,
-    reviewCount: row.review_count ?? undefined,
-    easeFactor: row.ease_factor ?? undefined,
-    fromExamSource: row.from_exam_source ?? false,
-    examRelevance: row.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
-    mentionedInNotes: row.mentioned_in_notes ?? false,
-    createdAt: row.created_at,
-  }));
+  return (data ?? []).map(mapStudyPlanEntry);
 };
 
 export const getStudyPlanEntry = async (entryId: string): Promise<StudyPlanEntry | null> => {
@@ -758,28 +844,7 @@ export const getStudyPlanEntry = async (entryId: string): Promise<StudyPlanEntry
     throw error;
   }
   
-  return {
-    id: data.id,
-    lectureId: data.lecture_id,
-    title: data.title,
-    description: data.description ?? undefined,
-    keyConcepts: data.key_concepts ?? [],
-    orderIndex: data.order_index ?? 0,
-    category: data.category ?? undefined,
-    importanceTier: (data.importance_tier as StudyPlanEntry['importanceTier']) ?? 'core',
-    priorityScore: data.priority_score ?? 0,
-    status: (data.status as SectionStatus | null) ?? 'not_started',
-    statusScore: data.status_score ?? undefined,
-    statusUpdatedAt: data.status_updated_at ?? undefined,
-    masteryScore: data.mastery_score ?? undefined,
-    nextReviewAt: data.next_review_at ?? undefined,
-    reviewCount: data.review_count ?? undefined,
-    easeFactor: data.ease_factor ?? undefined,
-    fromExamSource: data.from_exam_source ?? false,
-    examRelevance: data.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
-    mentionedInNotes: data.mentioned_in_notes ?? false,
-    createdAt: data.created_at,
-  };
+  return mapStudyPlanEntry(data);
 };
 
 export const updateStudyPlanEntryStatus = async (
@@ -910,11 +975,13 @@ export const getLectureWithFiles = async (lectureId: string): Promise<Lecture | 
   const [
     { data: lecture, error: lectureError },
     { data: files, error: filesError },
-    { data: studyPlanEntries, error: studyPlanError }
+    { data: studyPlanEntries, error: studyPlanError },
+    { data: studyPlanModuleRows, error: studyPlanModulesError }
   ] = await Promise.all([
     client.from('lectures').select().eq('id', lectureId).single(),
     client.from('lecture_files').select().eq('lecture_id', lectureId),
     client.from('study_plan_entries').select().eq('lecture_id', lectureId).order('order_index', { ascending: true }),
+    client.from('study_plan_modules').select().eq('lecture_id', lectureId).order('order_index', { ascending: true }),
   ]);
   
   if (lectureError) {
@@ -924,6 +991,9 @@ export const getLectureWithFiles = async (lectureId: string): Promise<Lecture | 
   if (filesError) throw filesError;
   if (studyPlanError) {
     console.warn('[supabase] study_plan_entries query failed:', studyPlanError.message);
+  }
+  if (studyPlanModulesError && studyPlanModulesError.code !== '42P01') {
+    console.warn('[supabase] study_plan_modules query failed:', studyPlanModulesError.message);
   }
   
   const lectureFiles = (files ?? []).map<LectureFile>((file) => ({
@@ -937,28 +1007,8 @@ export const getLectureWithFiles = async (lectureId: string): Promise<Lecture | 
     createdAt: file.created_at,
   }));
 
-  const studyPlan = (studyPlanEntries ?? []).map<StudyPlanEntry>((entry) => ({
-    id: entry.id,
-    lectureId: entry.lecture_id,
-    title: entry.title,
-    description: entry.description ?? undefined,
-    keyConcepts: entry.key_concepts ?? [],
-    orderIndex: entry.order_index ?? 0,
-    category: entry.category ?? undefined,
-    importanceTier: (entry.importance_tier as StudyPlanEntry['importanceTier']) ?? 'core',
-    priorityScore: entry.priority_score ?? 0,
-    status: (entry.status as SectionStatus | null) ?? 'not_started',
-    statusScore: entry.status_score ?? undefined,
-    statusUpdatedAt: entry.status_updated_at ?? undefined,
-    masteryScore: entry.mastery_score ?? undefined,
-    nextReviewAt: entry.next_review_at ?? undefined,
-    reviewCount: entry.review_count ?? undefined,
-    easeFactor: entry.ease_factor ?? undefined,
-    fromExamSource: entry.from_exam_source ?? false,
-    examRelevance: entry.exam_relevance as StudyPlanEntry['examRelevance'] ?? undefined,
-    mentionedInNotes: entry.mentioned_in_notes ?? false,
-    createdAt: entry.created_at,
-  }));
+  const studyPlanModules = (studyPlanModulesError ? [] : studyPlanModuleRows ?? []).map<StudyPlanModule>(mapStudyPlanModule);
+  const studyPlan = (studyPlanEntries ?? []).map<StudyPlanEntry>(mapStudyPlanEntry);
   
   return {
     id: lecture.id,
@@ -966,7 +1016,9 @@ export const getLectureWithFiles = async (lectureId: string): Promise<Lecture | 
     description: lecture.description ?? '',
     createdAt: lecture.created_at,
     additionalNotes: lecture.additional_notes ?? undefined,
+    planSettings: (lecture.plan_settings as PlanSettings | null) ?? undefined,
     files: lectureFiles,
+    studyPlanModules: studyPlanModules.length > 0 ? studyPlanModules : undefined,
     studyPlan: studyPlan.length > 0 ? studyPlan : undefined,
     roadmap: (lecture.roadmap as RoadmapStep[] | null) ?? undefined,
     readiness: (lecture.readiness as StudyReadiness | null) ?? undefined,

@@ -20,9 +20,9 @@ import { useFlashcardCount } from '@/hooks/use-flashcards';
 import { useLectures } from '@/hooks/use-lectures';
 import { usePracticeExams } from '@/hooks/use-practice-exams';
 import { useSessions } from '@/hooks/use-sessions';
-import { buildLectureChunks, ExtractedPdfPage, extractPdfText, generatePracticeExam, generateReadinessAndRoadmap, generateStudyPlan } from '@/lib/openai';
-import { countLectureChunks, createSession, deleteLecture, deleteLectureChunksForLecture, getLectureTotalCost, getSupabase, saveLectureInsights, saveStudyPlanEntries, updateLectureFileText, updateLectureNotes, updateLecturePlanStatus, upsertLectureChunks } from '@/lib/supabase';
-import { PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
+import { generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
+import { createSession, deleteLecture, enqueueLecturePlanGeneration, getLectureTotalCost, getSupabase, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
+import { PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 
 const stripCodeFences = (text: string) => {
   const fenceMatch = text.match(/```(?:json)?\n?([\s\S]*?)```/i);
@@ -41,7 +41,8 @@ export default function LectureDetailScreen() {
   const queryClient = useQueryClient();
   const { t, agentLanguage } = useLanguage();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const palette = Colors[scheme];
   const styles = useMemo(() => createStyles(palette), [palette]);
   
   // Tab navigation state
@@ -55,6 +56,12 @@ export default function LectureDetailScreen() {
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const [generationProgress, setGenerationProgress] = useState('');
   const [notesDraft, setNotesDraft] = useState('');
+  const [examDateDraft, setExamDateDraft] = useState('');
+  const [targetGradeDraft, setTargetGradeDraft] = useState<PlanSettings['targetGrade']>('pass');
+  const [weeklyMinutesDraft, setWeeklyMinutesDraft] = useState('');
+  const [sessionMinutesDraft, setSessionMinutesDraft] = useState('45');
+  const [currentLevelDraft, setCurrentLevelDraft] = useState<NonNullable<PlanSettings['currentLevel']>>('some-background');
+  const [weakAreasDraft, setWeakAreasDraft] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [readiness, setReadiness] = useState<StudyReadiness | undefined>(undefined);
   const [roadmap, setRoadmap] = useState<RoadmapStep[] | undefined>(undefined);
@@ -115,7 +122,14 @@ export default function LectureDetailScreen() {
 
   useEffect(() => {
     if (!lecture) return;
-    setNotesDraft(lecture.additionalNotes ?? '');
+    const settings = lecture.planSettings;
+    setNotesDraft(settings?.additionalNotes ?? lecture.additionalNotes ?? '');
+    setExamDateDraft(settings?.examDate ?? '');
+    setTargetGradeDraft(settings?.targetGrade ?? 'pass');
+    setWeeklyMinutesDraft(settings?.weeklyStudyMinutes ? String(settings.weeklyStudyMinutes) : '');
+    setSessionMinutesDraft(String(settings?.preferredSessionMinutes ?? 45));
+    setCurrentLevelDraft(settings?.currentLevel ?? 'some-background');
+    setWeakAreasDraft(settings?.weakAreas?.join(', ') ?? '');
     setReadiness(lecture.readiness ?? undefined);
     setRoadmap(lecture.roadmap ?? undefined);
   }, [lecture]);
@@ -124,53 +138,18 @@ export default function LectureDetailScreen() {
     () => (notesDraft ?? '') !== (lecture?.additionalNotes ?? ''),
     [lecture?.additionalNotes, notesDraft]
   );
-
-  const embeddingsCheckedRef = useRef(false);
-
-  useEffect(() => {
-    const backfillEmbeddings = async () => {
-      if (!lecture || embeddingsCheckedRef.current) return;
-      embeddingsCheckedRef.current = true;
-      try {
-        const existingCount = await countLectureChunks(lecture.id);
-        if ((existingCount ?? 0) > 0) return;
-
-        const allChunks: {
-          lectureId: string;
-          lectureFileId: string;
-          pageNumber: number;
-          chunkIndex: number;
-          content: string;
-          embedding: number[];
-          contentHash?: string;
-        }[] = [];
-        for (const file of lecture.files) {
-          const chunks = await buildLectureChunks(lecture.id, file);
-          chunks.forEach((chunk) =>
-            allChunks.push({
-              lectureId: lecture.id,
-              lectureFileId: file.id,
-              pageNumber: chunk.pageNumber,
-              chunkIndex: chunk.chunkIndex,
-              content: chunk.content,
-              embedding: chunk.embedding,
-              contentHash: chunk.contentHash,
-            })
-          );
-        }
-
-        if (allChunks.length > 0) {
-          await deleteLectureChunksForLecture(lecture.id);
-          await upsertLectureChunks(allChunks);
-          console.log('[lecture] embeddings backfilled', { chunks: allChunks.length });
-        }
-      } catch (err) {
-        console.warn('[lecture] embedding backfill skipped', err);
-      }
-    };
-
-    backfillEmbeddings();
-  }, [lecture]);
+  const settingsDirty = useMemo(() => {
+    if (!lecture) return false;
+    const settings = lecture.planSettings;
+    return (
+      examDateDraft !== (settings?.examDate ?? '') ||
+      targetGradeDraft !== (settings?.targetGrade ?? 'pass') ||
+      weeklyMinutesDraft !== (settings?.weeklyStudyMinutes ? String(settings.weeklyStudyMinutes) : '') ||
+      sessionMinutesDraft !== String(settings?.preferredSessionMinutes ?? 45) ||
+      currentLevelDraft !== (settings?.currentLevel ?? 'some-background') ||
+      weakAreasDraft !== (settings?.weakAreas?.join(', ') ?? '')
+    );
+  }, [currentLevelDraft, examDateDraft, lecture, sessionMinutesDraft, targetGradeDraft, weakAreasDraft, weeklyMinutesDraft]);
 
   // Pull-to-refresh handler
   const handleRefresh = useCallback(async () => {
@@ -326,156 +305,49 @@ export default function LectureDetailScreen() {
     );
   }, [deletingLecture, lecture, performDeleteLecture, t]);
 
+  const buildPlanSettingsDraft = useCallback((): PlanSettings => {
+    const settings: PlanSettings = {
+      targetGrade: targetGradeDraft ?? 'pass',
+      preferredSessionMinutes: Math.max(15, Math.min(180, Number(sessionMinutesDraft) || 45)),
+      currentLevel: currentLevelDraft,
+      additionalNotes: notesDraft.trim() || undefined,
+    };
+    if (examDateDraft.trim()) settings.examDate = examDateDraft.trim();
+    if (Number(weeklyMinutesDraft) > 0) {
+      settings.weeklyStudyMinutes = Math.max(30, Math.min(6000, Number(weeklyMinutesDraft)));
+    }
+    const weakAreas = weakAreasDraft
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (weakAreas.length > 0) settings.weakAreas = weakAreas;
+    return settings;
+  }, [currentLevelDraft, examDateDraft, notesDraft, sessionMinutesDraft, targetGradeDraft, weakAreasDraft, weeklyMinutesDraft]);
+
   const generatePlan = useCallback(async () => {
     if (!lecture || lecture.files.length === 0) {
       Alert.alert(t('lectureDetail.alert.noMaterialsTitle'), t('lectureDetail.alert.noMaterialsBody'));
       return;
     }
 
-    const generationStartedAt = Date.now();
     const lectureId = lecture.id;
     setGeneratingPlan(true);
-    setGenerationProgress(t('lectureDetail.statusPreparing'));
-    let embeddingsPromise: Promise<void> | undefined;
+    setGenerationProgress(t('lectureDetail.planPendingCta'));
 
     try {
+      const settings = buildPlanSettingsDraft();
+      await saveLecturePlanSettings(lectureId, settings);
       await updateLecturePlanStatus(lectureId, {
         planStatus: 'pending',
         planGeneratedAt: null,
         planError: null,
       });
-      const notesForPlan = (notesDraft || lecture.additionalNotes || '').trim();
-
-      const extractedTexts: { fileName: string; text: string; isExam?: boolean }[] = [];
-      let hasExtractedText = false;
-      const extractedPages: Record<string, ExtractedPdfPage[] | undefined> = {};
-
-      for (let i = 0; i < lecture.files.length; i++) {
-        const file = lecture.files[i];
-        setGenerationProgress(`Analyzing ${i + 1}/${lecture.files.length}: ${file.name}`);
-
-        if (file.extractedText && file.extractedText.length > 0) {
-          extractedTexts.push({ fileName: file.name, text: file.extractedText, isExam: Boolean(file.isExam) });
-          hasExtractedText = true;
-        } else {
-          try {
-            const extraction = await extractPdfText(file.uri);
-            const text = extraction.text;
-            extractedTexts.push({ fileName: file.name, text, isExam: Boolean(file.isExam) });
-            extractedPages[file.id] = extraction.pages;
-            if (text.length > 0) {
-              hasExtractedText = true;
-              try {
-                await updateLectureFileText(file.id, text);
-              } catch (saveErr) {
-                console.warn('[lecture] Failed to save extracted text:', saveErr);
-              }
-            }
-          } catch (err) {
-            console.warn(`[lecture] Failed to extract text from ${file.name}:`, err);
-            extractedTexts.push({ fileName: file.name, text: '', isExam: Boolean(file.isExam) });
-          }
-        }
-      }
-
-      const indexEmbeddings = async () => {
-        try {
-          const allChunks: {
-            lectureId: string;
-            lectureFileId: string;
-            pageNumber: number;
-            chunkIndex: number;
-            content: string;
-            embedding: number[];
-            contentHash?: string;
-          }[] = [];
-          for (const file of lecture.files) {
-            const chunks = await buildLectureChunks(lectureId, file, extractedPages[file.id]);
-            chunks.forEach((chunk) =>
-              allChunks.push({
-                lectureId,
-                lectureFileId: file.id,
-                pageNumber: chunk.pageNumber,
-                chunkIndex: chunk.chunkIndex,
-                content: chunk.content,
-                embedding: chunk.embedding,
-                contentHash: chunk.contentHash,
-              })
-            );
-          }
-
-          if (allChunks.length > 0) {
-            await deleteLectureChunksForLecture(lectureId);
-            await upsertLectureChunks(allChunks);
-            console.log('[lecture] embeddings indexed', { chunks: allChunks.length });
-          }
-        } catch (err) {
-          console.warn('[lecture] embedding indexing failed', err);
-        }
-      };
-
-      embeddingsPromise = hasExtractedText ? indexEmbeddings() : Promise.resolve();
-
-      setGenerationProgress(t('lectureDetail.generating'));
-
-      let studyPlanEntries: Awaited<ReturnType<typeof generateStudyPlan>>['entries'] = [];
-      let planCostUsd: number | undefined;
-      
-      if (hasExtractedText) {
-        const planResult = await generateStudyPlan(extractedTexts, agentLanguage, {
-          additionalNotes: notesForPlan || undefined,
-          lectureId,
-        });
-        studyPlanEntries = planResult.entries;
-        planCostUsd = planResult.costUsd;
-      } else {
-        console.log('[lecture] No text extracted, generating plan from file names');
-        const planResult = await generateStudyPlan(
-          lecture.files.map(f => ({ 
-            fileName: f.name, 
-            text: `PDF Document: ${f.name}. This file covers topics related to ${f.name.replace('.pdf', '').replace(/[-_]/g, ' ')}.`,
-            isExam: Boolean(f.isExam),
-          })),
-          agentLanguage,
-          {
-            additionalNotes: notesForPlan || undefined,
-            lectureId,
-          }
-        );
-        studyPlanEntries = planResult.entries;
-        planCostUsd = planResult.costUsd;
-      }
-
-      setGenerationProgress(t('lectureDetail.progress.savingPlan'));
-
-      if (studyPlanEntries.length > 0) {
-        await saveStudyPlanEntries(lecture.id, studyPlanEntries);
-      }
-
-      await updateLecturePlanStatus(lectureId, {
-        planStatus: 'ready',
-        planGeneratedAt: new Date().toISOString(),
-        planError: null,
-      });
-
-      if (embeddingsPromise) {
-        await embeddingsPromise;
-      }
-
+      await enqueueLecturePlanGeneration(lectureId, true);
       await refetch();
       queryClient.invalidateQueries({ queryKey: ['lectures'] });
-
-      setGenerationProgress('');
-      console.log('[lecture] study plan generation succeeded', {
-        lectureId,
-        entries: studyPlanEntries.length,
-        costUsd: planCostUsd,
-        durationMs: Date.now() - generationStartedAt,
-      });
-      Alert.alert('Success', `Study plan created with ${studyPlanEntries.length} topics!`);
     } catch (error) {
       const message = (error as any)?.message ?? String(error);
-      console.error('[lecture] Study plan generation failed:', error);
+      console.error('[lecture] Study plan enqueue failed:', error);
       try {
         await updateLecturePlanStatus(lectureId, {
           planStatus: 'failed',
@@ -487,23 +359,17 @@ export default function LectureDetailScreen() {
       }
       Alert.alert('Error', 'Failed to generate study plan. Please try again.');
       setGenerationProgress('');
-      try {
-        if (embeddingsPromise) {
-          await embeddingsPromise;
-        }
-      } catch (err) {
-        console.warn('[lecture] embedding indexing (post-error) failed', err);
-      }
     } finally {
       setGeneratingPlan(false);
     }
-  }, [agentLanguage, lecture, notesDraft, queryClient, refetch, t]);
+  }, [buildPlanSettingsDraft, lecture, queryClient, refetch, t]);
 
   const handleSaveNotes = useCallback(async () => {
     if (!lecture) return;
     setSavingNotes(true);
     try {
       await updateLectureNotes(lecture.id, notesDraft.trim() || null);
+      await saveLecturePlanSettings(lecture.id, buildPlanSettingsDraft());
       queryClient.invalidateQueries({ queryKey: ['lectures'] });
     } catch (err) {
       console.warn('[lecture] failed to save notes', err);
@@ -511,7 +377,7 @@ export default function LectureDetailScreen() {
     } finally {
       setSavingNotes(false);
     }
-  }, [lecture, notesDraft, queryClient, t]);
+  }, [buildPlanSettingsDraft, lecture, notesDraft, queryClient, t]);
 
   const toggleCategory = useCallback((category: string) => {
     setCategoryOpen((prev) => ({ ...prev, [category]: !prev[category] }));
@@ -564,7 +430,18 @@ export default function LectureDetailScreen() {
     return map;
   }, [orderedPlan]);
 
-  const categorizedPlan = useMemo(() => {
+  const planGroups = useMemo(() => {
+    const modules = [...(lecture?.studyPlanModules ?? [])].sort((a, b) => a.orderIndex - b.orderIndex);
+    if (modules.length > 0) {
+      return modules.map((module) => ({
+        key: module.id,
+        category: module.title,
+        summary: module.summary,
+        estimatedMinutes: module.estimatedMinutes,
+        entries: orderedPlan.filter((entry) => entry.moduleId === module.id),
+      })).filter((group) => group.entries.length > 0);
+    }
+
     const buckets = new Map<string, StudyPlanEntry[]>();
     orderedPlan.forEach((entry) => {
       const category = entry.category || 'General';
@@ -574,10 +451,13 @@ export default function LectureDetailScreen() {
       buckets.get(category)!.push(entry);
     });
     return Array.from(buckets.entries()).map(([category, entries]) => ({
+      key: category,
       category,
+      summary: undefined,
+      estimatedMinutes: undefined,
       entries,
     }));
-  }, [orderedPlan]);
+  }, [lecture?.studyPlanModules, orderedPlan]);
 
   const clusterQuizzesByCategory = useMemo(() => {
     const map: Record<string, PracticeExam[]> = {};
@@ -632,14 +512,14 @@ export default function LectureDetailScreen() {
   useEffect(() => {
     setCategoryOpen((prev) => {
       const next = { ...prev };
-      categorizedPlan.forEach((group, idx) => {
+      planGroups.forEach((group, idx) => {
         if (next[group.category] === undefined) {
           next[group.category] = idx === 0;
         }
       });
       return next;
     });
-  }, [categorizedPlan]);
+  }, [planGroups]);
 
   const hasStudyPlan = orderedPlan.length > 0;
   const planStatus = lecture?.planStatus ?? (hasStudyPlan ? 'ready' : undefined);
@@ -945,9 +825,9 @@ export default function LectureDetailScreen() {
             <ThemedText type="defaultSemiBold">{t('lectureDetail.additionalNotesTitle')}</ThemedText>
           </View>
           <Pressable
-            style={[styles.smallButton, (savingNotes || !notesDirty) && styles.buttonDisabled]}
+            style={[styles.smallButton, (savingNotes || (!notesDirty && !settingsDirty)) && styles.buttonDisabled]}
             onPress={handleSaveNotes}
-            disabled={savingNotes || !notesDirty}
+            disabled={savingNotes || (!notesDirty && !settingsDirty)}
           >
             {savingNotes ? (
               <ActivityIndicator color="#64748b" size="small" />
@@ -966,6 +846,70 @@ export default function LectureDetailScreen() {
           onChangeText={setNotesDraft}
           editable={!savingNotes}
         />
+        <View style={styles.planSettingsGrid}>
+          <TextInput
+            style={styles.planSettingsInput}
+            placeholder="Exam date (YYYY-MM-DD)"
+            placeholderTextColor={palette.textMuted}
+            value={examDateDraft}
+            onChangeText={setExamDateDraft}
+            editable={!savingNotes}
+          />
+          <TextInput
+            style={styles.planSettingsInput}
+            placeholder="Weekly minutes"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="number-pad"
+            value={weeklyMinutesDraft}
+            onChangeText={setWeeklyMinutesDraft}
+            editable={!savingNotes}
+          />
+          <TextInput
+            style={styles.planSettingsInput}
+            placeholder="Session minutes"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="number-pad"
+            value={sessionMinutesDraft}
+            onChangeText={setSessionMinutesDraft}
+            editable={!savingNotes}
+          />
+          <TextInput
+            style={styles.planSettingsInput}
+            placeholder="Weak areas, comma separated"
+            placeholderTextColor={palette.textMuted}
+            value={weakAreasDraft}
+            onChangeText={setWeakAreasDraft}
+            editable={!savingNotes}
+          />
+        </View>
+        <View style={styles.segmentRow}>
+          {(['pass', '2.0', '1.3'] as const).map((grade) => (
+            <Pressable
+              key={grade}
+              style={[styles.segmentButton, targetGradeDraft === grade && styles.segmentButtonActive]}
+              onPress={() => setTargetGradeDraft(grade)}
+              disabled={savingNotes}
+            >
+              <ThemedText style={[styles.segmentText, targetGradeDraft === grade && styles.segmentTextActive]}>
+                {grade === 'pass' ? 'Pass' : grade}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.segmentRow}>
+          {(['beginner', 'some-background', 'advanced'] as const).map((level) => (
+            <Pressable
+              key={level}
+              style={[styles.segmentButton, currentLevelDraft === level && styles.segmentButtonActive]}
+              onPress={() => setCurrentLevelDraft(level)}
+              disabled={savingNotes}
+            >
+              <ThemedText style={[styles.segmentText, currentLevelDraft === level && styles.segmentTextActive]}>
+                {level === 'some-background' ? 'Some background' : level}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
       </View>
 
       {/* No Study Plan Card */}
@@ -1054,7 +998,7 @@ export default function LectureDetailScreen() {
           {/* Category Quick Jump Chips */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryChipsScroll}>
             <View style={styles.categoryChipsRow}>
-              {categorizedPlan.map(({ category, entries }) => {
+              {planGroups.map(({ category, entries }) => {
                 const passed = entries.filter(e => e.status === 'passed').length;
                 return (
                   <Pressable
@@ -1072,8 +1016,8 @@ export default function LectureDetailScreen() {
           </ScrollView>
 
           <View style={styles.studyPlanList}>
-            {categorizedPlan.map(({ category, entries }) => (
-              <View key={category} style={styles.categoryGroup}>
+            {planGroups.map(({ key, category, summary, estimatedMinutes, entries }) => (
+              <View key={key} style={styles.categoryGroup}>
                 <Pressable style={styles.categoryHeader} onPress={() => toggleCategory(category)}>
                   <Ionicons
                     name={categoryOpen[category] ? 'chevron-down' : 'chevron-forward'}
@@ -1085,6 +1029,11 @@ export default function LectureDetailScreen() {
                   </ThemedText>
                   <ThemedText style={styles.categoryCount}>{entries.length}</ThemedText>
                 </Pressable>
+                {categoryOpen[category] && (summary || estimatedMinutes) && (
+                  <ThemedText style={styles.moduleSummary}>
+                    {summary}{estimatedMinutes ? ` · ${estimatedMinutes} min` : ''}
+                  </ThemedText>
+                )}
                 
                 {categoryOpen[category] && entries.map((entry) => {
                   const orderNumber = planOrderLookup[entry.id] ?? entry.orderIndex + 1;
@@ -1131,6 +1080,11 @@ export default function LectureDetailScreen() {
                               {entry.description}
                             </ThemedText>
                           )}
+                          {entry.sequenceReason && (
+                            <ThemedText style={styles.sequenceReason} numberOfLines={isExpanded ? undefined : 2}>
+                              {entry.sequenceReason}
+                            </ThemedText>
+                          )}
                         </View>
                         <Pressable
                           style={styles.expandButton}
@@ -1163,6 +1117,16 @@ export default function LectureDetailScreen() {
                             {entry.importanceTier && (
                               <ThemedText style={styles.entryMetaText}>
                                 {entry.importanceTier}
+                              </ThemedText>
+                            )}
+                            {entry.estimatedMinutes !== undefined && (
+                              <ThemedText style={styles.entryMetaText}>
+                                {entry.estimatedMinutes} min
+                              </ThemedText>
+                            )}
+                            {entry.difficulty && (
+                              <ThemedText style={styles.entryMetaText}>
+                                {entry.difficulty}
                               </ThemedText>
                             )}
                             {entry.priorityScore !== undefined && (
@@ -1735,6 +1699,45 @@ const createStyles = (palette: typeof Colors.light) =>
       backgroundColor: palette.surfaceAlt,
       fontSize: 14,
     },
+    planSettingsGrid: {
+      gap: Spacing.sm,
+    },
+    planSettingsInput: {
+      borderRadius: Radii.sm,
+      borderWidth: 1,
+      borderColor: palette.border,
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      color: palette.text,
+      backgroundColor: palette.surfaceAlt,
+      fontSize: 14,
+    },
+    segmentRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.xs,
+    },
+    segmentButton: {
+      borderWidth: 1,
+      borderColor: palette.border,
+      borderRadius: Radii.sm,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      backgroundColor: palette.surface,
+    },
+    segmentButtonActive: {
+      borderColor: `${palette.primary}66`,
+      backgroundColor: `${palette.primary}14`,
+    },
+    segmentText: {
+      color: palette.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+      textTransform: 'capitalize',
+    },
+    segmentTextActive: {
+      color: palette.primary,
+    },
     
     // Section Headers
     sectionHeaderRow: {
@@ -1896,6 +1899,13 @@ const createStyles = (palette: typeof Colors.light) =>
       color: palette.textMuted,
       fontSize: 12,
     },
+    moduleSummary: {
+      color: palette.textMuted,
+      fontSize: 12,
+      lineHeight: 17,
+      marginTop: -Spacing.xs,
+      marginBottom: Spacing.xs,
+    },
     
     // Study Plan Card
     studyPlanCard: {
@@ -1954,6 +1964,11 @@ const createStyles = (palette: typeof Colors.light) =>
       fontSize: 13,
       color: palette.textMuted,
       lineHeight: 18,
+    },
+    sequenceReason: {
+      fontSize: 12,
+      color: palette.primary,
+      lineHeight: 17,
     },
     expandButton: {
       padding: 4,

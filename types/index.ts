@@ -39,6 +39,16 @@ export type RoadmapStep = {
 
 export type GermanGrade = '1.0' | '1.3' | '1.7' | '2.0' | '2.3' | '2.7' | '3.0' | '3.3' | '3.7' | '4.0' | 'Failed';
 
+export type PlanSettings = {
+  examDate?: string;
+  targetGrade?: GermanGrade | 'pass';
+  weeklyStudyMinutes?: number;
+  preferredSessionMinutes?: number;
+  currentLevel?: 'beginner' | 'some-background' | 'advanced';
+  weakAreas?: string[];
+  additionalNotes?: string;
+};
+
 export type StudyReadiness = {
   /** Overall readiness percentage (0-100) */
   percentage: number;
@@ -52,9 +62,26 @@ export type StudyReadiness = {
 
 export type ExamRelevance = 'high' | 'medium' | 'low';
 
+export type SourceRef = {
+  fileName?: string;
+  pageNumber?: number;
+  reason?: string;
+};
+
+export type StudyPlanModule = {
+  id: string;
+  lectureId: string;
+  title: string;
+  summary?: string;
+  orderIndex: number;
+  estimatedMinutes?: number;
+  createdAt: string;
+};
+
 export type StudyPlanEntry = {
   id: string;
   lectureId: string;
+  moduleId?: string;
   title: string;
   description?: string;
   keyConcepts: string[];
@@ -72,6 +99,12 @@ export type StudyPlanEntry = {
   fromExamSource?: boolean;
   examRelevance?: ExamRelevance;
   mentionedInNotes?: boolean;
+  prerequisiteEntryIds?: string[];
+  learningObjective?: string;
+  estimatedMinutes?: number;
+  difficulty?: 'intro' | 'core' | 'advanced';
+  sequenceReason?: string;
+  sourceRefs?: SourceRef[];
   createdAt: string;
 };
 
@@ -83,7 +116,9 @@ export type Lecture = {
   description: string;
   createdAt: string;
   additionalNotes?: string;
+  planSettings?: PlanSettings;
   files: LectureFile[];
+  studyPlanModules?: StudyPlanModule[];
   studyPlan?: StudyPlanEntry[];
   roadmap?: RoadmapStep[];
   readiness?: StudyReadiness;

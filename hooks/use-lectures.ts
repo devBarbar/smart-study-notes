@@ -25,6 +25,11 @@ export const useLectures = () => {
           { event: '*', schema: 'public', table: 'study_plan_entries' },
           () => queryClient.invalidateQueries({ queryKey: ['lectures'] })
         )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'study_plan_modules' },
+          () => queryClient.invalidateQueries({ queryKey: ['lectures'] })
+        )
         .subscribe();
 
       subscribedRef.current = true;
@@ -50,4 +55,3 @@ export const useLectures = () => {
     },
   });
 };
-

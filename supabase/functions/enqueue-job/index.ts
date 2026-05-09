@@ -15,6 +15,7 @@ const allowedTypes = new Set([
   "metadata",
   "embed",
   "practice_exam",
+  "lecture_plan_v2",
 ]);
 
 const kickProcessJob = () => {
