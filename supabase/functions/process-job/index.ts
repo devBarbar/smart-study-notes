@@ -1094,15 +1094,23 @@ Deno.serve(async (req: Request) => {
   });
 
   try {
+    let requestedJobId: string | null = null;
+    try {
+      const body = await req.clone().json();
+      requestedJobId = typeof body?.jobId === "string" ? body.jobId : null;
+    } catch {
+      requestedJobId = null;
+    }
+
     // Pick oldest pending job
     console.log("[process-job] Looking for pending jobs...");
-    const { data: pending, error: fetchError } = await supabase
-      .from("jobs")
-      .select("*")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
+    let pendingQuery = supabase.from("jobs").select("*").eq("status", "pending");
+    if (requestedJobId) {
+      pendingQuery = pendingQuery.eq("id", requestedJobId);
+    } else {
+      pendingQuery = pendingQuery.order("created_at", { ascending: true }).limit(1);
+    }
+    const { data: pending, error: fetchError } = await pendingQuery.maybeSingle();
 
     if (fetchError) {
       console.error("[process-job] fetch error", fetchError);

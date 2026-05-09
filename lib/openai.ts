@@ -518,7 +518,7 @@ const enqueueJob = async (type: string, payload: any): Promise<string> => {
   if (!data?.jobId) {
     throw new Error('Failed to enqueue job');
   }
-  callSupabaseFunction('process-job', { source: 'client-fallback' }).catch((error) => {
+  callSupabaseFunction('process-job', { source: 'client-fallback', jobId: data.jobId }).catch((error) => {
     console.warn('[openai] process-job fallback kick failed', error);
   });
   return data.jobId;

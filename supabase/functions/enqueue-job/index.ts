@@ -18,7 +18,7 @@ const allowedTypes = new Set([
   "lecture_plan_v2",
 ]);
 
-const kickProcessJob = () => {
+const kickProcessJob = (jobId?: string) => {
   if (!SUPABASE_URL) return;
 
   const token = SUPABASE_ANON_KEY ?? SUPABASE_SERVICE_ROLE_KEY;
@@ -31,7 +31,7 @@ const kickProcessJob = () => {
       apikey: token,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ source: "enqueue-job" }),
+    body: JSON.stringify({ source: "enqueue-job", jobId }),
   }).catch((error) => {
     console.error("[enqueue-job] process-job kick failed:", error);
   });
@@ -108,7 +108,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    await kickProcessJob();
+    await kickProcessJob(data.id);
 
     return new Response(
       JSON.stringify({ jobId: data.id }),
