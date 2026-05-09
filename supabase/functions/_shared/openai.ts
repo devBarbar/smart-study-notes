@@ -1,4 +1,14 @@
 import { calculateTokenCostUSD, TokenUsage } from "./pricing.ts";
+import {
+  buildEmbeddingRequestBody,
+  extractResponseText,
+  getCompletedResponse,
+  getResponseStreamError,
+  getResponseTextDelta,
+  parseSseDataLine,
+  toTokenUsage,
+  validateEmbeddingDimensions,
+} from "./openai-response-utils.ts";
 
 export type ChatCompletionContent = {
   type: "text" | "image_url";
@@ -32,9 +42,12 @@ export type EmbeddingResponse = {
 };
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL") ?? "gpt-5.1";
+const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-5.5";
+const OPENAI_REASONING_EFFORT = Deno.env.get("OPENAI_REASONING_EFFORT")?.trim() || "high";
 const OPENAI_EMBED_MODEL =
-  Deno.env.get("OPENAI_EMBED_MODEL") ?? "text-embedding-3-small";
+  Deno.env.get("OPENAI_EMBED_MODEL")?.trim() || "text-embedding-3-large";
+const OPENAI_EMBED_DIMENSIONS_RAW = Deno.env.get("OPENAI_EMBED_DIMENSIONS")?.trim();
+const OPENAI_EMBED_DIMENSIONS = Number(OPENAI_EMBED_DIMENSIONS_RAW || "1536");
 
 export const requireOpenAIKey = () => {
   if (!OPENAI_API_KEY) {
@@ -99,28 +112,52 @@ export const chunkText = (text: string, maxChars = 48000, overlap = 1000) => {
   return chunks;
 };
 
-const toUsage = (data: any): OpenAIUsage | undefined => {
-  const promptTokens = data?.usage?.prompt_tokens;
-  const completionTokens = data?.usage?.completion_tokens;
-  const totalTokens = data?.usage?.total_tokens;
-  if (
-    promptTokens === undefined &&
-    completionTokens === undefined &&
-    totalTokens === undefined
-  ) {
-    return undefined;
+const toUsage = (data: any): OpenAIUsage | undefined => toTokenUsage(data);
+
+const toResponseContent = (content: ChatCompletionContent[]) =>
+  content.map((part) => {
+    if (part.type === "image_url") {
+      return {
+        type: "input_image",
+        image_url: part.image_url?.url ?? "",
+      };
+    }
+    return {
+      type: "input_text",
+      text: part.text ?? "",
+    };
+  });
+
+const toResponseMessages = (messages: ChatMessage[]) =>
+  messages
+    .filter((message) => message.role !== "system")
+    .map((message) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: String(message.content ?? ""),
+    }));
+
+const toInstructions = (messages: ChatMessage[]) => {
+  const systemMessages = messages
+    .filter((message) => message.role === "system")
+    .map((message) => String(message.content ?? "").trim())
+    .filter(Boolean);
+  return systemMessages.length > 0 ? systemMessages.join("\n\n") : undefined;
+};
+
+const assertResponseSucceeded = (data: any) => {
+  if (data?.status === "failed") {
+    throw new Error(data?.error?.message ?? "OpenAI response failed");
   }
-  return {
-    promptTokens: typeof promptTokens === "number" ? promptTokens : undefined,
-    completionTokens: typeof completionTokens === "number" ? completionTokens : undefined,
-    totalTokens: typeof totalTokens === "number" ? totalTokens : undefined,
-  };
+  if (data?.status === "incomplete") {
+    const reason = data?.incomplete_details?.reason ?? "unknown";
+    throw new Error(`OpenAI response incomplete: ${reason}`);
+  }
 };
 
 export const callChat = async (content: ChatCompletionContent[]): Promise<ChatResponse> => {
   const apiKey = requireOpenAIKey();
   const model = OPENAI_MODEL;
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -128,7 +165,9 @@ export const callChat = async (content: ChatCompletionContent[]): Promise<ChatRe
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "user", content }],
+      input: [{ role: "user", content: toResponseContent(content) }],
+      reasoning: { effort: OPENAI_REASONING_EFFORT },
+      store: false,
     }),
   });
 
@@ -138,11 +177,12 @@ export const callChat = async (content: ChatCompletionContent[]): Promise<ChatRe
   }
 
   const data = await response.json();
+  assertResponseSucceeded(data);
   const usage = toUsage(data);
   const pricing = calculateTokenCostUSD(data?.model ?? model, usage ?? {});
 
   return {
-    message: data.choices?.[0]?.message?.content as string,
+    message: extractResponseText(data),
     usage,
     model: data?.model ?? model,
     costUsd: pricing.totalCost,
@@ -156,7 +196,7 @@ export const callChatWithMessages = async (
 ): Promise<ChatResponse> => {
   const apiKey = requireOpenAIKey();
   const model = OPENAI_MODEL;
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -164,7 +204,10 @@ export const callChatWithMessages = async (
     },
     body: JSON.stringify({
       model,
-      messages,
+      input: toResponseMessages(messages),
+      instructions: toInstructions(messages),
+      reasoning: { effort: OPENAI_REASONING_EFFORT },
+      store: false,
     }),
   });
 
@@ -174,11 +217,12 @@ export const callChatWithMessages = async (
   }
 
   const data = await response.json();
+  assertResponseSucceeded(data);
   const usage = toUsage(data);
   const pricing = calculateTokenCostUSD(data?.model ?? model, usage ?? {});
 
   return {
-    message: data.choices?.[0]?.message?.content as string,
+    message: extractResponseText(data),
     usage,
     model: data?.model ?? model,
     costUsd: pricing.totalCost,
@@ -193,7 +237,7 @@ export type StreamChatCallbacks = {
 };
 
 /**
- * Stream chat completions from OpenAI with delta token callbacks.
+ * Stream Responses API text deltas from OpenAI with token callbacks.
  * Returns the final ChatResponse once streaming is complete.
  */
 export const callChatWithMessagesStream = async (
@@ -202,7 +246,7 @@ export const callChatWithMessagesStream = async (
 ): Promise<ChatResponse> => {
   const apiKey = requireOpenAIKey();
   const model = OPENAI_MODEL;
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -210,9 +254,11 @@ export const callChatWithMessagesStream = async (
     },
     body: JSON.stringify({
       model,
-      messages,
+      input: toResponseMessages(messages),
+      instructions: toInstructions(messages),
+      reasoning: { effort: OPENAI_REASONING_EFFORT },
+      store: false,
       stream: true,
-      stream_options: { include_usage: true },
     }),
   });
 
@@ -231,6 +277,7 @@ export const callChatWithMessagesStream = async (
   let usage: OpenAIUsage | undefined;
   let modelUsed = model;
   let buffer = "";
+  let streamError: string | null = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -246,22 +293,33 @@ export const callChatWithMessagesStream = async (
       if (!trimmed.startsWith("data: ")) continue;
 
       try {
-        const json = JSON.parse(trimmed.slice(6));
-        const delta = json.choices?.[0]?.delta?.content;
+        const json = parseSseDataLine(trimmed);
+        if (!json) continue;
+
+        streamError = getResponseStreamError(json);
+        if (streamError) break;
+
+        const delta = getResponseTextDelta(json);
         if (delta) {
           fullText += delta;
           await callbacks.onChunk(delta, fullText);
         }
-        if (json.model) {
-          modelUsed = json.model;
-        }
-        if (json.usage) {
-          usage = toUsage(json);
+
+        const completed = getCompletedResponse(json);
+        if (completed) {
+          modelUsed = completed.model ?? modelUsed;
+          usage = toUsage(completed);
         }
       } catch {
         // Ignore parse errors for partial lines
       }
     }
+
+    if (streamError) break;
+  }
+
+  if (streamError) {
+    throw new Error(streamError);
   }
 
   const pricing = calculateTokenCostUSD(modelUsed, usage ?? {});
@@ -281,6 +339,7 @@ export const callChatWithMessagesStream = async (
 export const embedTexts = async (inputs: string[]): Promise<EmbeddingResponse> => {
   requireOpenAIKey();
   const model = OPENAI_EMBED_MODEL;
+  const dimensions = Number.isFinite(OPENAI_EMBED_DIMENSIONS) ? OPENAI_EMBED_DIMENSIONS : undefined;
   const results: number[][] = [];
   const batchSize = 12;
   let aggregatedUsage: OpenAIUsage | undefined;
@@ -293,10 +352,7 @@ export const embedTexts = async (inputs: string[]): Promise<EmbeddingResponse> =
         "Content-Type": "application/json",
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({
-        model,
-        input: slice,
-      }),
+      body: JSON.stringify(buildEmbeddingRequestBody(model, slice, dimensions)),
     });
 
     if (!response.ok) {
@@ -317,6 +373,7 @@ export const embedTexts = async (inputs: string[]): Promise<EmbeddingResponse> =
     const embeddings = (data?.data ?? []).map(
       (item: any) => item.embedding as number[]
     );
+    validateEmbeddingDimensions(embeddings, dimensions);
     results.push(...embeddings);
   }
 
@@ -331,4 +388,3 @@ export const embedTexts = async (inputs: string[]): Promise<EmbeddingResponse> =
     outputCostUsd: pricing.outputCost,
   };
 };
-

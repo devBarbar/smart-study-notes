@@ -22,7 +22,9 @@ const normalizeModelKey = (model: string) => model.toLowerCase();
 
 const BASE_PRICING: Record<string, ModelPricing> = {
   // Defaults based on OpenAI public pricing (USD per 1K tokens)
+  "gpt-5.5": { inputPer1K: 0.005, outputPer1K: 0.03 },
   "gpt-5.1": { inputPer1K: 0.003, outputPer1K: 0.012 },
+  "gpt-4o-transcribe": { inputPer1K: 0.0025, outputPer1K: 0.01 },
   "gpt-4.1": { inputPer1K: 0.0025, outputPer1K: 0.01 },
   "gpt-4o": { inputPer1K: 0.005, outputPer1K: 0.015 },
   "gpt-4o-mini": { inputPer1K: 0.0003, outputPer1K: 0.0006 },

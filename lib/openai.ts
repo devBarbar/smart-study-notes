@@ -4,7 +4,8 @@ import { questionPrompt } from './prompts';
 import { getSupabase } from './supabase';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL ?? 'gpt-5.2';
+const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL?.trim() || 'gpt-5.5';
+const OPENAI_REASONING_EFFORT = process.env.EXPO_PUBLIC_OPENAI_REASONING_EFFORT?.trim() || 'high';
 
 type ChatCompletionContent = {
   type: 'text' | 'image_url';
@@ -29,7 +30,7 @@ const ensureKey = () => {
 
 const callChat = async (content: ChatCompletionContent[]) => {
   ensureKey();
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,7 +38,18 @@ const callChat = async (content: ChatCompletionContent[]) => {
     },
     body: JSON.stringify({
       model: OPENAI_MODEL,
-      messages: [{ role: 'user', content }],
+      input: [
+        {
+          role: 'user',
+          content: content.map((part) =>
+            part.type === 'image_url'
+              ? { type: 'input_image', image_url: part.image_url?.url ?? '' }
+              : { type: 'input_text', text: part.text ?? '' }
+          ),
+        },
+      ],
+      reasoning: { effort: OPENAI_REASONING_EFFORT },
+      store: false,
     }),
   });
 
@@ -47,7 +59,23 @@ const callChat = async (content: ChatCompletionContent[]) => {
   }
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content as string;
+  if (data?.status === 'failed') {
+    throw new Error(data?.error?.message ?? 'OpenAI response failed');
+  }
+  if (data?.status === 'incomplete') {
+    const reason = data?.incomplete_details?.reason ?? 'unknown';
+    throw new Error(`OpenAI response incomplete: ${reason}`);
+  }
+
+  if (typeof data?.output_text === 'string') {
+    return data.output_text as string;
+  }
+
+  return ((data?.output ?? []) as any[])
+    .flatMap((item) => item?.content ?? [])
+    .filter((part) => part?.type === 'output_text' || part?.type === 'text')
+    .map((part) => part?.text ?? '')
+    .join('');
 };
 
 const stripCodeFences = (text: string) => {
@@ -247,7 +275,7 @@ export const buildLectureChunks = async (
   lectureId: string,
   file: LectureFile,
   pages?: ExtractedPdfPage[]
-): Promise<Array<PreparedChunk & { embedding: number[] }>> => {
+): Promise<(PreparedChunk & { embedding: number[] })[]> => {
   const sourcePages: ExtractedPdfPage[] =
     pages && pages.length > 0
       ? pages

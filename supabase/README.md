@@ -2,12 +2,16 @@
 
 ## Required secrets
 - `OPENAI_API_KEY` (required)
-- `OPENAI_MODEL` (optional, defaults to `gpt-5.1`)
-- `OPENAI_EMBED_MODEL` (optional, defaults to `text-embedding-3-small`)
+- `OPENAI_MODEL` (optional, defaults to `gpt-5.5`)
+- `OPENAI_REASONING_EFFORT` (optional, defaults to `high`)
+- `OPENAI_EMBED_MODEL` (optional, defaults to `text-embedding-3-large`)
+- `OPENAI_EMBED_DIMENSIONS` (optional, defaults to `1536`)
+- `OPENAI_TRANSCRIBE_MODEL` (optional, defaults to `gpt-4o-transcribe`)
+- `OPENAI_TTS_MODEL` (optional, defaults to `gpt-4o-mini-tts`)
 
 Set them once per project:
 ```
-supabase secrets set OPENAI_API_KEY=sk-... OPENAI_MODEL=gpt-5.1 OPENAI_EMBED_MODEL=text-embedding-3-small
+supabase secrets set OPENAI_API_KEY=sk-... OPENAI_MODEL=gpt-5.5 OPENAI_REASONING_EFFORT=high OPENAI_EMBED_MODEL=text-embedding-3-large OPENAI_EMBED_DIMENSIONS=1536 OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe OPENAI_TTS_MODEL=gpt-4o-mini-tts
 ```
 
 ## Deploy checklist

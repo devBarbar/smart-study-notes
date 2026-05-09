@@ -12,7 +12,7 @@ import {
   stripCodeFences,
   truncateToTokenLimit,
 } from "../_shared/openai.ts";
-import { calculateWhisperCostUSD } from "../_shared/pricing.ts";
+import { toTokenUsage } from "../_shared/openai-response-utils.ts";
 import {
   feynmanSystemPrompt,
   gradingPrompt,
@@ -27,6 +27,7 @@ declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const OPENAI_TRANSCRIBE_MODEL = Deno.env.get("OPENAI_TRANSCRIBE_MODEL")?.trim() || "gpt-4o-transcribe";
 
 type Job = {
   id: string;
@@ -613,7 +614,7 @@ const handleTranscribe = async (payload: any): Promise<JobRunResult> => {
 
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("model", "whisper-1");
+  formData.append("model", OPENAI_TRANSCRIBE_MODEL);
   formData.append("language", language);
 
   const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -630,20 +631,20 @@ const handleTranscribe = async (payload: any): Promise<JobRunResult> => {
   }
 
   const data = await response.json();
+  const usage = toTokenUsage(data);
   const audioDurationSeconds =
     typeof data?.duration === "number"
       ? data.duration
       : typeof durationSeconds === "number"
         ? durationSeconds
         : undefined;
-  const costUsd = audioDurationSeconds ? calculateWhisperCostUSD(audioDurationSeconds) : 0;
 
   return {
     result: { text: data.text || "" },
     usage: {
       feature: "transcribe",
-      model: "whisper-1",
-      costUsd,
+      model: data?.model ?? OPENAI_TRANSCRIBE_MODEL,
+      usage,
       audioDurationSeconds,
       lectureId: lectureId ?? null,
       metadata: { language },
@@ -871,4 +872,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

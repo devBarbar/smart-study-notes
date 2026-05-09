@@ -38,10 +38,10 @@ Deno.serve(async (req: Request) => {
 
     let feedback: any = null;
     try {
-      feedback = JSON.parse(output);
+      feedback = JSON.parse(output.message);
     } catch {
       feedback = {
-        summary: output,
+        summary: output.message,
         correctness: "unknown",
       };
     }
@@ -67,4 +67,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

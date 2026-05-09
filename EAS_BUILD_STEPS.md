@@ -14,7 +14,8 @@ Use these steps to produce EAS builds that include the JS bundle, so the app run
    - `EXPO_PUBLIC_SUPABASE_URL`
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
    - `EXPO_PUBLIC_OPENAI_API_KEY`
-   - `EXPO_PUBLIC_OPENAI_MODEL` (optional, defaults to `gpt-5.1`)
+   - `EXPO_PUBLIC_OPENAI_MODEL` (optional, defaults to `gpt-5.5`)
+   - `EXPO_PUBLIC_OPENAI_REASONING_EFFORT` (optional, defaults to `high`)
    Example: `eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value <url>`
 3) Create/update `eas.json` with non-dev profiles (ensures the bundle is embedded):
 ```json
@@ -55,4 +56,3 @@ Notes: keep `developmentClient: false` so the JS is bundled; adjust `enterpriseP
 
 ## OTA updates (optional)
 Once a production/preview build is installed, you can push JS-only changes without rebuilding native binaries: `eas update --branch production --message "Your message"`.
-

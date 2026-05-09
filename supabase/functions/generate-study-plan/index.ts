@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
       let parsed: any[] | null = null;
 
       try {
-        const clean = stripCodeFences(output);
+        const clean = stripCodeFences(output.message);
         const json = JSON.parse(clean);
         if (!Array.isArray(json)) {
           throw new Error("Expected array response");
@@ -216,4 +216,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

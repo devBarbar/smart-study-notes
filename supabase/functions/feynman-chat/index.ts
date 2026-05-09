@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
     const reply = await callChatWithMessages(fullMessages);
 
     return new Response(
-      JSON.stringify({ message: reply }),
+      JSON.stringify({ message: reply.message, costUsd: reply.costUsd }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
@@ -51,4 +51,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

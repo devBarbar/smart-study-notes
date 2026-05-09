@@ -3,9 +3,23 @@ import { requireOpenAIKey } from "../_shared/openai.ts";
 
 // Rate limiting: max 4096 chars per request (OpenAI TTS limit)
 const MAX_INPUT_LENGTH = 4096;
+const OPENAI_TTS_MODEL = Deno.env.get("OPENAI_TTS_MODEL")?.trim() || "gpt-4o-mini-tts";
 
 // Supported voices for OpenAI TTS
-type TTSVoice = "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer";
+type TTSVoice =
+  | "alloy"
+  | "ash"
+  | "ballad"
+  | "coral"
+  | "echo"
+  | "fable"
+  | "nova"
+  | "onyx"
+  | "sage"
+  | "shimmer"
+  | "verse"
+  | "marin"
+  | "cedar";
 
 // Language to voice mapping for natural sounding speech
 const languageVoiceMap: Record<string, TTSVoice> = {
@@ -67,9 +81,10 @@ Deno.serve(async (req: Request) => {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "tts-1", // Use tts-1 for lower latency, tts-1-hd for higher quality
+        model: OPENAI_TTS_MODEL,
         input: text,
         voice,
+        instructions: "Speak naturally and clearly for an educational tutoring app.",
         response_format: "mp3", // mp3 is widely supported
         speed: 1.0,
       }),
@@ -102,4 +117,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

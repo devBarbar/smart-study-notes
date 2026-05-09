@@ -30,12 +30,12 @@ Deno.serve(async (req: Request) => {
     let parsedDescription = "";
 
     try {
-      const clean = stripCodeFences(output);
+      const clean = stripCodeFences(output.message);
       const parsed = JSON.parse(clean);
       parsedTitle = parsed.title ?? parsedTitle;
       parsedDescription = parsed.description ?? parsedDescription;
     } catch {
-      parsedDescription = output;
+      parsedDescription = output.message;
     }
 
     return new Response(
@@ -50,4 +50,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

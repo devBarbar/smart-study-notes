@@ -44,7 +44,9 @@ export const insertUsageLog = async ({
   const resolvedCost =
     typeof costUsd === "number"
       ? costUsd
-      : (resolvedInputCost ?? 0) + (resolvedOutputCost ?? 0);
+      : resolvedInputCost !== null || resolvedOutputCost !== null
+        ? (resolvedInputCost ?? 0) + (resolvedOutputCost ?? 0)
+        : null;
 
   const { error } = await supabase.from("ai_usage_logs").insert({
     user_id: userId,

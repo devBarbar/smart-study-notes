@@ -16,10 +16,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const embeddings = await embedTexts(inputs.map((item) => String(item)));
+    const embeddingResult = await embedTexts(inputs.map((item) => String(item)));
 
     return new Response(
-      JSON.stringify({ embeddings }),
+      JSON.stringify({
+        embeddings: embeddingResult.embeddings,
+        costUsd: embeddingResult.costUsd,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
@@ -30,4 +33,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

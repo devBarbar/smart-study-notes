@@ -1,6 +1,8 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireOpenAIKey } from "../_shared/openai.ts";
 
+const OPENAI_TRANSCRIBE_MODEL = Deno.env.get("OPENAI_TRANSCRIBE_MODEL")?.trim() || "gpt-4o-transcribe";
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -33,7 +35,7 @@ Deno.serve(async (req: Request) => {
 
     const openAIForm = new FormData();
     openAIForm.append("file", outboundFile);
-    openAIForm.append("model", "whisper-1");
+    openAIForm.append("model", OPENAI_TRANSCRIBE_MODEL);
     openAIForm.append("language", language);
 
     const apiKey = requireOpenAIKey();
@@ -64,4 +66,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-

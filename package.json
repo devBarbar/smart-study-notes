@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "deploy-functions": "npx supabase functions deploy extract-pdf-text embed-texts generate-lecture-metadata generate-study-plan feynman-chat evaluate-answer transcribe-audio enqueue-job process-job stream-tts",
-    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' node --require ts-node/register tests/prompts.test.ts"
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' node --require ts-node/register --test tests/*.test.ts"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.36",
