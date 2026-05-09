@@ -5,8 +5,6 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
-declare const EdgeRuntime: { waitUntil?: (promise: Promise<unknown>) => void };
-
 const allowedTypes = new Set([
   "plan",
   "chat",
@@ -26,7 +24,7 @@ const kickProcessJob = (jobId?: string) => {
   const token = SUPABASE_ANON_KEY ?? SUPABASE_SERVICE_ROLE_KEY;
   if (!token) return;
 
-  const request = fetch(`${SUPABASE_URL}/functions/v1/process-job`, {
+  return fetch(`${SUPABASE_URL}/functions/v1/process-job`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -37,13 +35,6 @@ const kickProcessJob = (jobId?: string) => {
   }).catch((error) => {
     console.error("[enqueue-job] process-job kick failed:", error);
   });
-
-  if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
-    EdgeRuntime.waitUntil(request);
-    return;
-  }
-
-  return request;
 };
 
 Deno.serve(async (req: Request) => {

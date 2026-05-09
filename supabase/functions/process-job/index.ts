@@ -37,6 +37,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 const OPENAI_TRANSCRIBE_MODEL = Deno.env.get("OPENAI_TRANSCRIBE_MODEL")?.trim() || "gpt-4o-transcribe";
+const PDF_EXTRACTION_TIMEOUT_MS = Number(Deno.env.get("PDF_EXTRACTION_TIMEOUT_MS") || "90000");
 
 type Job = {
   id: string;
@@ -74,7 +75,7 @@ const kickProcessJob = (jobId?: string) => {
   const token = SUPABASE_ANON_KEY ?? SUPABASE_SERVICE_ROLE_KEY;
   if (!token) return;
 
-  const request = fetch(`${SUPABASE_URL}/functions/v1/process-job`, {
+  return fetch(`${SUPABASE_URL}/functions/v1/process-job`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -83,12 +84,6 @@ const kickProcessJob = (jobId?: string) => {
     },
     body: JSON.stringify({ source: "process-job", jobId }),
   }).catch((error) => console.error("[process-job] follow-up kick failed", error));
-
-  try {
-    EdgeRuntime.waitUntil(request);
-  } catch {
-    return request;
-  }
 };
 
 const enqueueInternalJob = async (
@@ -158,6 +153,22 @@ const splitTextForEmbeddings = (text: string, maxChars = 1600, overlap = 200): s
   return chunks;
 };
 
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  let timeoutId: number | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(
+      () => reject(new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)} seconds`)),
+      timeoutMs,
+    );
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+  }
+};
+
 type PlanMaterialChunk = {
   index: number;
   label: string;
@@ -206,7 +217,7 @@ const buildLecturePlanMaterialChunks = (
 };
 
 const extractPdfPages = async (pdfUrl: string): Promise<ExtractedPage[]> => {
-  const pdfResponse = await fetch(pdfUrl);
+  const pdfResponse = await fetch(pdfUrl, { signal: AbortSignal.timeout(PDF_EXTRACTION_TIMEOUT_MS) });
   if (!pdfResponse.ok) throw new Error(`Failed to fetch PDF: ${pdfResponse.status}`);
   const pdfBuffer = await pdfResponse.arrayBuffer();
   const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
@@ -222,6 +233,9 @@ const extractPdfPages = async (pdfUrl: string): Promise<ExtractedPage[]> => {
   }
   return pages;
 };
+
+const extractPdfPagesWithTimeout = (pdfUrl: string, fileName: string) =>
+  withTimeout(extractPdfPages(pdfUrl), PDF_EXTRACTION_TIMEOUT_MS, `PDF extraction for ${fileName}`);
 
 const aggregateUsage = (
   current: UsageLogPayload | undefined,
@@ -471,15 +485,18 @@ const handleLecturePlanV2 = async (
       pages = [{ pageNumber: 1, text: sanitizeForDatabase(file.extracted_text) }];
     } else {
       try {
-        pages = await extractPdfPages(file.uri);
+        pages = await extractPdfPagesWithTimeout(file.uri, file.name);
         const fullText = pages.map((page) => page.text).join("\n\n");
+        if (!fullText.trim()) {
+          throw new Error("PDF text extraction returned no text");
+        }
         await supabase
           .from("lecture_files")
           .update({ extracted_text: fullText })
           .eq("id", file.id)
           .eq("user_id", userId);
       } catch (error: any) {
-        warnings.push(`Could not extract ${file.name}: ${error?.message ?? String(error)}`);
+        throw new Error(`Could not extract ${file.name}: ${error?.message ?? String(error)}`);
       }
     }
 
@@ -489,10 +506,6 @@ const handleLecturePlanV2 = async (
       text: fullText || `PDF Document: ${file.name}.`,
       isExam: Boolean(file.is_exam),
     });
-  }
-
-  if (!extractedTexts.some((item) => item.text && !item.text.startsWith("PDF Document:"))) {
-    warnings.push("No PDF text could be extracted; generated from file names.");
   }
 
   const runId = crypto.randomUUID();
