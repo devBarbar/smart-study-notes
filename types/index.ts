@@ -250,6 +250,9 @@ export type StudyQuestion = {
   sectionTitle?: string;
   targetConcepts?: string[];
   expectedAnswerPoints?: string[];
+  checkType?: TutorCheckType;
+  requiredForPass?: boolean;
+  difficulty?: TutorQuestionDifficulty;
 };
 
 export type StudyFeedback = {
@@ -260,6 +263,17 @@ export type StudyFeedback = {
   misconceptions?: string[];
   followUpQuestion?: string;
   sourceNotes?: string[];
+  checkType?: TutorCheckType;
+  canCountForPass?: boolean;
+  missingPrerequisites?: string[];
+  understandingLevel?: 'memorized' | 'partial' | 'connected' | 'transferable';
+  rubric?: {
+    conceptCoverage?: number;
+    reasoning?: number;
+    application?: number;
+    transfer?: number;
+    clarity?: number;
+  };
 };
 
 export type StudyAnswerLink = {
@@ -346,6 +360,29 @@ export type TutorQuestionMetadata = {
   question: string;
   targetConcepts?: string[];
   expectedAnswerPoints?: string[];
+  checkType?: TutorCheckType;
+  requiredForPass?: boolean;
+  difficulty?: TutorQuestionDifficulty;
+};
+
+export type TutorCheckType = 'recall' | 'why' | 'apply' | 'transfer' | 'teach_back';
+
+export type TutorQuestionDifficulty = 'basic' | 'exam' | 'edge_case';
+
+export type StudyDepthCheck = {
+  id?: string;
+  lectureId?: string;
+  studyPlanEntryId: string;
+  sessionId?: string;
+  questionId?: string;
+  questionText: string;
+  checkType: TutorCheckType;
+  score?: number;
+  correctness?: string;
+  passed: boolean;
+  canCountForPass: boolean;
+  feedbackSummary?: string;
+  createdAt?: string;
 };
 
 export type StudyMisconception = {

@@ -1,4 +1,4 @@
-import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanSettings, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, SourceRef, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyMisconception, StudyPlanEntry, StudyPlanModule, StudyReadiness, StudySession } from '@/types';
+import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanSettings, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, SourceRef, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyDepthCheck, StudyMisconception, StudyPlanEntry, StudyPlanModule, StudyReadiness, StudySession } from '@/types';
 import { createClient, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
@@ -419,6 +419,22 @@ const normalizeStringArray = (value: unknown): string[] | undefined => {
   return value.map((item) => String(item)).filter(Boolean);
 };
 
+const mapStudyDepthCheck = (row: any): StudyDepthCheck => ({
+  id: row.id,
+  lectureId: row.lecture_id ?? undefined,
+  studyPlanEntryId: row.study_plan_entry_id,
+  sessionId: row.session_id ?? undefined,
+  questionId: row.question_id ?? undefined,
+  questionText: row.question_text,
+  checkType: row.check_type,
+  score: row.score ?? undefined,
+  correctness: row.correctness ?? undefined,
+  passed: row.passed ?? false,
+  canCountForPass: row.can_count_for_pass ?? false,
+  feedbackSummary: row.feedback_summary ?? undefined,
+  createdAt: row.created_at,
+});
+
 const mapStudyPlanEntry = (entry: any): StudyPlanEntry => ({
   id: entry.id,
   lectureId: entry.lecture_id,
@@ -769,6 +785,65 @@ export const listStudyMisconceptions = async (
     resolved: row.resolved ?? false,
     createdAt: row.created_at,
   }));
+};
+
+export const saveStudyDepthCheck = async (
+  check: Omit<StudyDepthCheck, 'id' | 'createdAt'> & { id?: string; createdAt?: string },
+): Promise<StudyDepthCheck | null> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const payload = {
+    id: check.id,
+    user_id: userId,
+    lecture_id: check.lectureId ?? null,
+    study_plan_entry_id: check.studyPlanEntryId,
+    session_id: check.sessionId ?? null,
+    question_id: check.questionId ?? null,
+    question_text: sanitizeText(check.questionText) ?? '',
+    check_type: check.checkType,
+    score: check.score ?? null,
+    correctness: check.correctness ?? null,
+    passed: check.passed,
+    can_count_for_pass: check.canCountForPass,
+    feedback_summary: sanitizeText(check.feedbackSummary) ?? null,
+    created_at: check.createdAt ?? new Date().toISOString(),
+  };
+
+  const { data, error } = await client
+    .from('study_depth_checks')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '42P01') {
+      console.warn('[supabase] study_depth_checks table missing, skipping depth check tracking');
+      return null;
+    }
+    throw error;
+  }
+
+  return mapStudyDepthCheck(data);
+};
+
+export const listStudyDepthChecks = async (
+  studyPlanEntryId: string,
+  limit = 100,
+): Promise<StudyDepthCheck[]> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('study_depth_checks')
+    .select()
+    .eq('study_plan_entry_id', studyPlanEntryId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (error.code === '42P01') return [];
+    throw error;
+  }
+
+  return (data ?? []).map(mapStudyDepthCheck);
 };
 
 // Study Plan CRUD functions

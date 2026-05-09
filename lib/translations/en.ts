@@ -233,7 +233,7 @@ const en = {
 
   'flashcards.title': 'Flashcards',
   'flashcards.added': 'Added to flashcards!',
-  'lecture.passedToast': 'Lecture completed!',
+  'lecture.passedToast': 'All topics passed. Complete cluster assessments to finish the lecture.',
   'flashcards.question': 'Question',
   'flashcards.answer': 'Answer',
   'flashcards.explanation': 'Explanation',
@@ -258,6 +258,8 @@ const en = {
   'study.loading': 'Loading study data...',
   'study.empty': 'Nothing to study yet. Start from a lecture or material.',
   'study.focusBadge': 'Focused Study: {{concepts}}',
+  'study.depthGateTitle': 'Depth checks before pass',
+  'study.depthProgress': 'Depth progress',
   'study.focusConceptsFallback': 'Key concepts',
   'study.canvasTitle': 'Canvas (use Apple Pencil to draw, finger to scroll)',
   'study.notesPlaceholder': 'Jot down your notes here...',

@@ -17,6 +17,11 @@ ${question.expectedAnswerPoints?.length ? question.expectedAnswerPoints.map((poi
 Target concepts:
 ${question.targetConcepts?.length ? question.targetConcepts.map((concept) => `- ${concept}`).join('\n') : 'Not provided.'}
 
+Depth check:
+- checkType: ${question.checkType ?? 'infer from question'}
+- requiredForPass: ${question.requiredForPass === false ? 'false' : 'true'}
+- difficulty: ${question.difficulty ?? 'basic'}
+
 Source context:
 ${gradingContext?.trim() || 'No additional source context provided.'}
 
@@ -28,8 +33,25 @@ Return JSON only:
   "improvements": ["2-4 short tips"],
   "misconceptions": ["specific missing or misunderstood concepts"],
   "followUpQuestion": "one smaller diagnostic question targeting the most important gap",
-  "sourceNotes": ["brief source-grounded notes or page references when available"]
+  "sourceNotes": ["brief source-grounded notes or page references when available"],
+  "checkType": "recall | why | apply | transfer | teach_back",
+  "canCountForPass": true,
+  "understandingLevel": "memorized | partial | connected | transferable",
+  "missingPrerequisites": ["specific prerequisite gaps"],
+  "rubric": {
+    "conceptCoverage": 0-100,
+    "reasoning": 0-100,
+    "application": 0-100,
+    "transfer": 0-100,
+    "clarity": 0-100
+  }
 }
+
+Depth grading rules:
+- Infer "checkType" from question.checkType when available; otherwise infer from the question wording.
+- Set "canCountForPass" to true only when the response demonstrates understanding for that check type, is source-consistent, and scores at least 80.
+- Do not count memorized keyword lists as pass-worthy unless the student explains the relationship between ideas.
+- For "transfer", require a new or edge-case situation. For "teach_back", require clear simple language plus the important caveats.
 
 The student may answer with typed text, a canvas image, or both. If typed text is empty but an image is attached, evaluate the handwritten canvas answer. If neither contains an answer, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Respond in ${language} but keep JSON keys in English.`;
 
@@ -146,6 +168,13 @@ export const feynmanSystemPrompt = (materialContext: string, language = 'en') =>
 
 7. **Be Patient**: If the student is stuck, try a different angle. Use multiple explanations and examples.
 
+8. **Depth Before Passing**: A topic is not learned after one correct answer. Move the student through this depth ladder:
+   - recall: state the core idea accurately
+   - why: explain the reason, mechanism, or proof intuition
+   - apply: solve or analyze a concrete example
+   - transfer: adapt the idea to a new or edge-case situation
+   - teach_back: explain it simply with the important caveats
+
 **Material Context:**
 ${materialContext}
 
@@ -157,8 +186,9 @@ ${materialContext}
 - Invite the student to jot or explain their answer on the canvas before continuing
 - When asking questions, ask ONE at a time and do not answer it yourself
 - After the visible check-in question, include a hidden \`\`\`learning_question JSON block with:
-  {"question":"same check-in question","targetConcepts":["..."],"expectedAnswerPoints":["..."]}
+  {"question":"same check-in question","checkType":"recall | why | apply | transfer | teach_back","requiredForPass":true,"difficulty":"basic | exam | edge_case","targetConcepts":["..."],"expectedAnswerPoints":["..."]}
   This block is parsed by the app and removed from the visible chat.
+- Choose the checkType that matches the next missing depth step when the context lists depth progress. Do not repeat already-passed check types unless the student asks for review.
 - If the student seems lost, offer to start from the beginning
 - Adapt your explanations based on the student's level of understanding
 - Be warm and supportive, but also intellectually rigorous

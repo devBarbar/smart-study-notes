@@ -1,4 +1,5 @@
-import { TutorQuestionMetadata } from '@/types';
+import type { TutorQuestionMetadata } from '@/types';
+import { normalizeTutorCheckType, normalizeTutorQuestionDifficulty } from './depth-checks';
 
 const LEARNING_QUESTION_REGEX = /```learning_question\s*\n([\s\S]*?)\n```/g;
 
@@ -25,6 +26,9 @@ const normalizeTutorQuestion = (value: unknown): TutorQuestionMetadata | undefin
     question,
     targetConcepts: toStringList(data.targetConcepts),
     expectedAnswerPoints: toStringList(data.expectedAnswerPoints),
+    checkType: normalizeTutorCheckType(data.checkType),
+    requiredForPass: data.requiredForPass === undefined ? true : Boolean(data.requiredForPass),
+    difficulty: normalizeTutorQuestionDifficulty(data.difficulty),
   };
 };
 

@@ -12,6 +12,9 @@ What is the next step?
 \`\`\`learning_question
 {
   "question": "What is the next step?",
+  "checkType": "apply",
+  "requiredForPass": true,
+  "difficulty": "exam",
   "targetConcepts": ["Concept A"],
   "expectedAnswerPoints": ["Name the input", "Explain the output"]
 }
@@ -22,6 +25,9 @@ What is the next step?
       question: 'What is the next step?',
       targetConcepts: ['Concept A'],
       expectedAnswerPoints: ['Name the input', 'Explain the output'],
+      checkType: 'apply',
+      requiredForPass: true,
+      difficulty: 'exam',
     });
   });
 

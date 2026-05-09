@@ -487,7 +487,7 @@ export default function LectureDetailScreen() {
       latestQuiz,
       quizPassed,
       allTopicsPassed,
-      clusterPassed: quizPassed || allTopicsPassed,
+      clusterPassed: quizPassed,
     };
   }, [clusterQuizzesByCategory]);
 

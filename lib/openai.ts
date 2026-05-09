@@ -157,6 +157,11 @@ export const evaluateAnswer = async (
       misconceptions: data.feedback.misconceptions ?? [],
       followUpQuestion: data.feedback.followUpQuestion ?? undefined,
       sourceNotes: data.feedback.sourceNotes ?? [],
+      checkType: data.feedback.checkType ?? undefined,
+      canCountForPass: data.feedback.canCountForPass ?? undefined,
+      missingPrerequisites: data.feedback.missingPrerequisites ?? [],
+      understandingLevel: data.feedback.understandingLevel ?? undefined,
+      rubric: data.feedback.rubric ?? undefined,
       costUsd: data?.costUsd,
     };
   }

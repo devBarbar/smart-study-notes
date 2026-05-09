@@ -233,7 +233,7 @@ const de = {
 
   'flashcards.title': 'Lernkarten',
   'flashcards.added': 'Zu Lernkarten hinzugefügt!',
-  'lecture.passedToast': 'Vorlesung abgeschlossen!',
+  'lecture.passedToast': 'Alle Themen bestanden. Schließe die Cluster-Prüfungen ab, um die Vorlesung zu beenden.',
   'flashcards.question': 'Frage',
   'flashcards.answer': 'Antwort',
   'flashcards.explanation': 'Erklärung',
@@ -258,6 +258,8 @@ const de = {
   'study.loading': 'Lerninhalte werden geladen...',
   'study.empty': 'Noch nichts zu lernen. Starte aus einer Vorlesung oder einem Material.',
   'study.focusBadge': 'Fokussiertes Lernen: {{concepts}}',
+  'study.depthGateTitle': 'Tiefenchecks vor dem Bestehen',
+  'study.depthProgress': 'Tiefenfortschritt',
   'study.focusConceptsFallback': 'Schlüsselkonzepte',
   'study.canvasTitle': 'Canvas (mit Apple Pencil zeichnen, mit dem Finger scrollen)',
   'study.notesPlaceholder': 'Schreibe hier deine Notizen...',

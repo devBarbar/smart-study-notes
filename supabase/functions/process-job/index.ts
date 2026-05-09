@@ -1312,6 +1312,11 @@ const handleGrade = async (payload: any): Promise<JobRunResult> => {
           misconceptions: Array.isArray(feedback.misconceptions) ? feedback.misconceptions : [],
           followUpQuestion: typeof feedback.followUpQuestion === "string" ? feedback.followUpQuestion : undefined,
           sourceNotes: Array.isArray(feedback.sourceNotes) ? feedback.sourceNotes : [],
+          checkType: typeof feedback.checkType === "string" ? feedback.checkType : undefined,
+          canCountForPass: typeof feedback.canCountForPass === "boolean" ? feedback.canCountForPass : undefined,
+          missingPrerequisites: Array.isArray(feedback.missingPrerequisites) ? feedback.missingPrerequisites : [],
+          understandingLevel: typeof feedback.understandingLevel === "string" ? feedback.understandingLevel : undefined,
+          rubric: feedback.rubric && typeof feedback.rubric === "object" ? feedback.rubric : undefined,
         },
       },
     usage: {

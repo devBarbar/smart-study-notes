@@ -29,6 +29,7 @@ import {
   CanvasStrokeData,
   CanvasVisualBlock as CanvasVisualBlockType,
   StudyPlanEntry,
+  TutorCheckType,
 } from "@/types";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -80,6 +81,12 @@ type StudyCanvasPanelProps = {
   onMarkerPress: (messageId: string) => void;
   answerText: string;
   onNotesChange: (text: string) => void;
+  depthProgressItems: {
+    type: TutorCheckType;
+    label: string;
+    passed: boolean;
+    current: boolean;
+  }[];
 };
 
 export function StudyCanvasPanel({
@@ -129,6 +136,7 @@ export function StudyCanvasPanel({
   onMarkerPress,
   answerText,
   onNotesChange,
+  depthProgressItems,
 }: StudyCanvasPanelProps) {
   return (
     <View
@@ -181,6 +189,44 @@ export function StudyCanvasPanel({
                   t("study.focusConceptsFallback"),
               })}
             </ThemedText>
+          </View>
+        )}
+
+        {studyPlanEntry && depthProgressItems.length > 0 && (
+          <View style={styles.depthProgressContainer}>
+            <View style={styles.depthProgressHeader}>
+              <Ionicons name="layers-outline" size={14} color={palette.primary} />
+              <ThemedText style={styles.depthProgressTitle}>
+                {t("study.depthGateTitle")}
+              </ThemedText>
+            </View>
+            <View style={styles.depthProgressList}>
+              {depthProgressItems.map((item) => (
+                <View
+                  key={item.type}
+                  style={[
+                    styles.depthProgressPill,
+                    item.passed && styles.depthProgressPillPassed,
+                    item.current && styles.depthProgressPillCurrent,
+                  ]}
+                >
+                  <Ionicons
+                    name={item.passed ? "checkmark-circle" : item.current ? "radio-button-on" : "ellipse-outline"}
+                    size={13}
+                    color={item.passed ? palette.success : item.current ? palette.primary : palette.textMuted}
+                  />
+                  <ThemedText
+                    style={[
+                      styles.depthProgressPillText,
+                      item.passed && styles.depthProgressPillTextPassed,
+                      item.current && styles.depthProgressPillTextCurrent,
+                    ]}
+                  >
+                    {item.label}
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 

@@ -467,6 +467,59 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             fontSize: 13,
             fontWeight: "500",
         },
+        depthProgressContainer: {
+            backgroundColor: palette.surface,
+            borderWidth: 1,
+            borderColor: palette.border,
+            borderRadius: Radii.md,
+            padding: Spacing.sm,
+            gap: Spacing.xs,
+        },
+        depthProgressHeader: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: Spacing.xs,
+        },
+        depthProgressTitle: {
+            color: palette.text,
+            fontSize: 13,
+            fontWeight: "700",
+        },
+        depthProgressList: {
+            flexDirection: "row",
+            flexWrap: "wrap",
+            gap: Spacing.xs,
+        },
+        depthProgressPill: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            paddingVertical: 6,
+            paddingHorizontal: 10,
+            borderRadius: Radii.pill,
+            borderWidth: 1,
+            borderColor: palette.border,
+            backgroundColor: palette.surfaceAlt,
+        },
+        depthProgressPillPassed: {
+            borderColor: `${palette.success}55`,
+            backgroundColor: `${palette.success}12`,
+        },
+        depthProgressPillCurrent: {
+            borderColor: `${palette.primary}66`,
+            backgroundColor: `${palette.primary}12`,
+        },
+        depthProgressPillText: {
+            color: palette.textMuted,
+            fontSize: 12,
+            fontWeight: "600",
+        },
+        depthProgressPillTextPassed: {
+            color: palette.success,
+        },
+        depthProgressPillTextCurrent: {
+            color: palette.primary,
+        },
         checkAnswerButton: {
             position: "absolute",
             backgroundColor: palette.primary,

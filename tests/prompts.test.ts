@@ -10,8 +10,10 @@ test('questionPrompt includes title and count', () => {
 });
 
 test('gradingPrompt mentions question text', () => {
-  const prompt = gradingPrompt({ id: 'q1', prompt: 'Explain photosynthesis' });
+  const prompt = gradingPrompt({ id: 'q1', prompt: 'Explain photosynthesis', checkType: 'why' });
   assert.match(prompt, /photosynthesis/);
+  assert.match(prompt, /checkType: why/);
+  assert.match(prompt, /canCountForPass/);
 });
 
 test('lectureMetadataPrompt references JSON shape', () => {
@@ -31,4 +33,3 @@ test('practiceExamPrompt mentions passed topics and count', () => {
   assert.match(prompt, /4 questions/i);
   assert.match(prompt, /Passed topics/i);
 });
-

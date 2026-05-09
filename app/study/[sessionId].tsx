@@ -17,6 +17,18 @@ import {
 import { v4 as uuid } from "uuid";
 
 import { StreamingTTSPlayer, TTSPlayerState } from "@/lib/audio";
+import {
+  buildDepthCheckProgressLine,
+  buildDepthQuestion,
+  canPassStudyPlanEntry,
+  feedbackPassesDepthCheck,
+  getNextTutorCheckType,
+  getPassedDepthCheckTypes,
+  REQUIRED_TUTOR_CHECK_TYPES,
+  TUTOR_CHECK_DESCRIPTIONS,
+  TUTOR_CHECK_LABELS,
+  normalizeTutorCheckType,
+} from "@/lib/depth-checks";
 
 import {
   CanvasMode,
@@ -63,10 +75,12 @@ import {
   getUserStreak,
   listAnswerLinks,
   listReviewEvents,
+  listStudyDepthChecks,
   listSessionMessages,
   listStudyMisconceptions,
   saveAnswerLink,
   saveFlashcard,
+  saveStudyDepthCheck,
   saveStudyMisconceptions,
   saveSessionMessage,
   searchLectureChunks,
@@ -89,6 +103,7 @@ import {
   StudyAnswerLink,
   StudyChatMessage,
   StudyCitation,
+  StudyDepthCheck,
   StudyPlanEntry,
   StudyQuestion,
   StudySession,
@@ -282,6 +297,7 @@ export default function StudySessionScreen() {
   );
   const [loadingEntry, setLoadingEntry] = useState(false);
   const [recentMisconceptions, setRecentMisconceptions] = useState<string[]>([]);
+  const [depthChecks, setDepthChecks] = useState<StudyDepthCheck[]>([]);
 
   // Load study plan entry if specified
   useEffect(() => {
@@ -300,6 +316,23 @@ export default function StudySessionScreen() {
     loadEntry();
   }, [studyPlanEntryId]);
 
+  useEffect(() => {
+    const loadDepthChecks = async () => {
+      if (!studyPlanEntryId) {
+        setDepthChecks([]);
+        return;
+      }
+      try {
+        const checks = await listStudyDepthChecks(studyPlanEntryId);
+        setDepthChecks(checks);
+      } catch (err) {
+        console.warn("[study] Failed to load depth checks:", err);
+      }
+    };
+
+    loadDepthChecks();
+  }, [studyPlanEntryId]);
+
   // Build the study title based on context
   const studyTitle = useMemo(() => {
     if (studyPlanEntry) {
@@ -307,6 +340,26 @@ export default function StudySessionScreen() {
     }
     return lecture?.title ?? material?.title ?? t("study.titleFallback");
   }, [lecture, material, studyPlanEntry, t]);
+
+  const nextDepthCheckType = useMemo(
+    () => getNextTutorCheckType(depthChecks),
+    [depthChecks],
+  );
+
+  const depthProgressLine = useMemo(
+    () => buildDepthCheckProgressLine(depthChecks),
+    [depthChecks],
+  );
+
+  const depthProgressItems = useMemo(() => {
+    const passed = getPassedDepthCheckTypes(depthChecks);
+    return REQUIRED_TUTOR_CHECK_TYPES.map((type) => ({
+      type,
+      label: TUTOR_CHECK_LABELS[type],
+      passed: passed.has(type),
+      current: nextDepthCheckType === type,
+    }));
+  }, [depthChecks, nextDepthCheckType]);
 
   // Build comprehensive material context for the AI
   // This includes FULL extracted text from all PDFs for accurate tutoring
@@ -353,6 +406,16 @@ export default function StudySessionScreen() {
       parts.push(
         "\nIMPORTANT: Focus your explanations, questions, and feedback specifically on this topic and its key concepts. Draw from the full material content above but emphasize this particular area.",
       );
+      parts.push(
+        [
+          "\n## Depth Pass Gate",
+          `Current depth progress: ${depthProgressLine}`,
+          nextDepthCheckType
+            ? `Next required checkType: ${nextDepthCheckType} (${TUTOR_CHECK_LABELS[nextDepthCheckType]})`
+            : "All required depth checks are currently passed.",
+          "The topic should only be considered passed after recall, why, apply, transfer, and teach_back checks are all passed.",
+        ].join("\n"),
+      );
     }
 
     if (recentMisconceptions.length > 0) {
@@ -365,7 +428,7 @@ export default function StudySessionScreen() {
     }
 
     return parts.join("\n\n");
-  }, [lecture, material, studyPlanEntry, recentMisconceptions]);
+  }, [lecture, material, studyPlanEntry, recentMisconceptions, depthProgressLine, nextDepthCheckType]);
 
   // Simple outline for display (not for AI context)
   const studyOutline = useMemo(() => {
@@ -1754,6 +1817,7 @@ export default function StudySessionScreen() {
       questionIndexCounterRef.current = 0; // Reset question counter
 
       if (generated[0]) {
+        const checkType = nextDepthCheckType ?? "recall";
         pushMessage({
           id: uuid(),
           role: "ai",
@@ -1764,9 +1828,17 @@ export default function StudySessionScreen() {
           tutorQuestion: {
             question: generated[0].prompt,
             targetConcepts: studyPlanEntry?.keyConcepts,
+            checkType,
+            requiredForPass: true,
+            difficulty: "basic",
           },
         });
-        setCurrentQuestion(generated[0]);
+        setCurrentQuestion({
+          ...generated[0],
+          checkType,
+          requiredForPass: true,
+          difficulty: "basic",
+        });
       }
     } catch (error) {
       console.warn(error);
@@ -1779,7 +1851,8 @@ export default function StudySessionScreen() {
     if (!currentQuestion || questions.length === 0) return;
     const idx = questions.findIndex((q) => q.id === currentQuestion.id);
     const next = questions[(idx + 1) % questions.length];
-    setCurrentQuestion(next);
+    const checkType = next.checkType || nextDepthCheckType || "recall";
+    setCurrentQuestion({ ...next, checkType, requiredForPass: true });
     setHasDrawnAfterQuestion(false); // Reset drawing detection for new question
     pushMessage({
       id: uuid(),
@@ -1789,6 +1862,9 @@ export default function StudySessionScreen() {
       tutorQuestion: {
         question: next.prompt,
         targetConcepts: studyPlanEntry?.keyConcepts,
+        checkType,
+        requiredForPass: true,
+        difficulty: next.difficulty || "basic",
       },
     });
   };
@@ -1796,20 +1872,47 @@ export default function StudySessionScreen() {
   const submitAnswer = async () => {
     // Get question context - either from formal quiz or last AI message
     const lastAiMessage = [...messages].reverse().find((m) => m.role === "ai");
+    const lastAiQuestionText =
+      lastAiMessage?.tutorQuestion?.question ||
+      (lastAiMessage ? getQuestionTextForMessage(lastAiMessage) : null);
 
-    // Use current formal question or create one from the last AI message
-    const questionToEvaluate: StudyQuestion = currentQuestion || {
-      id: lastAiMessage?.id || uuid(),
-      prompt:
-        lastAiMessage?.tutorQuestion?.question ||
-        (lastAiMessage ? getQuestionTextForMessage(lastAiMessage) : null) ||
-        lastAiMessage?.text ||
-        t("study.defaultCheckPrompt"),
-      targetConcepts: lastAiMessage?.tutorQuestion?.targetConcepts,
-      expectedAnswerPoints: lastAiMessage?.tutorQuestion?.expectedAnswerPoints,
-    };
+    // Prefer the latest answerable tutor question. A stale formal question should
+    // not steal grading from a newer AI check-in.
+    const questionToEvaluate: StudyQuestion | null = lastAiQuestionText
+      ? {
+          id: lastAiMessage?.questionId || lastAiMessage?.id || uuid(),
+          prompt: lastAiQuestionText,
+          targetConcepts:
+            lastAiMessage?.tutorQuestion?.targetConcepts ||
+            currentQuestion?.targetConcepts,
+          expectedAnswerPoints:
+            lastAiMessage?.tutorQuestion?.expectedAnswerPoints ||
+            currentQuestion?.expectedAnswerPoints,
+          checkType: normalizeTutorCheckType(
+            lastAiMessage?.tutorQuestion?.checkType ||
+              currentQuestion?.checkType ||
+              nextDepthCheckType ||
+              "recall",
+          ),
+          requiredForPass:
+            lastAiMessage?.tutorQuestion?.requiredForPass ??
+            currentQuestion?.requiredForPass ??
+            true,
+          difficulty:
+            lastAiMessage?.tutorQuestion?.difficulty ||
+            currentQuestion?.difficulty,
+        }
+      : currentQuestion
+        ? {
+            ...currentQuestion,
+            checkType: normalizeTutorCheckType(
+              currentQuestion.checkType || nextDepthCheckType || "recall",
+            ),
+            requiredForPass: currentQuestion.requiredForPass ?? true,
+          }
+        : null;
 
-    if (!lastAiMessage && !currentQuestion) return;
+    if (!questionToEvaluate) return;
 
     setGrading(true);
     try {
@@ -1869,17 +1972,58 @@ export default function StudySessionScreen() {
       await saveAnswerLink(link);
       setAnswerLinks((prev) => [link, ...prev]);
 
+      const evaluatedCheckType = normalizeTutorCheckType(
+        feedback.checkType || questionToEvaluate.checkType || nextDepthCheckType || "recall",
+      );
+      const depthCheckPassed = feedbackPassesDepthCheck({
+        ...feedback,
+        score: normalizedScore,
+      });
+      const canCountForPass =
+        depthCheckPassed && questionToEvaluate.requiredForPass !== false;
+      const localDepthCheck: StudyDepthCheck | null = studyPlanEntryId
+        ? {
+            id: uuid(),
+            lectureId,
+            studyPlanEntryId,
+            sessionId: sessionId as string,
+            questionId: questionToEvaluate.id,
+            questionText: questionToEvaluate.prompt,
+            checkType: evaluatedCheckType,
+            score: normalizedScore,
+            correctness: feedback.correctness,
+            passed: depthCheckPassed,
+            canCountForPass,
+            feedbackSummary: feedback.summary,
+            createdAt: new Date().toISOString(),
+          }
+        : null;
+      let latestDepthChecks = depthChecks;
+      if (localDepthCheck) {
+        try {
+          const savedDepthCheck = await saveStudyDepthCheck(localDepthCheck);
+          latestDepthChecks = [savedDepthCheck ?? localDepthCheck, ...depthChecks];
+          setDepthChecks(latestDepthChecks);
+        } catch (err) {
+          console.warn("[study] Failed to save depth check", err);
+          latestDepthChecks = [localDepthCheck, ...depthChecks];
+          setDepthChecks(latestDepthChecks);
+        }
+      }
+
       const deriveSectionStatus = (
         score: number | undefined,
         correctness: string,
+        checks: StudyDepthCheck[],
       ): SectionStatus => {
-        if (typeof score === "number") {
-          if (score >= 80) return "passed";
-          if (score <= 40) return "failed";
-          return "in_progress";
+        if (canPassStudyPlanEntry(checks)) return "passed";
+        const passedDepthCount = getPassedDepthCheckTypes(checks).size;
+        if (typeof score === "number" && score <= 40 && passedDepthCount === 0) {
+          return "failed";
         }
-        if (correctness === "correct") return "passed";
-        if (correctness === "incorrect") return "failed";
+        if (correctness === "incorrect" && passedDepthCount === 0) {
+          return "failed";
+        }
         return "in_progress";
       };
 
@@ -1888,6 +2032,7 @@ export default function StudySessionScreen() {
         const nextStatus = deriveSectionStatus(
           normalizedScore,
           feedback.correctness,
+          latestDepthChecks,
         );
         try {
           await updateStudyPlanEntryStatus(studyPlanEntryId, {
@@ -2007,12 +2152,20 @@ export default function StudySessionScreen() {
       setHasDrawnAfterQuestion(false);
       setLastDrawingPosition(null);
 
-      // Create flashcard if the answer was correct/passed
-      const isPassed =
+      // Create flashcard if this depth check was answered well. Topic status
+      // still requires the full depth ladder before it becomes passed.
+      const isCheckPassed =
+        depthCheckPassed ||
         (feedback.score !== undefined && feedback.score >= 80) ||
         feedback.correctness === "correct";
+      const isTopicDepthPassed = studyPlanEntryId
+        ? canPassStudyPlanEntry(latestDepthChecks)
+        : isCheckPassed;
+      const nextMissingCheckType = studyPlanEntryId
+        ? getNextTutorCheckType(latestDepthChecks)
+        : null;
 
-      if (!isPassed && feedback.misconceptions?.length && lectureId) {
+      if (!isCheckPassed && feedback.misconceptions?.length && lectureId) {
         const savedMisconceptions = feedback.misconceptions.map((item) => ({
           lectureId,
           studyPlanEntryId: studyPlanEntryId ?? undefined,
@@ -2031,7 +2184,7 @@ export default function StudySessionScreen() {
         }
       }
 
-      if (isPassed && lectureId) {
+      if (isCheckPassed && lectureId) {
         try {
           // Collect AI explanation from previous messages (up to 3 messages before the question)
           const questionMsgIndex = messages.findIndex(
@@ -2113,26 +2266,47 @@ export default function StudySessionScreen() {
         feedback.sourceNotes && feedback.sourceNotes.length
           ? `\n\n${t("study.feedback.sourceIntro")}\n${feedback.sourceNotes.map((i) => `• ${i}`).join("\n")}`
           : "";
-      const followUpText =
-        !isPassed && feedback.followUpQuestion
-          ? `\n\n${t("study.feedback.followUpIntro")}\n${feedback.followUpQuestion}`
-          : "";
-      const costText = feedback.costUsd
-        ? `\n\n_${t("cost.label", { value: feedback.costUsd.toFixed(4) })}_`
-        : "";
-
-      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${sourceNotesText}${improvementsText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
-
       const followUpQuestion: StudyQuestion | null =
-        !isPassed && feedback.followUpQuestion
+        !isCheckPassed && feedback.followUpQuestion
           ? {
               id: `follow-up-${uuid()}`,
               prompt: feedback.followUpQuestion,
               targetConcepts:
                 questionToEvaluate.targetConcepts || feedback.misconceptions,
               expectedAnswerPoints: questionToEvaluate.expectedAnswerPoints,
+              checkType: evaluatedCheckType,
+              requiredForPass: questionToEvaluate.requiredForPass ?? true,
+              difficulty: questionToEvaluate.difficulty,
             }
-          : null;
+          : isCheckPassed &&
+              !isTopicDepthPassed &&
+              nextMissingCheckType &&
+              studyPlanEntry
+            ? {
+                id: `depth-${nextMissingCheckType}-${uuid()}`,
+                prompt: buildDepthQuestion(nextMissingCheckType, studyPlanEntry),
+                targetConcepts: studyPlanEntry.keyConcepts,
+                expectedAnswerPoints: [
+                  TUTOR_CHECK_DESCRIPTIONS[nextMissingCheckType],
+                ],
+                checkType: nextMissingCheckType,
+                requiredForPass: true,
+                difficulty:
+                  nextMissingCheckType === "transfer" ? "edge_case" : "basic",
+              }
+            : null;
+      const followUpText =
+        followUpQuestion
+          ? `\n\n${t("study.feedback.followUpIntro")}\n${followUpQuestion.prompt}`
+          : "";
+      const costText = feedback.costUsd
+        ? `\n\n_${t("cost.label", { value: feedback.costUsd.toFixed(4) })}_`
+        : "";
+      const depthProgressText = studyPlanEntryId
+        ? `\n\n${t("study.depthProgress")}: ${buildDepthCheckProgressLine(latestDepthChecks)}`
+        : "";
+
+      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${depthProgressText}${sourceNotesText}${improvementsText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
 
       pushMessage({
         id: uuid(),
@@ -2146,6 +2320,9 @@ export default function StudySessionScreen() {
               question: followUpQuestion.prompt,
               targetConcepts: followUpQuestion.targetConcepts,
               expectedAnswerPoints: followUpQuestion.expectedAnswerPoints,
+              checkType: followUpQuestion.checkType,
+              requiredForPass: followUpQuestion.requiredForPass,
+              difficulty: followUpQuestion.difficulty,
             }
           : undefined,
       });
@@ -2186,11 +2363,14 @@ export default function StudySessionScreen() {
           .filter(Boolean)
           .join("\n");
 
+    const nextCheckInstruction = nextDepthCheckType
+      ? `The next required pass-gate checkType is "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}). The hidden learning_question must use that checkType.`
+      : "All depth checks are already passed; ask a concise retention or exam-style review question.";
     const topicFocus = studyPlanEntry
-      ? `Give me a concise (1-2 short paragraphs) explanation of the first key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply—I will answer on the canvas.`
+      ? `Give me a concise (1-2 short paragraphs) explanation of the next key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only. ${nextCheckInstruction} ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply - I will answer on the canvas.`
       : `Give me a concise (1-2 short paragraphs) explanation of the first key idea in this topic. Cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
     sendToFeynmanAI(topicFocus, undefined, retrievalFocus || topicFocus);
-  }, [lecture, sendToFeynmanAI, studyPlanEntry]);
+  }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyPlanEntry]);
 
   // Auto-trigger explanation when starting a new session
   useEffect(() => {
@@ -2365,11 +2545,20 @@ export default function StudySessionScreen() {
   );
 
   const answerableQuestion = useMemo<StudyQuestion | null>(() => {
-    if (currentQuestion) return currentQuestion;
     const lastAiQuestionMessage = [...messages]
       .reverse()
       .find((message) => message.role === "ai" && getQuestionTextForMessage(message));
-    if (!lastAiQuestionMessage) return null;
+    if (!lastAiQuestionMessage) {
+      return currentQuestion
+        ? {
+            ...currentQuestion,
+            checkType: normalizeTutorCheckType(
+              currentQuestion.checkType || nextDepthCheckType || "recall",
+            ),
+            requiredForPass: currentQuestion.requiredForPass ?? true,
+          }
+        : null;
+    }
 
     return {
       id: lastAiQuestionMessage.id,
@@ -2379,8 +2568,21 @@ export default function StudySessionScreen() {
         t("study.defaultCheckPrompt"),
       targetConcepts: lastAiQuestionMessage.tutorQuestion?.targetConcepts,
       expectedAnswerPoints: lastAiQuestionMessage.tutorQuestion?.expectedAnswerPoints,
+      checkType: normalizeTutorCheckType(
+        lastAiQuestionMessage.tutorQuestion?.checkType ||
+          currentQuestion?.checkType ||
+          nextDepthCheckType ||
+          "recall",
+      ),
+      requiredForPass:
+        lastAiQuestionMessage.tutorQuestion?.requiredForPass ??
+        currentQuestion?.requiredForPass ??
+        true,
+      difficulty:
+        lastAiQuestionMessage.tutorQuestion?.difficulty ||
+        currentQuestion?.difficulty,
     };
-  }, [currentQuestion, getQuestionTextForMessage, messages, t]);
+  }, [currentQuestion, getQuestionTextForMessage, messages, nextDepthCheckType, t]);
 
   // Toggle AI tutor visibility
   const toggleTutor = useCallback(() => {
@@ -2513,6 +2715,7 @@ export default function StudySessionScreen() {
         onMarkerPress={scrollToQuestionMessage}
         answerText={answerText}
         onNotesChange={handleNotesChange}
+        depthProgressItems={depthProgressItems}
       />
 
       {tutorCollapsed ? (

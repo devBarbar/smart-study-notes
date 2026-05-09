@@ -2,7 +2,15 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { callChat, ChatCompletionContent } from "../_shared/openai.ts";
 import { gradingPrompt } from "../_shared/prompts.ts";
 
-type StudyQuestion = { id?: string; prompt: string };
+type StudyQuestion = {
+  id?: string;
+  prompt: string;
+  targetConcepts?: string[];
+  expectedAnswerPoints?: string[];
+  checkType?: string;
+  requiredForPass?: boolean;
+  difficulty?: string;
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -53,6 +61,26 @@ Deno.serve(async (req: Request) => {
       improvements: Array.isArray(feedback.improvements)
         ? feedback.improvements
         : [],
+      misconceptions: Array.isArray(feedback.misconceptions)
+        ? feedback.misconceptions
+        : [],
+      followUpQuestion: typeof feedback.followUpQuestion === "string"
+        ? feedback.followUpQuestion
+        : undefined,
+      sourceNotes: Array.isArray(feedback.sourceNotes)
+        ? feedback.sourceNotes
+        : [],
+      checkType: typeof feedback.checkType === "string" ? feedback.checkType : undefined,
+      canCountForPass: typeof feedback.canCountForPass === "boolean"
+        ? feedback.canCountForPass
+        : undefined,
+      missingPrerequisites: Array.isArray(feedback.missingPrerequisites)
+        ? feedback.missingPrerequisites
+        : [],
+      understandingLevel: typeof feedback.understandingLevel === "string"
+        ? feedback.understandingLevel
+        : undefined,
+      rubric: feedback.rubric && typeof feedback.rubric === "object" ? feedback.rubric : undefined,
     };
 
     return new Response(
