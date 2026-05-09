@@ -562,6 +562,7 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             flexDirection: "row",
             alignItems: "center",
             gap: 6,
+            maxWidth: "100%",
             backgroundColor: `${palette.primary}10`,
             paddingVertical: 6,
             paddingHorizontal: 10,
@@ -571,6 +572,7 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         },
         citationChipText: {
             color: palette.primary,
+            flexShrink: 1,
             fontSize: 12,
             fontWeight: "600",
         },

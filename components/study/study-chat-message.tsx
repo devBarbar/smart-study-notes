@@ -12,6 +12,7 @@ type StudyChatMessageProps = {
   marker: CanvasAnswerMarker | null;
   styles: StudyStyles;
   t: (key: string, params?: Record<string, any>) => string;
+  getCitationLabel: (citation: StudyCitation) => string;
   ttsEnabled: boolean;
   isSpeaking: boolean;
   activeTtsMessageId: string | null;
@@ -27,6 +28,7 @@ export function StudyChatMessageItem({
   marker,
   styles,
   t,
+  getCitationLabel,
   ttsEnabled,
   isSpeaking,
   activeTtsMessageId,
@@ -38,6 +40,10 @@ export function StudyChatMessageItem({
 }: StudyChatMessageProps) {
   const isActiveTtsMessage =
     item.role === "ai" && isSpeaking && activeTtsMessageId === item.id;
+  const citations =
+    item.role === "ai" && item.citations
+      ? dedupeCitationsBySourcePage(item.citations)
+      : [];
 
   return (
     <ThemedView
@@ -91,19 +97,21 @@ export function StudyChatMessageItem({
       ) : (
         <ThemedText style={{ color: "#e2e8f0" }}>{item.text}</ThemedText>
       )}
-      {item.role === "ai" && item.citations && item.citations.length > 0 && (
+      {citations.length > 0 && (
         <View style={styles.citationRow}>
-          {item.citations.map((citation, idx) => (
+          {citations.map((citation, idx) => (
             <Pressable
-              key={`${item.id}-citation-${idx}`}
+              key={`${item.id}-citation-${citationKey(citation, idx)}`}
               style={styles.citationChip}
               onPress={() => onOpenCitation(citation)}
             >
               <Ionicons name="book-outline" size={12} color="#0ea5e9" />
-              <ThemedText style={styles.citationChipText}>
-                {citation.pageNumber
-                  ? `Source p${citation.pageNumber}`
-                  : "Source"}
+              <ThemedText
+                style={styles.citationChipText}
+                numberOfLines={1}
+                ellipsizeMode="middle"
+              >
+                {getCitationLabel(citation)}
               </ThemedText>
             </Pressable>
           ))}
@@ -134,3 +142,20 @@ export function StudyChatMessageItem({
     </ThemedView>
   );
 }
+
+const citationKey = (citation: StudyCitation, index: number) =>
+  citation.lectureFileId
+    ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}`
+    : `${citation.chunkId}-${citation.pageNumber ?? "unknown"}-${index}`;
+
+const dedupeCitationsBySourcePage = (citations: StudyCitation[]) => {
+  const seen = new Set<string>();
+  return citations.filter((citation) => {
+    const key = citation.lectureFileId
+      ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}`
+      : `${citation.chunkId}-${citation.pageNumber ?? "unknown"}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};

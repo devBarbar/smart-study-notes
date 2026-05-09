@@ -101,6 +101,24 @@ const CANVAS_GROW_CHUNK = 600;
 // Threshold from edge to trigger growth (px)
 const EDGE_THRESHOLD = 80;
 
+const cleanSourceFileName = (nameOrUri: string) => {
+  const withoutQuery = nameOrUri.split(/[?#]/)[0];
+  const lastSegment = withoutQuery.split(/[\\/]/).filter(Boolean).pop() ?? nameOrUri;
+  let decoded = lastSegment;
+
+  try {
+    decoded = decodeURIComponent(lastSegment);
+  } catch {
+    decoded = lastSegment;
+  }
+
+  return (
+    decoded
+      .replace(/\.(pdf|png|jpe?g|webp|heic|txt|docx?|pptx?|pages)$/i, "")
+      .trim() || decoded
+  );
+};
+
 export default function StudySessionScreen() {
   const { sessionId, materialId, lectureId, studyPlanEntryId } =
     useLocalSearchParams<{
@@ -125,6 +143,13 @@ export default function StudySessionScreen() {
     () => lectures.find((l) => l.id === lectureId),
     [lectures, lectureId],
   );
+  const citationFileNames = useMemo(() => {
+    const names = new Map<string, string>();
+    lecture?.files.forEach((file) => {
+      names.set(file.id, cleanSourceFileName(file.name || file.uri));
+    });
+    return names;
+  }, [lecture?.files]);
 
   // Study plan entry for focused study
   const [studyPlanEntry, setStudyPlanEntry] = useState<StudyPlanEntry | null>(
@@ -1956,6 +1981,23 @@ export default function StudySessionScreen() {
     [activeVisualBlocks],
   );
 
+  const getCitationLabel = useCallback(
+    (citation: StudyCitation) => {
+      const sourceName = citation.lectureFileId
+        ? citationFileNames.get(citation.lectureFileId)
+        : undefined;
+
+      if (sourceName) {
+        return citation.pageNumber
+          ? `${sourceName} p. ${citation.pageNumber}`
+          : sourceName;
+      }
+
+      return citation.pageNumber ? `Source p. ${citation.pageNumber}` : "Source";
+    },
+    [citationFileNames],
+  );
+
   const openCitationSource = useCallback(
     (citation: StudyCitation) => {
       if (!lecture) return;
@@ -1980,27 +2022,6 @@ export default function StudySessionScreen() {
     }),
     [],
   );
-
-  if (
-    (loadingMaterials || loadingLectures || loadingEntry || loadingMessages) &&
-    !material &&
-    !lecture
-  ) {
-    return (
-      <ThemedView style={styles.center}>
-        <ActivityIndicator />
-        <ThemedText>{t("study.loading")}</ThemedText>
-      </ThemedView>
-    );
-  }
-
-  if (!material && !lecture) {
-    return (
-      <ThemedView style={styles.center}>
-        <ThemedText>{t("study.empty")}</ThemedText>
-      </ThemedView>
-    );
-  }
 
   // Toggle AI tutor visibility
   const toggleTutor = useCallback(() => {
@@ -2062,6 +2083,27 @@ export default function StudySessionScreen() {
     stopSpeaking,
     router,
   ]);
+
+  if (
+    (loadingMaterials || loadingLectures || loadingEntry || loadingMessages) &&
+    !material &&
+    !lecture
+  ) {
+    return (
+      <ThemedView style={styles.center}>
+        <ActivityIndicator />
+        <ThemedText>{t("study.loading")}</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  if (!material && !lecture) {
+    return (
+      <ThemedView style={styles.center}>
+        <ThemedText>{t("study.empty")}</ThemedText>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.shell}>
@@ -2160,6 +2202,7 @@ export default function StudySessionScreen() {
           onVoiceTranscription={handleVoiceTranscription}
           onListeningModeEnd={() => setListeningMode(false)}
           ttsFinished={!isSpeaking && listeningMode}
+          getCitationLabel={getCitationLabel}
           onReplayMessage={speakMessage}
           onOpenCitation={openCitationSource}
           onViewNotes={scrollToCanvasAnswer}
