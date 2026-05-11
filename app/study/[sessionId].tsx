@@ -166,6 +166,97 @@ type FinalQuizState = {
   averageScore?: number;
 };
 
+const stableStringify = (value: unknown): string => {
+  if (Array.isArray(value)) {
+    return `[${value.map(stableStringify).join(",")}]`;
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(value) ?? String(value);
+};
+
+const getVisualBlockSignature = (
+  block: Pick<CanvasVisualBlockType, "type" | "data">,
+) => `${block.type}:${stableStringify(block.data)}`;
+
+const getVisualBlockInsertKey = (
+  pageId: string,
+  messageId: string,
+  block: Pick<CanvasVisualBlockType, "type" | "data">,
+) => `${pageId}:${messageId}:${getVisualBlockSignature(block)}`;
+
+const getVisualBlockBottom = (block: CanvasVisualBlockType) =>
+  block.position.y +
+  (block.size?.height ?? estimateVisualBlockSize(block).height);
+
+const dedupeVisualBlocks = (blocks: CanvasVisualBlockType[] = []) => {
+  const seen = new Set<string>();
+
+  return blocks.filter((block) => {
+    const key = `${block.messageId}:${getVisualBlockSignature(block)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const normalizeCanvasPageVisualBlocks = (pages: CanvasPage[]) => {
+  let changed = false;
+  const normalizedPages = pages.map((page) => {
+    if (!page.visualBlocks || page.visualBlocks.length === 0) {
+      return page;
+    }
+
+    const dedupedBlocks = dedupeVisualBlocks(page.visualBlocks);
+    if (dedupedBlocks.length === page.visualBlocks.length) {
+      return page;
+    }
+
+    changed = true;
+    return {
+      ...page,
+      visualBlocks: dedupedBlocks,
+    };
+  });
+
+  return { changed, pages: normalizedPages };
+};
+
+const normalizeRepeatText = (value: string) =>
+  value.replace(/\s+/g, " ").trim();
+
+const collapseRepeatedTutorText = (text: string) => {
+  const paragraphs = text
+    .trim()
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+
+  if (paragraphs.length < 2 || paragraphs.length % 2 !== 0) {
+    return text.trim();
+  }
+
+  const half = paragraphs.length / 2;
+  const firstHalf = paragraphs.slice(0, half).join("\n\n");
+  const secondHalf = paragraphs.slice(half).join("\n\n");
+
+  if (
+    normalizeRepeatText(firstHalf) &&
+    normalizeRepeatText(firstHalf) === normalizeRepeatText(secondHalf)
+  ) {
+    return firstHalf;
+  }
+
+  return text.trim();
+};
+
 const PRACTICE_SOURCE_PATTERN =
   /\b(exercise|sheet|worksheet|practice|assignment|aufgabe|uebung|übung)\b/i;
 const EXAM_SOURCE_PATTERN = /\b(exam|mock|klausur|probe)\b/i;
@@ -520,6 +611,9 @@ export default function StudySessionScreen() {
   const canvasQuestionCounterRef = useRef(0);
   const writtenQuestionIdsRef = useRef<Set<string>>(new Set());
   const streamingAiMessageIdsRef = useRef<Set<string>>(new Set());
+  const completedAiMessageIdsRef = useRef<Set<string>>(new Set());
+  const messageIdsRef = useRef<Set<string>>(new Set());
+  const insertedVisualBlockKeysRef = useRef<Set<string>>(new Set());
   const hasSeededQuestionWritesRef = useRef(false);
 
   // Highlight state for canvas area when clicking "View Notes" in chat
@@ -582,9 +676,23 @@ export default function StudySessionScreen() {
 
   // Visual blocks for the current active page
   const activeVisualBlocks = useMemo(
-    () => activePage?.visualBlocks || [],
+    () => dedupeVisualBlocks(activePage?.visualBlocks || []),
     [activePage],
   );
+
+  useEffect(() => {
+    messageIdsRef.current = new Set(messages.map((message) => message.id));
+  }, [messages]);
+
+  useEffect(() => {
+    const nextKeys = new Set(insertedVisualBlockKeysRef.current);
+    canvasPages.forEach((page) => {
+      (page.visualBlocks || []).forEach((block) => {
+        nextKeys.add(getVisualBlockInsertKey(page.id, block.messageId, block));
+      });
+    });
+    insertedVisualBlockKeysRef.current = nextKeys;
+  }, [canvasPages]);
 
   useEffect(() => {
     if (!lecture?.studyPlan || lecture.studyPlan.length === 0) return;
@@ -837,6 +945,25 @@ export default function StudySessionScreen() {
     ) => {
       if (!activePage) return null;
 
+      const existingBlock = activeVisualBlocks.find(
+        (block) =>
+          block.messageId === messageId &&
+          getVisualBlockSignature(block) === getVisualBlockSignature(partialBlock),
+      );
+      if (existingBlock) {
+        return { id: existingBlock.id, bottom: getVisualBlockBottom(existingBlock) };
+      }
+
+      const insertKey = getVisualBlockInsertKey(
+        activePageId,
+        messageId,
+        partialBlock,
+      );
+      if (insertedVisualBlockKeysRef.current.has(insertKey)) {
+        return null;
+      }
+      insertedVisualBlockKeysRef.current.add(insertKey);
+
       // Get current strokes directly from canvas ref (more reliable than state)
       const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
 
@@ -865,7 +992,18 @@ export default function StudySessionScreen() {
           if (page.id !== activePageId) return page;
 
           const existingBlocks = page.visualBlocks || [];
-          const newBlocks = [...existingBlocks, fullBlock];
+          if (
+            existingBlocks.some(
+              (block) =>
+                block.messageId === messageId &&
+                getVisualBlockSignature(block) ===
+                  getVisualBlockSignature(fullBlock),
+            )
+          ) {
+            return page;
+          }
+
+          const newBlocks = dedupeVisualBlocks([...existingBlocks, fullBlock]);
 
           // Grow canvas if needed to fit the new block
           const requiredHeight = position.y + estimatedSize.height + padding;
@@ -1126,13 +1264,23 @@ export default function StudySessionScreen() {
         if (session) {
           // Restore canvas pages (prefer new format, fallback to old canvasData)
           if (session.canvasPages && session.canvasPages.length > 0) {
-            setCanvasPages(session.canvasPages);
-            setActivePageId(session.canvasPages[0].id);
-            canvasBaselineRef.current = session.canvasPages[0].strokes.length;
+            const normalized = normalizeCanvasPageVisualBlocks(session.canvasPages);
+            setCanvasPages(normalized.pages);
+            setActivePageId(normalized.pages[0].id);
+            canvasBaselineRef.current = normalized.pages[0].strokes.length;
             hasInitializedCanvasRef.current = true;
+            if (normalized.changed) {
+              updateSession(sessionId, { canvasPages: normalized.pages }).catch(
+                (err) =>
+                  console.warn(
+                    "[study] Failed to save deduped visual blocks:",
+                    err,
+                  ),
+              );
+            }
             console.log(
               "[study] Restored",
-              session.canvasPages.length,
+              normalized.pages.length,
               "canvas pages",
             );
           } else if (session.canvasData && session.canvasData.length > 0) {
@@ -1192,6 +1340,7 @@ export default function StudySessionScreen() {
         if (savedMessages.length > 0) {
           // Restore messages from database
           setMessages(savedMessages);
+          messageIdsRef.current = new Set(savedMessages.map((message) => message.id));
 
           // Rebuild chat history for AI context
           const history: ChatMessage[] = savedMessages
@@ -1524,8 +1673,20 @@ export default function StudySessionScreen() {
 
   const pushMessage = useCallback(
     (message: StudyChatMessage, speak = true) => {
-      setMessages((prev) => [...prev, message]);
-      if (speak && message.role === "ai") {
+      const alreadyExists = messageIdsRef.current.has(message.id);
+      messageIdsRef.current.add(message.id);
+
+      setMessages((prev) => {
+        if (!prev.some((item) => item.id === message.id)) {
+          return [...prev, message];
+        }
+
+        return prev.map((item) =>
+          item.id === message.id ? { ...item, ...message } : item,
+        );
+      });
+
+      if (!alreadyExists && speak && message.role === "ai") {
         speakMessage(message.text, message.id);
       }
       // Scroll to bottom
@@ -1799,8 +1960,14 @@ export default function StudySessionScreen() {
               updateMessage(aiMsgId, { text: partialText });
             },
             onDone: (result) => {
+              if (completedAiMessageIdsRef.current.has(aiMsgId)) {
+                return;
+              }
+              completedAiMessageIdsRef.current.add(aiMsgId);
+
               const learningParsed = parseLearningResponse(result.message);
               const parsed = parseAIResponse(learningParsed.text);
+              const visibleTutorText = collapseRepeatedTutorText(parsed.text);
 
               // Add cost footer if available
               const costSuffix = result.costUsd
@@ -1819,7 +1986,7 @@ export default function StudySessionScreen() {
               const tempMsg: StudyChatMessage = {
                 id: aiMsgId,
                 role: "ai",
-                text: parsed.text,
+                text: visibleTutorText,
                 tutorQuestion: learningParsed.tutorQuestion,
               };
               const questionText =
@@ -1857,13 +2024,13 @@ export default function StudySessionScreen() {
               // Final update with citations, cost, and visual block references
               const citations: StudyCitation[] | undefined =
                 retrievedChunks.length > 0
-                  ? chunksToCitations(retrievedChunks, parsed.text)
+                  ? chunksToCitations(retrievedChunks, visibleTutorText)
                   : undefined;
 
               const finalMessage: StudyChatMessage = {
                 id: aiMsgId,
                 role: "ai",
-                text: parsed.text + costSuffix, // Use cleaned text without visual blocks
+                text: visibleTutorText + costSuffix, // Use cleaned text without visual blocks
                 citations,
                 tutorQuestion: learningParsed.tutorQuestion,
                 visualBlockIds:
@@ -1872,7 +2039,7 @@ export default function StudySessionScreen() {
               updateMessage(aiMsgId, finalMessage);
 
               // Speak the cleaned message (without visual block JSON)
-              speakMessage(parsed.text, aiMsgId);
+              speakMessage(visibleTutorText, aiMsgId);
 
               // Save the final message to database
               if (sessionId) {
@@ -1889,7 +2056,10 @@ export default function StudySessionScreen() {
         const historyParsed = parseAIResponse(historyLearningParsed.text);
         setChatHistory((prev) => [
           ...prev,
-          { role: "assistant", content: historyParsed.text },
+          {
+            role: "assistant",
+            content: collapseRepeatedTutorText(historyParsed.text),
+          },
         ]);
       } catch (error) {
         console.warn("Feynman chat error:", error);
