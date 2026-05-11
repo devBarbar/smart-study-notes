@@ -19,12 +19,15 @@ test('gradingPrompt mentions question text', () => {
   assert.match(prompt, /correctAnswer/);
   assert.match(prompt, /rewriteExample/);
   assert.match(prompt, /be a tutor first and a grader second/i);
+  assert.match(prompt, /enough detail to teach the gap/i);
+  assert.doesNotMatch(prompt, /2-4 clear sentences/i);
 });
 
 test('feynmanSystemPrompt covers the full study session and hidden metadata', () => {
   const prompt = feynmanSystemPrompt('Learning objective: Limits\nKey Concepts to Master: epsilon, delta');
   assert.match(prompt, /systematically cover the learning objective/i);
   assert.match(prompt, /every listed key concept/i);
+  assert.match(prompt, /not artificially short/i);
   assert.match(prompt, /```learning_question JSON block/i);
   assert.match(prompt, /"assessmentKind":"depth"/);
 });

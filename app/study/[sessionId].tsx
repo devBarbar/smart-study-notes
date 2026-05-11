@@ -3025,10 +3025,10 @@ export default function StudySessionScreen() {
 
     const nextCheckInstruction = nextDepthCheckType
       ? `The next required pass-gate checkType is "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}). The hidden learning_question must use that checkType, and the student needs 90+/100 for it to count.`
-      : "All depth checks are already passed; ask a concise retention or exam-style review question.";
+      : "All depth checks are already passed; ask a focused retention or exam-style review question.";
     const topicFocus = studyPlanEntry
-      ? `Give me a concise (1-2 short paragraphs) explanation of the next key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only. ${nextCheckInstruction} ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply - I will answer on the canvas.`
-      : `Give me a concise (1-2 short paragraphs) explanation of the first key idea in this topic. Cover one step only. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
+      ? `Give me a focused explanation of the next key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only, and use enough detail for real understanding without dumping the whole topic. ${nextCheckInstruction} ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply - I will answer on the canvas.`
+      : `Give me a focused explanation of the first key idea in this topic. Cover one step only, and use enough detail for real understanding without dumping the whole topic. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
     sendToFeynmanAI(topicFocus, undefined, retrievalFocus || topicFocus);
   }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyPlanEntry]);
 
