@@ -15,6 +15,10 @@ test('gradingPrompt mentions question text', () => {
   assert.match(prompt, /checkType: why/);
   assert.match(prompt, /canCountForPass/);
   assert.match(prompt, /scores at least 90/i);
+  assert.match(prompt, /whatWentWrong/);
+  assert.match(prompt, /correctAnswer/);
+  assert.match(prompt, /rewriteExample/);
+  assert.match(prompt, /be a tutor first and a grader second/i);
 });
 
 test('feynmanSystemPrompt covers the full study session and hidden metadata', () => {

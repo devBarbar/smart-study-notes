@@ -27,13 +27,16 @@ ${gradingContext?.trim() || 'No additional source context provided.'}
 
 Return JSON only:
 {
-  "summary": "1-2 sentence feedback summary",
+  "summary": "1 short teaching summary; for scores below 90, plainly name the main gap before anything else",
   "correctness": "correct | partially correct | incorrect",
   "score": 0-100,
+  "whatWentWrong": ["2-4 concrete bullets explaining exactly what was missing, wrong, or not readable"],
+  "correctAnswer": "For scores below 90, give the correct source-consistent answer in 2-4 clear sentences. For passing answers, keep this empty or brief.",
+  "rewriteExample": "For scores below 90, provide a concise answer the student could have written to score 90+.",
   "improvements": ["2-4 short tips"],
   "misconceptions": ["specific missing or misunderstood concepts"],
   "followUpQuestion": "one smaller diagnostic question targeting the most important gap",
-  "sourceNotes": ["brief source-grounded notes or page references when available"],
+  "sourceNotes": ["at most 2 brief source-grounded notes or page references when available"],
   "checkType": "recall | why | apply | transfer | teach_back",
   "canCountForPass": true,
   "understandingLevel": "memorized | partial | connected | transferable",
@@ -52,6 +55,13 @@ Depth grading rules:
 - Set "canCountForPass" to true only when the response demonstrates source-consistent understanding for that check type and scores at least 90.
 - Do not count memorized keyword lists as pass-worthy unless the student explains the relationship between ideas.
 - For "transfer", require a new or edge-case situation. For "teach_back", require clear simple language plus the important caveats.
+
+Feedback quality rules:
+- If score is below 90, be a tutor first and a grader second: make "whatWentWrong", "correctAnswer", and "rewriteExample" specific enough that the student knows exactly what to fix.
+- Do not hide the correct answer inside sourceNotes or generic improvements.
+- If the student wrote a request for help instead of answering, say that in "whatWentWrong" and still provide the correct answer.
+- If the handwriting image is present but unreadable, say "I could not read enough of the handwriting" instead of claiming no answer was provided.
+- Keep sourceNotes short; they support the feedback but should not be the main explanation.
 
 The student may answer with typed text, a canvas image, or both. If typed text is empty but an image is attached, evaluate the handwritten canvas answer. If neither contains an answer, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Respond in ${language} but keep JSON keys in English.`;
 

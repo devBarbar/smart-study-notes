@@ -2780,6 +2780,18 @@ export default function StudySessionScreen() {
       const scoreText = typeof feedback.score === "number"
         ? `\n\n${t("study.scoreLabel", { score: feedback.score })}`
         : "";
+      const whatWentWrongText =
+        !isCheckPassed && feedback.whatWentWrong?.length
+          ? `\n\n${t("study.feedback.whatWentWrongIntro")}\n${feedback.whatWentWrong.map((i) => `• ${i}`).join("\n")}`
+          : "";
+      const correctAnswerText =
+        !isCheckPassed && feedback.correctAnswer?.trim()
+          ? `\n\n${t("study.feedback.correctAnswerIntro")}\n${feedback.correctAnswer.trim()}`
+          : "";
+      const rewriteExampleText =
+        !isCheckPassed && feedback.rewriteExample?.trim()
+          ? `\n\n${t("study.feedback.rewriteExampleIntro")}\n${feedback.rewriteExample.trim()}`
+          : "";
       const improvementsText =
         feedback.improvements && feedback.improvements.length
           ? `\n\n${t("study.feedback.improveIntro")}\n${feedback.improvements.map((i) => `• ${i}`).join("\n")}`
@@ -2921,7 +2933,7 @@ export default function StudySessionScreen() {
               })}`
             : "";
 
-      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${depthProgressText}${finalQuizText}${sourceNotesText}${improvementsText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
+      const feedbackText = `${correctnessText}\n\n${feedback.summary}${whatWentWrongText}${correctAnswerText}${rewriteExampleText}${improvementsText}${scoreText}${depthProgressText}${finalQuizText}${sourceNotesText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
 
       pushMessage({
         id: uuid(),

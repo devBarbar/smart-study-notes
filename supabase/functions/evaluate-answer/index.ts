@@ -58,6 +58,15 @@ Deno.serve(async (req: Request) => {
       summary: feedback.summary ?? "No summary",
       correctness: feedback.correctness ?? "unknown",
       score: feedback.score ?? undefined,
+      whatWentWrong: Array.isArray(feedback.whatWentWrong)
+        ? feedback.whatWentWrong
+        : [],
+      correctAnswer: typeof feedback.correctAnswer === "string"
+        ? feedback.correctAnswer
+        : undefined,
+      rewriteExample: typeof feedback.rewriteExample === "string"
+        ? feedback.rewriteExample
+        : undefined,
       improvements: Array.isArray(feedback.improvements)
         ? feedback.improvements
         : [],

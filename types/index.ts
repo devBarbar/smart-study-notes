@@ -260,6 +260,9 @@ export type StudyFeedback = {
   summary: string;
   correctness: string;
   score?: number;
+  whatWentWrong?: string[];
+  correctAnswer?: string;
+  rewriteExample?: string;
   improvements?: string[];
   misconceptions?: string[];
   followUpQuestion?: string;
