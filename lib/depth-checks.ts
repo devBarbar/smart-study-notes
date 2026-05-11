@@ -14,6 +14,8 @@ export const REQUIRED_TUTOR_CHECK_TYPES: TutorCheckType[] = [
   'teach_back',
 ];
 
+export const DEPTH_PASS_SCORE = 90;
+
 export const TUTOR_CHECK_LABELS: Record<TutorCheckType, string> = {
   recall: 'Recall',
   why: 'Why',
@@ -75,7 +77,13 @@ export const getPassedDepthCheckTypes = (
 ): Set<TutorCheckType> =>
   new Set(
     checks
-      .filter((check) => check.passed && check.canCountForPass)
+      .filter(
+        (check) =>
+          check.passed &&
+          check.canCountForPass &&
+          typeof check.score === 'number' &&
+          check.score >= DEPTH_PASS_SCORE,
+      )
       .map((check) => normalizeTutorCheckType(check.checkType)),
   );
 
@@ -95,9 +103,8 @@ export const getDepthProgressCount = (checks: StudyDepthCheck[]) =>
   getPassedDepthCheckTypes(checks).size;
 
 export const feedbackPassesDepthCheck = (feedback: StudyFeedback): boolean => {
-  const scorePassed = typeof feedback.score === 'number' && feedback.score >= 80;
-  const correctnessPassed = feedback.correctness === 'correct';
-  return (scorePassed || correctnessPassed) && feedback.canCountForPass !== false;
+  const scorePassed = typeof feedback.score === 'number' && feedback.score >= DEPTH_PASS_SCORE;
+  return scorePassed && feedback.canCountForPass !== false;
 };
 
 export const buildDepthCheckProgressLine = (checks: StudyDepthCheck[]) => {

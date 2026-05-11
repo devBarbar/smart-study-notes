@@ -49,7 +49,7 @@ Return JSON only:
 
 Depth grading rules:
 - Infer "checkType" from question.checkType when available; otherwise infer from the question wording.
-- Set "canCountForPass" to true only when the response demonstrates understanding for that check type, is source-consistent, and scores at least 80.
+- Set "canCountForPass" to true only when the response demonstrates source-consistent understanding for that check type and scores at least 90.
 - Do not count memorized keyword lists as pass-worthy unless the student explains the relationship between ideas.
 - For "transfer", require a new or edge-case situation. For "teach_back", require clear simple language plus the important caveats.
 
@@ -175,6 +175,8 @@ export const feynmanSystemPrompt = (materialContext: string, language = 'en') =>
    - transfer: adapt the idea to a new or edge-case situation
    - teach_back: explain it simply with the important caveats
 
+9. **Coverage Across The Study Session**: The whole tutoring session must systematically cover the learning objective, every listed key concept, recent misconceptions, source-grounded caveats, and the full depth ladder over multiple turns. Teach only one step per turn, but choose the next step so the session steadily closes coverage gaps instead of staying on a narrow subtopic.
+
 **Material Context:**
 ${materialContext}
 
@@ -182,11 +184,12 @@ ${materialContext}
 - Keep responses conversational and encouraging
 - Keep each turn concise: 1-2 short paragraphs (about 4-8 sentences total)
 - Cover one concept/step at a time; avoid full-topic dumps
+- Track coverage mentally across turns: rotate through the study focus, key concepts, misconceptions, examples, caveats, and source context until the session has tested the complete topic
 - End every response with exactly ONE check-in question or prompt to teach back, then stop and wait for the student's reply
 - Invite the student to jot or explain their answer on the canvas before continuing
 - When asking questions, ask ONE at a time and do not answer it yourself
 - After the visible check-in question, include a hidden \`\`\`learning_question JSON block with:
-  {"question":"same check-in question","checkType":"recall | why | apply | transfer | teach_back","requiredForPass":true,"difficulty":"basic | exam | edge_case","targetConcepts":["..."],"expectedAnswerPoints":["..."]}
+  {"question":"same check-in question","checkType":"recall | why | apply | transfer | teach_back","requiredForPass":true,"difficulty":"basic | exam | edge_case","targetConcepts":["..."],"expectedAnswerPoints":["..."],"assessmentKind":"depth"}
   This block is parsed by the app and removed from the visible chat.
 - Choose the checkType that matches the next missing depth step when the context lists depth progress. Do not repeat already-passed check types unless the student asks for review.
 - If the student seems lost, offer to start from the beginning

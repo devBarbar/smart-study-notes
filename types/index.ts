@@ -253,6 +253,7 @@ export type StudyQuestion = {
   checkType?: TutorCheckType;
   requiredForPass?: boolean;
   difficulty?: TutorQuestionDifficulty;
+  assessmentKind?: AssessmentKind;
 };
 
 export type StudyFeedback = {
@@ -363,11 +364,14 @@ export type TutorQuestionMetadata = {
   checkType?: TutorCheckType;
   requiredForPass?: boolean;
   difficulty?: TutorQuestionDifficulty;
+  assessmentKind?: AssessmentKind;
 };
 
 export type TutorCheckType = 'recall' | 'why' | 'apply' | 'transfer' | 'teach_back';
 
 export type TutorQuestionDifficulty = 'basic' | 'exam' | 'edge_case';
+
+export type AssessmentKind = 'depth' | 'final_quiz';
 
 export type StudyDepthCheck = {
   id?: string;

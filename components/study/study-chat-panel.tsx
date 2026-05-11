@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { RefObject } from "react";
 import { FlatList, View } from "react-native";
 
@@ -30,6 +31,11 @@ type StudyChatPanelProps = {
   answerQuestion: StudyQuestion | null;
   messages: StudyChatMessage[];
   answerMarkers: CanvasAnswerMarker[];
+  fullScreen?: boolean;
+  canCollapseTutor?: boolean;
+  memorizationSecondsRemaining?: number | null;
+  memorizationTotalSeconds?: number;
+  finalQuizProgressLabel?: string | null;
   chatListRef: RefObject<FlatList<StudyChatMessage> | null>;
   getItemLayout: (
     data: any,
@@ -78,6 +84,11 @@ export function StudyChatPanel({
   answerQuestion,
   messages,
   answerMarkers,
+  fullScreen = false,
+  canCollapseTutor = true,
+  memorizationSecondsRemaining = null,
+  memorizationTotalSeconds = 60,
+  finalQuizProgressLabel = null,
   chatListRef,
   getItemLayout,
   onToggleTutor,
@@ -103,13 +114,22 @@ export function StudyChatPanel({
   answerDraft,
   onAnswerDraftChange,
 }: StudyChatPanelProps) {
+  const timerPercent =
+    memorizationSecondsRemaining === null
+      ? 0
+      : Math.max(
+          0,
+          Math.min(100, (memorizationSecondsRemaining / memorizationTotalSeconds) * 100),
+        );
+
   return (
-    <View style={styles.chatColumn}>
+    <View style={[styles.chatColumn, fullScreen && styles.chatColumnFullscreen]}>
       <StudyChatHeader
         styles={styles}
         t={t}
         ttsEnabled={ttsEnabled}
         listeningMode={listeningMode}
+        canCollapseTutor={canCollapseTutor}
         onToggleTutor={onToggleTutor}
         onToggleTts={onToggleTts}
         onToggleListening={onToggleListening}
@@ -123,6 +143,34 @@ export function StudyChatPanel({
           ? t("study.focusedOn", { title: studyPlanEntry.title })
           : t("study.aiSubtitle")}
       </ThemedText>
+      {memorizationSecondsRemaining !== null && (
+        <View style={styles.recallTimerBanner}>
+          <View style={styles.recallTimerHeader}>
+            <Ionicons name="timer-outline" size={18} color="#f59e0b" />
+            <ThemedText style={styles.recallTimerText}>
+              {t("study.recallTimer", {
+                seconds: memorizationSecondsRemaining,
+              })}
+            </ThemedText>
+          </View>
+          <View style={styles.recallTimerTrack}>
+            <View
+              style={[
+                styles.recallTimerFill,
+                { width: `${timerPercent}%` },
+              ]}
+            />
+          </View>
+        </View>
+      )}
+      {finalQuizProgressLabel && (
+        <View style={styles.finalQuizBanner}>
+          <Ionicons name="school-outline" size={16} color="#818cf8" />
+          <ThemedText style={styles.finalQuizBannerText}>
+            {finalQuizProgressLabel}
+          </ThemedText>
+        </View>
+      )}
       <StudyChatToolbar
         styles={styles}
         t={t}

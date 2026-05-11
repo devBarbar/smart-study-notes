@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  DEPTH_PASS_SCORE,
   buildDepthQuestion,
   canPassStudyPlanEntry,
   feedbackPassesDepthCheck,
@@ -15,6 +16,7 @@ const baseCheck = (checkType: StudyDepthCheck['checkType']): StudyDepthCheck => 
   studyPlanEntryId: 'entry-1',
   questionText: `${checkType} question`,
   checkType,
+  score: DEPTH_PASS_SCORE,
   passed: true,
   canCountForPass: true,
 });
@@ -38,12 +40,12 @@ test('topic pass gate requires every required depth check', () => {
   assert.equal(getNextTutorCheckType(complete), null);
 });
 
-test('feedback only counts for pass when score is high and not vetoed', () => {
+test('feedback only counts for pass at 90 or higher and not vetoed', () => {
   assert.equal(
     feedbackPassesDepthCheck({
       summary: 'Good',
       correctness: 'correct',
-      score: 82,
+      score: DEPTH_PASS_SCORE,
       canCountForPass: true,
     }),
     true,
@@ -51,9 +53,19 @@ test('feedback only counts for pass when score is high and not vetoed', () => {
 
   assert.equal(
     feedbackPassesDepthCheck({
+      summary: 'Close but not enough',
+      correctness: 'correct',
+      score: DEPTH_PASS_SCORE - 1,
+      canCountForPass: true,
+    }),
+    false,
+  );
+
+  assert.equal(
+    feedbackPassesDepthCheck({
       summary: 'Memorized',
       correctness: 'correct',
-      score: 90,
+      score: DEPTH_PASS_SCORE,
       canCountForPass: false,
     }),
     false,

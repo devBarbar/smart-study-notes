@@ -21,6 +21,8 @@ const normalizeTutorQuestion = (value: unknown): TutorQuestionMetadata | undefin
   const data = value as Record<string, unknown>;
   const question = String(data.question ?? '').trim();
   if (!question) return undefined;
+  const assessmentKind =
+    data.assessmentKind === 'final_quiz' ? 'final_quiz' : undefined;
 
   return {
     question,
@@ -29,6 +31,7 @@ const normalizeTutorQuestion = (value: unknown): TutorQuestionMetadata | undefin
     checkType: normalizeTutorCheckType(data.checkType),
     requiredForPass: data.requiredForPass === undefined ? true : Boolean(data.requiredForPass),
     difficulty: normalizeTutorQuestionDifficulty(data.difficulty),
+    ...(assessmentKind ? { assessmentKind } : {}),
   };
 };
 

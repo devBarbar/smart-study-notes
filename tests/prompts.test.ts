@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { gradingPrompt, lectureMetadataPrompt, practiceExamPrompt, questionPrompt } from '../lib/prompts';
+import { feynmanSystemPrompt, gradingPrompt, lectureMetadataPrompt, practiceExamPrompt, questionPrompt } from '../lib/prompts';
 
 test('questionPrompt includes title and count', () => {
   const prompt = questionPrompt('Biology', 'Cells and DNA', 3);
@@ -14,6 +14,15 @@ test('gradingPrompt mentions question text', () => {
   assert.match(prompt, /photosynthesis/);
   assert.match(prompt, /checkType: why/);
   assert.match(prompt, /canCountForPass/);
+  assert.match(prompt, /scores at least 90/i);
+});
+
+test('feynmanSystemPrompt covers the full study session and hidden metadata', () => {
+  const prompt = feynmanSystemPrompt('Learning objective: Limits\nKey Concepts to Master: epsilon, delta');
+  assert.match(prompt, /systematically cover the learning objective/i);
+  assert.match(prompt, /every listed key concept/i);
+  assert.match(prompt, /```learning_question JSON block/i);
+  assert.match(prompt, /"assessmentKind":"depth"/);
 });
 
 test('lectureMetadataPrompt references JSON shape', () => {

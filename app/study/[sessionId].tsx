@@ -18,6 +18,7 @@ import { v4 as uuid } from "uuid";
 
 import { StreamingTTSPlayer, TTSPlayerState } from "@/lib/audio";
 import {
+  DEPTH_PASS_SCORE,
   buildDepthCheckProgressLine,
   buildDepthQuestion,
   canPassStudyPlanEntry,
@@ -36,7 +37,6 @@ import {
   HandwritingCanvasHandle,
 } from "@/components/handwriting-canvas";
 import { StudyCanvasPanel } from "@/components/study/study-canvas-panel";
-import { StudyChatCollapsed } from "@/components/study/study-chat-collapsed";
 import { StudyChatPanel } from "@/components/study/study-chat-panel";
 import { StudyFlashcardToast } from "@/components/study/study-flashcard-toast";
 import { StudyLecturePassedToast } from "@/components/study/study-lecture-passed-toast";
@@ -111,6 +111,9 @@ import {
 
 // Estimated height for chat messages for scrollToIndex
 const CHAT_ITEM_HEIGHT = 100;
+const MEMORIZATION_SECONDS = 60;
+const FINAL_QUIZ_QUESTION_COUNT = 5;
+const FINAL_QUIZ_PASS_SCORE = DEPTH_PASS_SCORE;
 
 // Initial canvas size (will grow as user draws near edges)
 const INITIAL_CANVAS_WIDTH = 1400;
@@ -143,6 +146,24 @@ type CitationSourceType = NonNullable<StudyCitation["sourceType"]>;
 type CitationSourceMetadata = {
   name: string;
   sourceType: CitationSourceType;
+};
+
+type StudyPhase = "tutor" | "memorize" | "answer" | "grading" | "final_quiz";
+
+type FinalQuizAnswer = {
+  questionId: string;
+  prompt: string;
+  score?: number;
+  checkType?: StudyQuestion["checkType"];
+  summary: string;
+};
+
+type FinalQuizState = {
+  status: "idle" | "generating" | "active" | "passed" | "failed";
+  questions: StudyQuestion[];
+  currentIndex: number;
+  answers: FinalQuizAnswer[];
+  averageScore?: number;
 };
 
 const PRACTICE_SOURCE_PATTERN =
@@ -413,7 +434,7 @@ export default function StudySessionScreen() {
           nextDepthCheckType
             ? `Next required checkType: ${nextDepthCheckType} (${TUTOR_CHECK_LABELS[nextDepthCheckType]})`
             : "All required depth checks are currently passed.",
-          "The topic should only be considered passed after recall, why, apply, transfer, and teach_back checks are all passed.",
+          "The topic should only be considered passed after recall, why, apply, transfer, and teach_back checks all score at least 90/100, followed by a final quiz.",
         ].join("\n"),
       );
     }
@@ -518,7 +539,21 @@ export default function StudySessionScreen() {
   >(null);
 
   // AI Tutor collapse state
-  const [tutorCollapsed, setTutorCollapsed] = useState(false);
+  const [, setTutorCollapsed] = useState(false);
+  const [studyPhase, setStudyPhase] = useState<StudyPhase>("tutor");
+  const [memorizationSecondsRemaining, setMemorizationSecondsRemaining] =
+    useState<number | null>(null);
+  const [memorizationMessageId, setMemorizationMessageId] = useState<
+    string | null
+  >(null);
+  const [finalQuizState, setFinalQuizState] = useState<FinalQuizState>({
+    status: "idle",
+    questions: [],
+    currentIndex: 0,
+    answers: [],
+  });
+  const finalQuizStartedRef = useRef(false);
+  const finalQuizPassedRef = useRef(false);
 
   // Flashcard added notification state
   const [flashcardAdded, setFlashcardAdded] = useState(false);
@@ -1520,6 +1555,100 @@ export default function StudySessionScreen() {
     [],
   );
 
+  const answeredQuestionIds = useMemo(
+    () =>
+      new Set(
+        messages
+          .filter((message) => message.role === "user" && message.questionId)
+          .map((message) => message.questionId as string),
+      ),
+    [messages],
+  );
+
+  const latestUnansweredTutorQuestionMessage = useMemo(() => {
+    return [...messages]
+      .reverse()
+      .find((message) => {
+        if (message.role !== "ai" || !message.tutorQuestion?.question) {
+          return false;
+        }
+        const questionKey = message.questionId ?? message.id;
+        return !answeredQuestionIds.has(questionKey);
+      });
+  }, [answeredQuestionIds, messages]);
+
+  useEffect(() => {
+    if (
+      loadingMessages ||
+      loadingEntry ||
+      isChatting ||
+      grading ||
+      !latestUnansweredTutorQuestionMessage ||
+      latestUnansweredTutorQuestionMessage.id === memorizationMessageId
+    ) {
+      return;
+    }
+
+    const questionText = getQuestionTextForMessage(
+      latestUnansweredTutorQuestionMessage,
+    );
+    if (
+      questionText &&
+      !writtenQuestionIdsRef.current.has(latestUnansweredTutorQuestionMessage.id)
+    ) {
+      writtenQuestionIdsRef.current.add(latestUnansweredTutorQuestionMessage.id);
+      writeQuestionToCanvas(questionText);
+    }
+
+    setTutorCollapsed(false);
+    setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
+    setMemorizationSecondsRemaining(MEMORIZATION_SECONDS);
+    setStudyPhase(
+      latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
+        "final_quiz"
+        ? "final_quiz"
+        : "memorize",
+    );
+  }, [
+    getQuestionTextForMessage,
+    grading,
+    isChatting,
+    latestUnansweredTutorQuestionMessage,
+    loadingEntry,
+    loadingMessages,
+    memorizationMessageId,
+    writeQuestionToCanvas,
+  ]);
+
+  useEffect(() => {
+    if (
+      memorizationSecondsRemaining === null ||
+      studyPhase === "answer" ||
+      studyPhase === "grading"
+    ) {
+      return;
+    }
+
+    if (memorizationSecondsRemaining <= 0) {
+      setMemorizationSecondsRemaining(null);
+      setTutorCollapsed(true);
+      setStudyPhase("answer");
+      stopSpeaking().catch((err) =>
+        console.warn("[study] Failed to stop tutor audio before recall:", err),
+      );
+      pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setMemorizationSecondsRemaining((current) =>
+        current === null ? null : Math.max(0, current - 1),
+      );
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [memorizationSecondsRemaining, stopSpeaking, studyPhase]);
+
   const buildRetrievalQuery = useCallback(
     (query: string) => {
       const focusParts = [
@@ -1831,6 +1960,7 @@ export default function StudySessionScreen() {
             checkType,
             requiredForPass: true,
             difficulty: "basic",
+            assessmentKind: "depth",
           },
         });
         setCurrentQuestion({
@@ -1838,6 +1968,7 @@ export default function StudySessionScreen() {
           checkType,
           requiredForPass: true,
           difficulty: "basic",
+          assessmentKind: "depth",
         });
       }
     } catch (error) {
@@ -1852,7 +1983,12 @@ export default function StudySessionScreen() {
     const idx = questions.findIndex((q) => q.id === currentQuestion.id);
     const next = questions[(idx + 1) % questions.length];
     const checkType = next.checkType || nextDepthCheckType || "recall";
-    setCurrentQuestion({ ...next, checkType, requiredForPass: true });
+    setCurrentQuestion({
+      ...next,
+      checkType,
+      requiredForPass: true,
+      assessmentKind: next.assessmentKind || "depth",
+    });
     setHasDrawnAfterQuestion(false); // Reset drawing detection for new question
     pushMessage({
       id: uuid(),
@@ -1865,9 +2001,203 @@ export default function StudySessionScreen() {
         checkType,
         requiredForPass: true,
         difficulty: next.difficulty || "basic",
+        assessmentKind: "depth",
       },
     });
   };
+
+  const markFinalQuizPassed = useCallback(
+    async (averageScore: number) => {
+      finalQuizPassedRef.current = true;
+      if (!studyPlanEntryId) return;
+
+      try {
+        await updateStudyPlanEntryStatus(studyPlanEntryId, {
+          status: "passed",
+          statusScore: averageScore,
+        });
+      } catch (err) {
+        console.warn("[study] Failed to mark topic passed after final quiz", err);
+      }
+
+      try {
+        const history = await listReviewEvents(studyPlanEntryId, 50);
+        const masteryScore = computeMasteryScore({ history });
+        const reviewCount = history?.length ?? 0;
+        const easeFactor = studyPlanEntry?.easeFactor ?? 2.5;
+        const nextReviewAt = computeNextReviewDate({
+          masteryScore,
+          easeFactor,
+          reviewCount,
+        });
+
+        await updateStudyPlanEntryMastery(studyPlanEntryId, {
+          masteryScore: Math.round(Math.max(masteryScore, averageScore)),
+          nextReviewAt,
+          reviewCount,
+          easeFactor,
+          status: "passed",
+          statusScore: averageScore,
+        });
+      } catch (err) {
+        console.warn("[study] Failed to update mastery after final quiz", err);
+      }
+
+      if (
+        !hasShownLecturePassedToastRef.current &&
+        lecture?.studyPlan &&
+        lecture.studyPlan.length > 0
+      ) {
+        const updatedPlan = lecture.studyPlan.map((entry) =>
+          entry.id === studyPlanEntryId ? { ...entry, status: "passed" } : entry,
+        );
+        if (updatedPlan.every((entry) => entry.status === "passed")) {
+          hasShownLecturePassedToastRef.current = true;
+          setLecturePassedToast(true);
+          setTimeout(() => setLecturePassedToast(false), 3500);
+        }
+      }
+    },
+    [lecture?.studyPlan, studyPlanEntry?.easeFactor, studyPlanEntryId],
+  );
+
+  const pushFinalQuizQuestion = useCallback(
+    (question: StudyQuestion, index: number) => {
+      pushMessage({
+        id: uuid(),
+        role: "ai",
+        text: t("study.finalQuizQuestionIntro", {
+          current: index + 1,
+          total: FINAL_QUIZ_QUESTION_COUNT,
+          question: question.prompt,
+        }),
+        questionId: question.id,
+        tutorQuestion: {
+          question: question.prompt,
+          targetConcepts: question.targetConcepts,
+          expectedAnswerPoints: question.expectedAnswerPoints,
+          checkType: question.checkType,
+          requiredForPass: false,
+          difficulty: question.difficulty,
+          assessmentKind: "final_quiz",
+        },
+      });
+      setCurrentQuestion(question);
+    },
+    [pushMessage, t],
+  );
+
+  const startFinalQuiz = useCallback(async () => {
+    if (finalQuizStartedRef.current || finalQuizPassedRef.current || !studyPlanEntry) {
+      return;
+    }
+
+    finalQuizStartedRef.current = true;
+    setStudyPhase("final_quiz");
+    setTutorCollapsed(false);
+    setMemorizationSecondsRemaining(null);
+    setFinalQuizState({
+      status: "generating",
+      questions: [],
+      currentIndex: 0,
+      answers: [],
+    });
+
+    pushMessage({
+      id: uuid(),
+      role: "ai",
+      text: t("study.finalQuizIntro"),
+    });
+
+    setLoadingQuestions(true);
+    try {
+      const finalQuizContext = [
+        "Generate a final in-session mastery quiz. Cover the full focused study session, not a narrow subtopic.",
+        `Topic: ${studyPlanEntry.title}`,
+        studyPlanEntry.learningObjective
+          ? `Learning objective: ${studyPlanEntry.learningObjective}`
+          : null,
+        studyPlanEntry.description
+          ? `Description: ${studyPlanEntry.description}`
+          : null,
+        studyPlanEntry.keyConcepts?.length
+          ? `Key concepts: ${studyPlanEntry.keyConcepts.join(", ")}`
+          : null,
+        "Include recall, why, apply, transfer, and teach-back style checks across the set.",
+        fullMaterialContext,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+      const generated = await generateQuestions(
+        studyPlanEntry.title,
+        finalQuizContext,
+        FINAL_QUIZ_QUESTION_COUNT,
+        agentLanguage,
+      );
+      const generatedQuizQuestions = [...generated];
+      while (generatedQuizQuestions.length < FINAL_QUIZ_QUESTION_COUNT) {
+        const checkType =
+          REQUIRED_TUTOR_CHECK_TYPES[
+            generatedQuizQuestions.length % REQUIRED_TUTOR_CHECK_TYPES.length
+          ];
+        generatedQuizQuestions.push({
+          id: `final-fallback-${generatedQuizQuestions.length}`,
+          prompt: buildDepthQuestion(checkType, studyPlanEntry),
+        });
+      }
+
+      const quizQuestions = generatedQuizQuestions.slice(0, FINAL_QUIZ_QUESTION_COUNT).map(
+        (question, index): StudyQuestion => {
+          const checkType =
+            REQUIRED_TUTOR_CHECK_TYPES[index % REQUIRED_TUTOR_CHECK_TYPES.length];
+          return {
+            ...question,
+            id: `final-quiz-${uuid()}`,
+            targetConcepts: studyPlanEntry.keyConcepts,
+            expectedAnswerPoints: [TUTOR_CHECK_DESCRIPTIONS[checkType]],
+            checkType,
+            requiredForPass: false,
+            difficulty: checkType === "transfer" ? "edge_case" : "exam",
+            assessmentKind: "final_quiz",
+          };
+        },
+      );
+
+      setFinalQuizState({
+        status: "active",
+        questions: quizQuestions,
+        currentIndex: 0,
+        answers: [],
+      });
+
+      if (quizQuestions[0]) {
+        pushFinalQuizQuestion(quizQuestions[0], 0);
+      }
+    } catch (err) {
+      console.warn("[study] Failed to generate final quiz", err);
+      finalQuizStartedRef.current = false;
+      setFinalQuizState({
+        status: "idle",
+        questions: [],
+        currentIndex: 0,
+        answers: [],
+      });
+      pushMessage({
+        id: uuid(),
+        role: "ai",
+        text: t("common.errorGeneric"),
+      });
+    } finally {
+      setLoadingQuestions(false);
+    }
+  }, [
+    agentLanguage,
+    fullMaterialContext,
+    pushFinalQuizQuestion,
+    pushMessage,
+    studyPlanEntry,
+    t,
+  ]);
 
   const submitAnswer = async () => {
     // Get question context - either from formal quiz or last AI message
@@ -1901,6 +2231,10 @@ export default function StudySessionScreen() {
           difficulty:
             lastAiMessage?.tutorQuestion?.difficulty ||
             currentQuestion?.difficulty,
+          assessmentKind:
+            lastAiMessage?.tutorQuestion?.assessmentKind ||
+            currentQuestion?.assessmentKind ||
+            "depth",
         }
       : currentQuestion
         ? {
@@ -1909,10 +2243,20 @@ export default function StudySessionScreen() {
               currentQuestion.checkType || nextDepthCheckType || "recall",
             ),
             requiredForPass: currentQuestion.requiredForPass ?? true,
+            assessmentKind: currentQuestion.assessmentKind || "depth",
           }
         : null;
 
     if (!questionToEvaluate) return;
+
+    const isFinalQuizAnswer =
+      questionToEvaluate.assessmentKind === "final_quiz";
+    setMemorizationSecondsRemaining(null);
+    setTutorCollapsed(false);
+    setStudyPhase("grading");
+    stopSpeaking().catch((err) =>
+      console.warn("[study] Failed to stop tutor audio before grading:", err),
+    );
 
     setGrading(true);
     try {
@@ -1975,13 +2319,17 @@ export default function StudySessionScreen() {
       const evaluatedCheckType = normalizeTutorCheckType(
         feedback.checkType || questionToEvaluate.checkType || nextDepthCheckType || "recall",
       );
-      const depthCheckPassed = feedbackPassesDepthCheck({
-        ...feedback,
-        score: normalizedScore,
-      });
+      const depthCheckPassed =
+        !isFinalQuizAnswer &&
+        feedbackPassesDepthCheck({
+          ...feedback,
+          score: normalizedScore,
+        });
       const canCountForPass =
-        depthCheckPassed && questionToEvaluate.requiredForPass !== false;
-      const localDepthCheck: StudyDepthCheck | null = studyPlanEntryId
+        !isFinalQuizAnswer &&
+        depthCheckPassed &&
+        questionToEvaluate.requiredForPass !== false;
+      const localDepthCheck: StudyDepthCheck | null = !isFinalQuizAnswer && studyPlanEntryId
         ? {
             id: uuid(),
             lectureId,
@@ -2016,7 +2364,9 @@ export default function StudySessionScreen() {
         correctness: string,
         checks: StudyDepthCheck[],
       ): SectionStatus => {
-        if (canPassStudyPlanEntry(checks)) return "passed";
+        if (canPassStudyPlanEntry(checks)) {
+          return finalQuizPassedRef.current ? "passed" : "in_progress";
+        }
         const passedDepthCount = getPassedDepthCheckTypes(checks).size;
         if (typeof score === "number" && score <= 40 && passedDepthCount === 0) {
           return "failed";
@@ -2028,7 +2378,7 @@ export default function StudySessionScreen() {
       };
 
       // Update study plan entry status when focusing on a specific section
-      if (studyPlanEntryId) {
+      if (studyPlanEntryId && !isFinalQuizAnswer) {
         const nextStatus = deriveSectionStatus(
           normalizedScore,
           feedback.correctness,
@@ -2155,9 +2505,10 @@ export default function StudySessionScreen() {
       // Create flashcard if this depth check was answered well. Topic status
       // still requires the full depth ladder before it becomes passed.
       const isCheckPassed =
-        depthCheckPassed ||
-        (feedback.score !== undefined && feedback.score >= 80) ||
-        feedback.correctness === "correct";
+        isFinalQuizAnswer
+          ? typeof normalizedScore === "number" &&
+            normalizedScore >= FINAL_QUIZ_PASS_SCORE
+          : depthCheckPassed;
       const isTopicDepthPassed = studyPlanEntryId
         ? canPassStudyPlanEntry(latestDepthChecks)
         : isCheckPassed;
@@ -2184,7 +2535,7 @@ export default function StudySessionScreen() {
         }
       }
 
-      if (isCheckPassed && lectureId) {
+      if (!isFinalQuizAnswer && isCheckPassed && lectureId) {
         try {
           // Collect AI explanation from previous messages (up to 3 messages before the question)
           const questionMsgIndex = messages.findIndex(
@@ -2266,19 +2617,98 @@ export default function StudySessionScreen() {
         feedback.sourceNotes && feedback.sourceNotes.length
           ? `\n\n${t("study.feedback.sourceIntro")}\n${feedback.sourceNotes.map((i) => `• ${i}`).join("\n")}`
           : "";
+      const finalQuizAnswer: FinalQuizAnswer | null = isFinalQuizAnswer
+        ? {
+            questionId: questionToEvaluate.id,
+            prompt: questionToEvaluate.prompt,
+            score: normalizedScore,
+            checkType: evaluatedCheckType,
+            summary: feedback.summary,
+          }
+        : null;
+      const nextFinalQuizAnswers = finalQuizAnswer
+        ? [...finalQuizState.answers, finalQuizAnswer]
+        : finalQuizState.answers;
+      const finalQuizComplete =
+        isFinalQuizAnswer &&
+        finalQuizState.questions.length > 0 &&
+        nextFinalQuizAnswers.length >= finalQuizState.questions.length;
+      const finalQuizAverage = finalQuizComplete
+        ? Math.round(
+            nextFinalQuizAnswers.reduce(
+              (sum, answer) => sum + (answer.score ?? 0),
+              0,
+            ) / nextFinalQuizAnswers.length,
+          )
+        : undefined;
+      const finalQuizPassed =
+        finalQuizAverage !== undefined &&
+        finalQuizAverage >= FINAL_QUIZ_PASS_SCORE;
+      const nextFinalQuizIndex = finalQuizState.currentIndex + 1;
+      const nextFinalQuizQuestion =
+        isFinalQuizAnswer && !finalQuizComplete
+          ? finalQuizState.questions[nextFinalQuizIndex]
+          : undefined;
+      const weakestFinalQuizAnswer = nextFinalQuizAnswers.reduce<
+        FinalQuizAnswer | null
+      >((weakest, answer) => {
+        if (!weakest) return answer;
+        return (answer.score ?? 0) < (weakest.score ?? 0) ? answer : weakest;
+      }, null);
+      const finalQuizRestartQuestion: StudyQuestion | null =
+        finalQuizComplete &&
+        !finalQuizPassed &&
+        studyPlanEntry &&
+        weakestFinalQuizAnswer
+          ? {
+              id: `final-quiz-retry-${uuid()}`,
+              prompt: buildDepthQuestion(
+                weakestFinalQuizAnswer.checkType || "recall",
+                studyPlanEntry,
+              ),
+              targetConcepts: studyPlanEntry.keyConcepts,
+              expectedAnswerPoints: [
+                TUTOR_CHECK_DESCRIPTIONS[
+                  weakestFinalQuizAnswer.checkType || "recall"
+                ],
+              ],
+              checkType: weakestFinalQuizAnswer.checkType || "recall",
+              requiredForPass: true,
+              difficulty:
+                weakestFinalQuizAnswer.checkType === "transfer"
+                  ? "edge_case"
+                  : "basic",
+              assessmentKind: "depth",
+            }
+          : null;
+      const shouldStartFinalQuiz =
+        !isFinalQuizAnswer &&
+        isCheckPassed &&
+        isTopicDepthPassed &&
+        Boolean(studyPlanEntry) &&
+        !finalQuizStartedRef.current &&
+        !finalQuizPassedRef.current;
       const followUpQuestion: StudyQuestion | null =
-        !isCheckPassed && feedback.followUpQuestion
+        finalQuizRestartQuestion
+          ? finalQuizRestartQuestion
+          : !isFinalQuizAnswer && !isCheckPassed
           ? {
               id: `follow-up-${uuid()}`,
-              prompt: feedback.followUpQuestion,
+              prompt:
+                feedback.followUpQuestion ||
+                (studyPlanEntry
+                  ? buildDepthQuestion(evaluatedCheckType, studyPlanEntry)
+                  : `Explain the missing part again, focusing on ${feedback.misconceptions?.[0] || questionToEvaluate.prompt}.`),
               targetConcepts:
                 questionToEvaluate.targetConcepts || feedback.misconceptions,
               expectedAnswerPoints: questionToEvaluate.expectedAnswerPoints,
               checkType: evaluatedCheckType,
               requiredForPass: questionToEvaluate.requiredForPass ?? true,
               difficulty: questionToEvaluate.difficulty,
+              assessmentKind: "depth",
             }
-          : isCheckPassed &&
+          : !isFinalQuizAnswer &&
+              isCheckPassed &&
               !isTopicDepthPassed &&
               nextMissingCheckType &&
               studyPlanEntry
@@ -2293,6 +2723,7 @@ export default function StudySessionScreen() {
                 requiredForPass: true,
                 difficulty:
                   nextMissingCheckType === "transfer" ? "edge_case" : "basic",
+                assessmentKind: "depth",
               }
             : null;
       const followUpText =
@@ -2305,8 +2736,21 @@ export default function StudySessionScreen() {
       const depthProgressText = studyPlanEntryId
         ? `\n\n${t("study.depthProgress")}: ${buildDepthCheckProgressLine(latestDepthChecks)}`
         : "";
+      const finalQuizText =
+        isFinalQuizAnswer && finalQuizComplete && finalQuizAverage !== undefined
+          ? `\n\n${
+              finalQuizPassed
+                ? t("study.finalQuizPassed", { score: finalQuizAverage })
+                : t("study.finalQuizFailed", { score: finalQuizAverage })
+            }`
+          : isFinalQuizAnswer
+            ? `\n\n${t("study.finalQuizProgress", {
+                current: nextFinalQuizAnswers.length,
+                total: finalQuizState.questions.length || FINAL_QUIZ_QUESTION_COUNT,
+              })}`
+            : "";
 
-      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${depthProgressText}${sourceNotesText}${improvementsText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
+      const feedbackText = `${correctnessText}\n\n${feedback.summary}${scoreText}${depthProgressText}${finalQuizText}${sourceNotesText}${improvementsText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
 
       pushMessage({
         id: uuid(),
@@ -2323,13 +2767,46 @@ export default function StudySessionScreen() {
               checkType: followUpQuestion.checkType,
               requiredForPass: followUpQuestion.requiredForPass,
               difficulty: followUpQuestion.difficulty,
+              assessmentKind: followUpQuestion.assessmentKind,
             }
           : undefined,
       });
 
+      if (isFinalQuizAnswer && finalQuizAnswer) {
+        setFinalQuizState({
+          status: finalQuizComplete
+            ? finalQuizPassed
+              ? "passed"
+              : "failed"
+            : "active",
+          questions: finalQuizState.questions,
+          currentIndex: finalQuizComplete
+            ? finalQuizState.currentIndex
+            : nextFinalQuizIndex,
+          answers: nextFinalQuizAnswers,
+          averageScore: finalQuizAverage,
+        });
+
+        if (finalQuizComplete && finalQuizAverage !== undefined) {
+          if (finalQuizPassed) {
+            await markFinalQuizPassed(finalQuizAverage);
+          } else {
+            finalQuizStartedRef.current = false;
+            finalQuizPassedRef.current = false;
+          }
+        } else if (nextFinalQuizQuestion) {
+          pushFinalQuizQuestion(nextFinalQuizQuestion, nextFinalQuizIndex);
+        }
+      }
+
       if (followUpQuestion) {
         setQuestions((prev) => [...prev, followUpQuestion]);
         setCurrentQuestion(followUpQuestion);
+      }
+      if (shouldStartFinalQuiz) {
+        await startFinalQuiz();
+      } else if (!followUpQuestion && !nextFinalQuizQuestion) {
+        setStudyPhase(finalQuizState.status === "active" ? "final_quiz" : "tutor");
       }
       setAnswerDraft("");
     } catch (error) {
@@ -2364,7 +2841,7 @@ export default function StudySessionScreen() {
           .join("\n");
 
     const nextCheckInstruction = nextDepthCheckType
-      ? `The next required pass-gate checkType is "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}). The hidden learning_question must use that checkType.`
+      ? `The next required pass-gate checkType is "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}). The hidden learning_question must use that checkType, and the student needs 90+/100 for it to count.`
       : "All depth checks are already passed; ask a concise retention or exam-style review question.";
     const topicFocus = studyPlanEntry
       ? `Give me a concise (1-2 short paragraphs) explanation of the next key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only. ${nextCheckInstruction} ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply - I will answer on the canvas.`
@@ -2581,6 +3058,10 @@ export default function StudySessionScreen() {
       difficulty:
         lastAiQuestionMessage.tutorQuestion?.difficulty ||
         currentQuestion?.difficulty,
+      assessmentKind:
+        lastAiQuestionMessage.tutorQuestion?.assessmentKind ||
+        currentQuestion?.assessmentKind ||
+        "depth",
     };
   }, [currentQuestion, getQuestionTextForMessage, messages, nextDepthCheckType, t]);
 
@@ -2666,73 +3147,72 @@ export default function StudySessionScreen() {
     );
   }
 
+  const showCanvasSurface = studyPhase === "answer";
+  const finalQuizProgressLabel =
+    finalQuizState.status === "generating"
+      ? t("study.finalQuizGenerating")
+      : finalQuizState.status === "active"
+        ? t("study.finalQuizProgress", {
+            current: Math.min(
+              finalQuizState.currentIndex + 1,
+              finalQuizState.questions.length || FINAL_QUIZ_QUESTION_COUNT,
+            ),
+            total: finalQuizState.questions.length || FINAL_QUIZ_QUESTION_COUNT,
+          })
+        : null;
+
   return (
     <ThemedView style={styles.shell}>
-      <StudyCanvasPanel
-        styles={styles}
-        palette={palette}
-        t={t}
-        tutorCollapsed={tutorCollapsed}
-        toggleTutor={toggleTutor}
-        studyTitle={studyTitle}
-        studyOutline={studyOutline}
-        studyPlanEntry={studyPlanEntry}
-        canvasPages={canvasPages}
-        activePageId={activePageId}
-        activePage={activePage}
-        canvasSize={canvasSize}
-        canvasMode={canvasMode}
-        canvasColor={canvasColor}
-        onCanvasModeChange={handleCanvasModeChange}
-        onCanvasColorChange={handleCanvasColorChange}
-        onClearCanvas={handleClearCanvas}
-        onUndo={handleUndo}
-        onAddPage={handleAddPage}
-        onSelectPage={handleSelectPage}
-        onTitleStrokesChange={handleTitleStrokesChange}
-        titleCanvasRef={titleCanvasRef}
-        canvasRef={canvasRef}
-        pageScrollRef={pageScrollRef}
-        canvasScrollRef={canvasScrollRef}
-        canvasHScrollRef={canvasHScrollRef}
-        scrollEnabled={scrollEnabled}
-        onDrawingStart={handleDrawingStart}
-        onDrawingEnd={handleDrawingEnd}
-        initialCanvasStrokes={initialCanvasStrokes}
-        onCanvasStrokesChange={handleCanvasStrokesChange}
-        activeVisualBlocks={activeVisualBlocks}
-        highlightedVisualBlockId={highlightedVisualBlockId}
-        onHighlightVisualBlock={setHighlightedVisualBlockId}
-        highlightedAnswerLinkId={highlightedAnswerLinkId}
-        highlightedBounds={highlightedBounds}
-        onCanvasLayout={handleCanvasLayout}
-        checkButtonPosition={checkButtonPosition}
-        checkButtonAnimatedStyle={checkButtonAnimatedStyle}
-        lastDrawingPosition={lastDrawingPosition}
-        onSubmitAnswer={submitAnswer}
-        grading={grading}
-        answerMarkers={answerMarkers}
-        onMarkerPress={scrollToQuestionMessage}
-        answerText={answerText}
-        onNotesChange={handleNotesChange}
-        depthProgressItems={depthProgressItems}
-      />
-
-      {tutorCollapsed ? (
-        <StudyChatCollapsed
+      {showCanvasSurface ? (
+        <StudyCanvasPanel
           styles={styles}
+          palette={palette}
           t={t}
-          messagesCount={messages.length}
-          isChatting={isChatting}
-          loadingQuestions={loadingQuestions}
-          onToggleTutor={toggleTutor}
-          onRequestExplanation={requestExplanation}
-          onRequestQuestions={requestQuestions}
-          onRestartSession={handleRestartSession}
-          onVoiceTranscription={handleVoiceTranscription}
-          listeningMode={listeningMode}
-          onListeningModeEnd={() => setListeningMode(false)}
-          ttsFinished={!isSpeaking && listeningMode}
+          tutorCollapsed
+          lockedAnswerMode
+          toggleTutor={toggleTutor}
+          studyTitle={studyTitle}
+          studyOutline={studyOutline}
+          studyPlanEntry={studyPlanEntry}
+          canvasPages={canvasPages}
+          activePageId={activePageId}
+          activePage={activePage}
+          canvasSize={canvasSize}
+          canvasMode={canvasMode}
+          canvasColor={canvasColor}
+          onCanvasModeChange={handleCanvasModeChange}
+          onCanvasColorChange={handleCanvasColorChange}
+          onClearCanvas={handleClearCanvas}
+          onUndo={handleUndo}
+          onAddPage={handleAddPage}
+          onSelectPage={handleSelectPage}
+          onTitleStrokesChange={handleTitleStrokesChange}
+          titleCanvasRef={titleCanvasRef}
+          canvasRef={canvasRef}
+          pageScrollRef={pageScrollRef}
+          canvasScrollRef={canvasScrollRef}
+          canvasHScrollRef={canvasHScrollRef}
+          scrollEnabled={scrollEnabled}
+          onDrawingStart={handleDrawingStart}
+          onDrawingEnd={handleDrawingEnd}
+          initialCanvasStrokes={initialCanvasStrokes}
+          onCanvasStrokesChange={handleCanvasStrokesChange}
+          activeVisualBlocks={activeVisualBlocks}
+          highlightedVisualBlockId={highlightedVisualBlockId}
+          onHighlightVisualBlock={setHighlightedVisualBlockId}
+          highlightedAnswerLinkId={highlightedAnswerLinkId}
+          highlightedBounds={highlightedBounds}
+          onCanvasLayout={handleCanvasLayout}
+          checkButtonPosition={checkButtonPosition}
+          checkButtonAnimatedStyle={checkButtonAnimatedStyle}
+          lastDrawingPosition={lastDrawingPosition}
+          onSubmitAnswer={submitAnswer}
+          grading={grading}
+          answerMarkers={answerMarkers}
+          onMarkerPress={scrollToQuestionMessage}
+          answerText={answerText}
+          onNotesChange={handleNotesChange}
+          depthProgressItems={depthProgressItems}
         />
       ) : (
         <StudyChatPanel
@@ -2750,6 +3230,11 @@ export default function StudySessionScreen() {
           answerQuestion={answerableQuestion}
           messages={messages}
           answerMarkers={answerMarkers}
+          fullScreen
+          canCollapseTutor={false}
+          memorizationSecondsRemaining={memorizationSecondsRemaining}
+          memorizationTotalSeconds={MEMORIZATION_SECONDS}
+          finalQuizProgressLabel={finalQuizProgressLabel}
           chatListRef={chatListRef}
           getItemLayout={getItemLayout}
           onToggleTutor={toggleTutor}

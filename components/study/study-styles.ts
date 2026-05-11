@@ -69,6 +69,9 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             borderColor: palette.border,
             ...Shadows.sm,
         },
+        chatColumnFullscreen: {
+            flex: 1,
+        },
         chatColumnCollapsed: {
             width: 60,
             backgroundColor: palette.surfaceAlt,
@@ -225,6 +228,51 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         chatSubtitle: {
             color: palette.textMuted,
             fontSize: 13,
+        },
+        recallTimerBanner: {
+            backgroundColor: `${palette.warning}12`,
+            borderWidth: 1,
+            borderColor: `${palette.warning}55`,
+            borderRadius: Radii.md,
+            padding: Spacing.sm,
+            gap: 8,
+        },
+        recallTimerHeader: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: Spacing.xs,
+        },
+        recallTimerText: {
+            color: palette.warning,
+            fontSize: 14,
+            fontWeight: "700",
+        },
+        recallTimerTrack: {
+            height: 6,
+            borderRadius: 999,
+            backgroundColor: `${palette.warning}24`,
+            overflow: "hidden",
+        },
+        recallTimerFill: {
+            height: 6,
+            borderRadius: 999,
+            backgroundColor: palette.warning,
+        },
+        finalQuizBanner: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: Spacing.xs,
+            backgroundColor: `${palette.primary}12`,
+            borderWidth: 1,
+            borderColor: `${palette.primary}33`,
+            borderRadius: Radii.md,
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+        },
+        finalQuizBannerText: {
+            color: palette.primary,
+            fontSize: 13,
+            fontWeight: "700",
         },
         chatToolbarScroll: {
             marginHorizontal: -4,
@@ -461,6 +509,22 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             marginTop: 4,
             borderWidth: 1,
             borderColor: `${palette.success}33`,
+        },
+        answerModeBanner: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: Spacing.xs,
+            backgroundColor: `${palette.primary}12`,
+            borderWidth: 1,
+            borderColor: `${palette.primary}33`,
+            borderRadius: Radii.md,
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+        },
+        answerModeBannerText: {
+            color: palette.primary,
+            fontSize: 14,
+            fontWeight: "700",
         },
         topicFocusText: {
             color: palette.success,

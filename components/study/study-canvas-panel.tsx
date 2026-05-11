@@ -39,6 +39,7 @@ type StudyCanvasPanelProps = {
   palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
   tutorCollapsed: boolean;
+  lockedAnswerMode?: boolean;
   toggleTutor: () => void;
   studyTitle: string;
   studyOutline: string;
@@ -94,6 +95,7 @@ export function StudyCanvasPanel({
   palette,
   t,
   tutorCollapsed,
+  lockedAnswerMode = false,
   toggleTutor,
   studyTitle,
   studyOutline,
@@ -155,31 +157,42 @@ export function StudyCanvasPanel({
           <ThemedText type="title" style={styles.canvasTitle}>
             {studyTitle}
           </ThemedText>
-          <Pressable
-            style={[
-              styles.tutorToggleButton,
-              tutorCollapsed && styles.tutorToggleButtonCollapsed,
-            ]}
-            onPress={toggleTutor}
-            accessibilityLabel={
-              tutorCollapsed ? t("study.showTutor") : t("study.hideTutor")
-            }
-            accessibilityRole="button"
-          >
-            <Ionicons
-              name={tutorCollapsed ? "chatbubbles" : "chevron-forward"}
-              size={20}
-              color={tutorCollapsed ? "#10b981" : palette.textMuted}
-            />
-            {tutorCollapsed && (
-              <ThemedText style={styles.tutorToggleText}>
-                {t("study.showTutor")}
-              </ThemedText>
-            )}
-          </Pressable>
+          {!lockedAnswerMode && (
+            <Pressable
+              style={[
+                styles.tutorToggleButton,
+                tutorCollapsed && styles.tutorToggleButtonCollapsed,
+              ]}
+              onPress={toggleTutor}
+              accessibilityLabel={
+                tutorCollapsed ? t("study.showTutor") : t("study.hideTutor")
+              }
+              accessibilityRole="button"
+            >
+              <Ionicons
+                name={tutorCollapsed ? "chatbubbles" : "chevron-forward"}
+                size={20}
+                color={tutorCollapsed ? "#10b981" : palette.textMuted}
+              />
+              {tutorCollapsed && (
+                <ThemedText style={styles.tutorToggleText}>
+                  {t("study.showTutor")}
+                </ThemedText>
+              )}
+            </Pressable>
+          )}
         </View>
 
-        {studyPlanEntry && (
+        {lockedAnswerMode && (
+          <View style={styles.answerModeBanner}>
+            <Ionicons name="eye-off-outline" size={16} color={palette.primary} />
+            <ThemedText style={styles.answerModeBannerText}>
+              {t("study.answerModeLocked")}
+            </ThemedText>
+          </View>
+        )}
+
+        {!lockedAnswerMode && studyPlanEntry && (
           <View style={styles.topicFocusBadge}>
             <Ionicons name="locate" size={14} color="#10b981" />
             <ThemedText style={styles.topicFocusText}>
@@ -192,7 +205,7 @@ export function StudyCanvasPanel({
           </View>
         )}
 
-        {studyPlanEntry && depthProgressItems.length > 0 && (
+        {!lockedAnswerMode && studyPlanEntry && depthProgressItems.length > 0 && (
           <View style={styles.depthProgressContainer}>
             <View style={styles.depthProgressHeader}>
               <Ionicons name="layers-outline" size={14} color={palette.primary} />
@@ -230,9 +243,11 @@ export function StudyCanvasPanel({
           </View>
         )}
 
-        <ThemedText style={{ marginBottom: 8, color: "#64748b" }}>
-          {studyOutline}
-        </ThemedText>
+        {!lockedAnswerMode && (
+          <ThemedText style={{ marginBottom: 8, color: "#64748b" }}>
+            {studyOutline}
+          </ThemedText>
+        )}
 
         <ThemedText
           type="defaultSemiBold"

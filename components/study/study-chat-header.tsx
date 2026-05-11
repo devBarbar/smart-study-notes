@@ -9,6 +9,7 @@ type StudyChatHeaderProps = {
   t: (key: string, params?: Record<string, any>) => string;
   ttsEnabled: boolean;
   listeningMode: boolean;
+  canCollapseTutor?: boolean;
   onToggleTutor: () => void;
   onToggleTts: () => void;
   onToggleListening: () => void;
@@ -20,6 +21,7 @@ export function StudyChatHeader({
   t,
   ttsEnabled,
   listeningMode,
+  canCollapseTutor = true,
   onToggleTutor,
   onToggleTts,
   onToggleListening,
@@ -31,14 +33,16 @@ export function StudyChatHeader({
         <ThemedText type="title" style={{ color: "#fff" }}>
           {t("study.aiTutor")}
         </ThemedText>
-        <Pressable
-          style={styles.collapseTutorButton}
-          onPress={onToggleTutor}
-          accessibilityLabel={t("study.hideTutor")}
-          accessibilityRole="button"
-        >
-          <Ionicons name="chevron-forward" size={20} color="#64748b" />
-        </Pressable>
+        {canCollapseTutor && (
+          <Pressable
+            style={styles.collapseTutorButton}
+            onPress={onToggleTutor}
+            accessibilityLabel={t("study.hideTutor")}
+            accessibilityRole="button"
+          >
+            <Ionicons name="chevron-forward" size={20} color="#64748b" />
+          </Pressable>
+        )}
       </View>
       <View style={styles.voiceControlsRow}>
         <Pressable
