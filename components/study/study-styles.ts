@@ -277,6 +277,9 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         chatToolbarScroll: {
             marginHorizontal: -4,
             flexShrink: 0,
+            flexGrow: 0,
+            height: 52,
+            maxHeight: 52,
         },
         chatToolbarContent: {
             flexDirection: "row",

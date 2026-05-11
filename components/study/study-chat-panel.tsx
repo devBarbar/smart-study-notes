@@ -28,7 +28,6 @@ type StudyChatPanelProps = {
   loadingQuestions: boolean;
   grading: boolean;
   currentQuestion: StudyQuestion | null;
-  answerQuestion: StudyQuestion | null;
   messages: StudyChatMessage[];
   answerMarkers: CanvasAnswerMarker[];
   fullScreen?: boolean;
@@ -81,7 +80,6 @@ export function StudyChatPanel({
   loadingQuestions,
   grading,
   currentQuestion,
-  answerQuestion,
   messages,
   answerMarkers,
   fullScreen = false,
@@ -114,8 +112,9 @@ export function StudyChatPanel({
   answerDraft,
   onAnswerDraftChange,
 }: StudyChatPanelProps) {
+  const isMemorizing = memorizationSecondsRemaining !== null;
   const timerPercent =
-    memorizationSecondsRemaining === null
+    !isMemorizing
       ? 0
       : Math.max(
           0,
@@ -171,18 +170,20 @@ export function StudyChatPanel({
           </ThemedText>
         </View>
       )}
-      <StudyChatToolbar
-        styles={styles}
-        t={t}
-        isChatting={isChatting}
-        loadingQuestions={loadingQuestions}
-        currentQuestion={currentQuestion}
-        onRequestExplanation={onRequestExplanation}
-        onRequestQuestions={onRequestQuestions}
-        onAddPage={onAddPage}
-        onNextQuestion={onNextQuestion}
-        onSendQuickAction={onSendQuickAction}
-      />
+      {!isMemorizing && (
+        <StudyChatToolbar
+          styles={styles}
+          t={t}
+          isChatting={isChatting}
+          loadingQuestions={loadingQuestions}
+          currentQuestion={currentQuestion}
+          onRequestExplanation={onRequestExplanation}
+          onRequestQuestions={onRequestQuestions}
+          onAddPage={onAddPage}
+          onNextQuestion={onNextQuestion}
+          onSendQuickAction={onSendQuickAction}
+        />
+      )}
 
       <StudyChatList
         styles={styles}
@@ -203,21 +204,23 @@ export function StudyChatPanel({
         onViewDiagram={onViewDiagram}
       />
 
-      <StudyChatInputArea
-        styles={styles}
-        t={t}
-        isChatting={isChatting}
-        currentQuestion={answerQuestion}
-        grading={grading}
-        onVoiceTranscription={onVoiceTranscription}
-        listeningMode={listeningMode}
-        onListeningModeEnd={onListeningModeEnd}
-        ttsFinished={ttsFinished}
-        onSubmitAnswer={onSubmitAnswer}
-        answerDraft={answerDraft}
-        onAnswerDraftChange={onAnswerDraftChange}
-        onSendMessage={onSendQuickAction}
-      />
+      {!isMemorizing && (
+        <StudyChatInputArea
+          styles={styles}
+          t={t}
+          isChatting={isChatting}
+          currentQuestion={null}
+          grading={grading}
+          onVoiceTranscription={onVoiceTranscription}
+          listeningMode={listeningMode}
+          onListeningModeEnd={onListeningModeEnd}
+          ttsFinished={ttsFinished}
+          onSubmitAnswer={onSubmitAnswer}
+          answerDraft={answerDraft}
+          onAnswerDraftChange={onAnswerDraftChange}
+          onSendMessage={onSendQuickAction}
+        />
+      )}
     </View>
   );
 }

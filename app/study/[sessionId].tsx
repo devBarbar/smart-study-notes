@@ -3021,50 +3021,6 @@ export default function StudySessionScreen() {
     [],
   );
 
-  const answerableQuestion = useMemo<StudyQuestion | null>(() => {
-    const lastAiQuestionMessage = [...messages]
-      .reverse()
-      .find((message) => message.role === "ai" && getQuestionTextForMessage(message));
-    if (!lastAiQuestionMessage) {
-      return currentQuestion
-        ? {
-            ...currentQuestion,
-            checkType: normalizeTutorCheckType(
-              currentQuestion.checkType || nextDepthCheckType || "recall",
-            ),
-            requiredForPass: currentQuestion.requiredForPass ?? true,
-          }
-        : null;
-    }
-
-    return {
-      id: lastAiQuestionMessage.id,
-      prompt:
-        lastAiQuestionMessage.tutorQuestion?.question ||
-        getQuestionTextForMessage(lastAiQuestionMessage) ||
-        t("study.defaultCheckPrompt"),
-      targetConcepts: lastAiQuestionMessage.tutorQuestion?.targetConcepts,
-      expectedAnswerPoints: lastAiQuestionMessage.tutorQuestion?.expectedAnswerPoints,
-      checkType: normalizeTutorCheckType(
-        lastAiQuestionMessage.tutorQuestion?.checkType ||
-          currentQuestion?.checkType ||
-          nextDepthCheckType ||
-          "recall",
-      ),
-      requiredForPass:
-        lastAiQuestionMessage.tutorQuestion?.requiredForPass ??
-        currentQuestion?.requiredForPass ??
-        true,
-      difficulty:
-        lastAiQuestionMessage.tutorQuestion?.difficulty ||
-        currentQuestion?.difficulty,
-      assessmentKind:
-        lastAiQuestionMessage.tutorQuestion?.assessmentKind ||
-        currentQuestion?.assessmentKind ||
-        "depth",
-    };
-  }, [currentQuestion, getQuestionTextForMessage, messages, nextDepthCheckType, t]);
-
   // Toggle AI tutor visibility
   const toggleTutor = useCallback(() => {
     setTutorCollapsed((prev) => !prev);
@@ -3227,7 +3183,6 @@ export default function StudySessionScreen() {
           loadingQuestions={loadingQuestions}
           grading={grading}
           currentQuestion={currentQuestion}
-          answerQuestion={answerableQuestion}
           messages={messages}
           answerMarkers={answerMarkers}
           fullScreen
