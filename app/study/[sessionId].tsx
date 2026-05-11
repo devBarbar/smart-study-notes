@@ -111,7 +111,7 @@ import {
 
 // Estimated height for chat messages for scrollToIndex
 const CHAT_ITEM_HEIGHT = 100;
-const MEMORIZATION_SECONDS = 60;
+const MEMORIZATION_SECONDS = 120;
 const FINAL_QUIZ_QUESTION_COUNT = 5;
 const FINAL_QUIZ_PASS_SCORE = DEPTH_PASS_SCORE;
 
@@ -2253,13 +2253,23 @@ export default function StudySessionScreen() {
       questionToEvaluate.assessmentKind === "final_quiz";
     setMemorizationSecondsRemaining(null);
     setTutorCollapsed(false);
-    setStudyPhase("grading");
     stopSpeaking().catch((err) =>
       console.warn("[study] Failed to stop tutor audio before grading:", err),
     );
 
     setGrading(true);
     try {
+      const imageUri = await canvasRef.current?.exportAsImage();
+      const canvasBounds = getNewStrokeBounds();
+      const base64 = imageUri
+        ? await FileSystem.readAsStringAsync(imageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          })
+        : undefined;
+      const dataUrl = base64 ? `data:image/png;base64,${base64}` : undefined;
+
+      setStudyPhase("grading");
+
       const gradingChunks = await fetchRelevantChunks(
         `${questionToEvaluate.prompt}\n${answerDraft || answerText}`,
         6,
@@ -2271,13 +2281,6 @@ export default function StudySessionScreen() {
       const gradingCitations =
         gradingChunks.length > 0 ? chunksToCitations(gradingChunks) : undefined;
 
-      const imageUri = await canvasRef.current?.exportAsImage();
-      const base64 = imageUri
-        ? await FileSystem.readAsStringAsync(imageUri, {
-            encoding: FileSystem.EncodingType.Base64,
-          })
-        : undefined;
-      const dataUrl = base64 ? `data:image/png;base64,${base64}` : undefined;
       const feedback = await evaluateAnswer(
         {
           question: questionToEvaluate,
@@ -2299,8 +2302,6 @@ export default function StudySessionScreen() {
         const uploaded = await uploadCanvasImage(imageUri);
         uploadedImageUri = uploaded.publicUrl;
       }
-
-      const canvasBounds = getNewStrokeBounds();
 
       const linkId = uuid();
       const link: StudyAnswerLink = {
