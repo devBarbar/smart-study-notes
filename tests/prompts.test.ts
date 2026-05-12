@@ -28,7 +28,7 @@ test('feynmanSystemPrompt covers the full study session and hidden metadata', ()
   assert.match(prompt, /systematically cover the learning objective/i);
   assert.match(prompt, /every listed key concept/i);
   assert.match(prompt, /not artificially short/i);
-  assert.match(prompt, /```learning_question JSON block/i);
+  assert.match(prompt, /```learning_question followed by a newline/i);
   assert.match(prompt, /"assessmentKind":"depth"/);
 });
 

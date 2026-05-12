@@ -1,7 +1,8 @@
 import type { TutorQuestionMetadata } from '@/types';
 import { normalizeTutorCheckType, normalizeTutorQuestionDifficulty } from './depth-checks';
 
-const LEARNING_QUESTION_REGEX = /```learning_question\s*\n([\s\S]*?)\n```/g;
+const FENCED_BLOCK_REGEX = /```[ \t]*([^\n`]*)\n([\s\S]*?)(?:\n?```|$)/g;
+const TRAILING_JSON_MIN_KEYS = ['"question"', '"checkType"'];
 
 type ParsedLearningResponse = {
   text: string;
@@ -22,7 +23,11 @@ const normalizeTutorQuestion = (value: unknown): TutorQuestionMetadata | undefin
   const question = String(data.question ?? '').trim();
   if (!question) return undefined;
   const assessmentKind =
-    data.assessmentKind === 'final_quiz' ? 'final_quiz' : undefined;
+    data.assessmentKind === 'final_quiz'
+      ? 'final_quiz'
+      : data.assessmentKind === 'depth'
+        ? 'depth'
+        : undefined;
 
   return {
     question,
@@ -35,29 +40,79 @@ const normalizeTutorQuestion = (value: unknown): TutorQuestionMetadata | undefin
   };
 };
 
+const parseTutorQuestionJson = (raw: string): TutorQuestionMetadata | undefined => {
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start === -1 || end <= start) return undefined;
+
+  try {
+    return normalizeTutorQuestion(JSON.parse(raw.slice(start, end + 1)));
+  } catch {
+    return undefined;
+  }
+};
+
+const findTrailingTutorQuestionJson = (
+  text: string,
+): { fullMatch: string; tutorQuestion: TutorQuestionMetadata } | undefined => {
+  const trimmedEnd = text.trimEnd();
+  if (!TRAILING_JSON_MIN_KEYS.every((key) => trimmedEnd.includes(key))) {
+    return undefined;
+  }
+
+  let searchIndex = trimmedEnd.lastIndexOf('{');
+  while (searchIndex !== -1) {
+    const candidate = trimmedEnd.slice(searchIndex).trim();
+    const tutorQuestion = parseTutorQuestionJson(candidate);
+    if (tutorQuestion) {
+      return { fullMatch: text.slice(searchIndex), tutorQuestion };
+    }
+    searchIndex = trimmedEnd.lastIndexOf('{', searchIndex - 1);
+  }
+
+  return undefined;
+};
+
 export const parseLearningResponse = (rawText: string): ParsedLearningResponse => {
   if (!rawText) return { text: '' };
 
-  const matches: { fullMatch: string; json: string }[] = [];
-  LEARNING_QUESTION_REGEX.lastIndex = 0;
+  const matches: { fullMatch: string; tutorQuestion?: TutorQuestionMetadata }[] = [];
+  FENCED_BLOCK_REGEX.lastIndex = 0;
 
   let match: RegExpExecArray | null;
-  while ((match = LEARNING_QUESTION_REGEX.exec(rawText)) !== null) {
-    matches.push({ fullMatch: match[0], json: match[1].trim() });
-  }
-
   let tutorQuestion: TutorQuestionMetadata | undefined;
-  for (const { json } of matches) {
-    try {
-      tutorQuestion = normalizeTutorQuestion(JSON.parse(json)) ?? tutorQuestion;
-    } catch {
-      // Ignore malformed metadata; visible response text still renders.
+
+  while ((match = FENCED_BLOCK_REGEX.exec(rawText)) !== null) {
+    const label = match[1].trim().toLowerCase();
+    const body = match[2].trim();
+    const isLearningQuestionBlock = label.startsWith('learning_question');
+    const isJsonBlock = label === 'json';
+    if (!isLearningQuestionBlock && !isJsonBlock) {
+      continue;
+    }
+
+    const parsed = parseTutorQuestionJson(body);
+    if (parsed) {
+      tutorQuestion = parsed;
+    }
+
+    if (parsed || isLearningQuestionBlock) {
+      matches.push({ fullMatch: match[0], tutorQuestion: parsed });
     }
   }
 
   let cleanText = rawText;
-  for (const { fullMatch } of matches) {
+  for (const { fullMatch, tutorQuestion: parsed } of matches) {
+    if (parsed) {
+      tutorQuestion = parsed;
+    }
     cleanText = cleanText.replace(fullMatch, '');
+  }
+
+  const trailingJson = findTrailingTutorQuestionJson(cleanText);
+  if (trailingJson) {
+    tutorQuestion = trailingJson.tutorQuestion;
+    cleanText = cleanText.replace(trailingJson.fullMatch, '');
   }
 
   return {

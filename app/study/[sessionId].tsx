@@ -2024,12 +2024,15 @@ export default function StudySessionScreen() {
           lectureId,
           {
             onChunk: (partialText) => {
+              const learningParsed = parseLearningResponse(partialText);
+              const parsed = parseAIResponse(learningParsed.text);
+              const visibleTutorText = collapseRepeatedTutorText(parsed.text);
               // Update the AI message with the partial text
               updateMessage(aiMsgId, {
-                text: partialText,
+                text: visibleTutorText,
                 reasoning: {
                   ...tutorModelInfo.reasoning,
-                  completionTokens: estimateTokenCount(partialText),
+                  completionTokens: estimateTokenCount(visibleTutorText),
                 },
               });
             },

@@ -31,6 +31,57 @@ What is the next step?
     });
   });
 
+  it('handles learning question fences with extra labels', () => {
+    const parsed = parseLearningResponse(`Explanation.
+
+Teach it back?
+
+\`\`\`learning_question JSON
+{"question":"Teach it back?","checkType":"teach_back","requiredForPass":true,"difficulty":"basic","assessmentKind":"depth"}
+\`\`\``);
+
+    assert.equal(parsed.text, 'Explanation.\n\nTeach it back?');
+    assert.equal(parsed.tutorQuestion?.question, 'Teach it back?');
+    assert.equal(parsed.tutorQuestion?.checkType, 'teach_back');
+    assert.equal(parsed.tutorQuestion?.assessmentKind, 'depth');
+  });
+
+  it('removes generic json code fences only when they contain tutor metadata', () => {
+    const parsed = parseLearningResponse(`Why does this happen?
+
+\`\`\`json
+{"question":"Why does this happen?","checkType":"why","requiredForPass":true}
+\`\`\``);
+
+    assert.equal(parsed.text, 'Why does this happen?');
+    assert.equal(parsed.tutorQuestion?.question, 'Why does this happen?');
+    assert.equal(parsed.tutorQuestion?.checkType, 'why');
+  });
+
+  it('removes trailing raw tutor metadata JSON', () => {
+    const parsed = parseLearningResponse(`Explain the scheduler in your own words.
+{"question":"Explain the scheduler in your own words.","checkType":"recall","requiredForPass":true,"difficulty":"basic","assessmentKind":"depth"}`);
+
+    assert.equal(parsed.text, 'Explain the scheduler in your own words.');
+    assert.equal(parsed.tutorQuestion?.question, 'Explain the scheduler in your own words.');
+    assert.equal(parsed.tutorQuestion?.assessmentKind, 'depth');
+  });
+
+  it('keeps ordinary json code blocks visible', () => {
+    const parsed = parseLearningResponse(`Here is an example:
+
+\`\`\`json
+{"name":"Ada"}
+\`\`\``);
+
+    assert.equal(parsed.text, `Here is an example:
+
+\`\`\`json
+{"name":"Ada"}
+\`\`\``);
+    assert.equal(parsed.tutorQuestion, undefined);
+  });
+
   it('ignores invalid metadata without dropping visible text', () => {
     const parsed = parseLearningResponse(`Visible text.
 
