@@ -1,17 +1,5 @@
 import { LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness } from '@/types';
-import { percentageToGrade } from './mastery';
-import { questionPrompt } from './prompts';
 import { getSupabase } from './supabase';
-
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.EXPO_PUBLIC_OPENAI_MODEL?.trim() || 'gpt-5.5';
-const OPENAI_REASONING_EFFORT = process.env.EXPO_PUBLIC_OPENAI_REASONING_EFFORT?.trim() || 'high';
-
-type ChatCompletionContent = {
-  type: 'text' | 'image_url';
-  text?: string;
-  image_url?: { url: string };
-};
 
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant';
@@ -20,68 +8,6 @@ export type ChatMessage = {
 
 export type ExtractedPdfPage = { pageNumber: number; text: string };
 export type ExtractedPdfResult = { text: string; pages?: ExtractedPdfPage[]; pageCount?: number };
-
-const ensureKey = () => {
-  if (!OPENAI_API_KEY) {
-    throw new Error('Missing EXPO_PUBLIC_OPENAI_API_KEY for OpenAI calls.');
-  }
-  return OPENAI_API_KEY;
-};
-
-const callChat = async (content: ChatCompletionContent[]) => {
-  ensureKey();
-  const response = await fetch('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      input: [
-        {
-          role: 'user',
-          content: content.map((part) =>
-            part.type === 'image_url'
-              ? { type: 'input_image', image_url: part.image_url?.url ?? '' }
-              : { type: 'input_text', text: part.text ?? '' }
-          ),
-        },
-      ],
-      reasoning: { effort: OPENAI_REASONING_EFFORT },
-      store: false,
-    }),
-  });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(`OpenAI request failed: ${message}`);
-  }
-
-  const data = await response.json();
-  if (data?.status === 'failed') {
-    throw new Error(data?.error?.message ?? 'OpenAI response failed');
-  }
-  if (data?.status === 'incomplete') {
-    const reason = data?.incomplete_details?.reason ?? 'unknown';
-    throw new Error(`OpenAI response incomplete: ${reason}`);
-  }
-
-  if (typeof data?.output_text === 'string') {
-    return data.output_text as string;
-  }
-
-  return ((data?.output ?? []) as any[])
-    .flatMap((item) => item?.content ?? [])
-    .filter((part) => part?.type === 'output_text' || part?.type === 'text')
-    .map((part) => part?.text ?? '')
-    .join('');
-};
-
-const stripCodeFences = (text: string) => {
-  const fenceMatch = text.match(/```(?:json)?\n?([\s\S]*?)```/i);
-  return fenceMatch ? fenceMatch[1].trim() : text.trim();
-};
 
 /**
  * Sanitize text for PostgreSQL storage - removes null characters and other problematic Unicode
@@ -117,20 +43,15 @@ export const generateQuestions = async (
   count = 3,
   language: LanguageCode = 'en'
 ): Promise<StudyQuestion[]> => {
-  // Truncate outline if too long to prevent token limit issues
   const truncatedOutline = truncateToTokenLimit(outline, 500000);
-  const prompt = questionPrompt(materialTitle, truncatedOutline, count, language);
-  const content: ChatCompletionContent[] = [{ type: 'text', text: prompt }];
-  const output = await callChat(content);
-  const lines = output
-    .split('\n')
-    .map((line) => line.replace(/^\d+[\).\s]*/, '').trim())
-    .filter(Boolean);
-
-  return lines.map((line, idx) => ({
-    id: `q-${idx}`,
-    prompt: line,
-  }));
+  const jobId = await enqueueJob('question_generation', {
+    materialTitle,
+    outline: truncatedOutline,
+    count,
+    language,
+  });
+  const data = await waitForJobResult<{ questions?: StudyQuestion[] }>(jobId);
+  return Array.isArray(data?.questions) ? data.questions : [];
 };
 
 type EvaluateAnswerParams = {
@@ -680,176 +601,36 @@ type RoadmapRequest = {
   additionalNotes?: string;
   progress: { passed: number; inProgress: number; notStarted: number; failed: number };
   language?: LanguageCode;
+  lectureId?: string;
   /** Cluster quiz results to factor into readiness calculation */
   clusterQuizResults?: ClusterQuizResult[];
 };
 
 export const generateReadinessAndRoadmap = async (
-  { planEntries, additionalNotes, progress, language = 'en', clusterQuizResults = [] }: RoadmapRequest
+  { planEntries, additionalNotes, progress, language = 'en', lectureId, clusterQuizResults = [] }: RoadmapRequest
 ): Promise<{ readiness: StudyReadiness; roadmap: RoadmapStep[] }> => {
-  const total = Math.max(planEntries.length, 1);
-  
-  // Factor in cluster quiz results - passed quizzes boost confidence
-  const passedClusters = clusterQuizResults.filter(q => q.passed).length;
-  const totalClusters = clusterQuizResults.length;
-  const avgQuizScore = clusterQuizResults.length > 0 
-    ? clusterQuizResults.reduce((sum, q) => sum + q.score, 0) / clusterQuizResults.length 
-    : 0;
-  
-  // Boost completion ratio based on cluster quiz performance
-  const baseCompletionRatio =
-    (progress.passed + progress.inProgress * 0.6 + progress.failed * 0.3) / total;
-  const clusterBonus = totalClusters > 0 ? (passedClusters / totalClusters) * 0.15 : 0;
-  const completionRatio = Math.min(1, baseCompletionRatio + clusterBonus);
-  
-  // Calculate fallback readiness percentage
-  const fallbackPercentage = Math.max(0, Math.min(100, Math.round(20 + completionRatio * 70)));
-
-  const notesBlock = additionalNotes
-    ? `Instructor / additional notes (HIGH PRIORITY - topics mentioned here should be prioritized):\n${truncateToTokenLimit(additionalNotes, 2000)}\n`
-    : '';
-  
-  // Build cluster quiz results block
-  const clusterQuizBlock = clusterQuizResults.length > 0
-    ? `Cluster Quiz Results (IMPORTANT - these demonstrate actual test performance on topic clusters):\n${
-        clusterQuizResults.map(q => 
-          `- ${q.category}: ${q.score}% (${q.passed ? 'PASSED' : 'FAILED'}) - ${q.questionCount} questions`
-        ).join('\n')
-      }\n\nAverage quiz score: ${Math.round(avgQuizScore)}% | Clusters passed: ${passedClusters}/${totalClusters}\n`
-    : '';
-
-  // Build enhanced plan summary with exam info
-  const enhancedPlanSummary = planEntries
-    .map((entry, idx) => {
-      const status = (entry.status ?? 'not_started').replace('_', ' ');
-      const examTag = entry.fromExamSource ? ' [EXAM TOPIC]' : (entry.examRelevance === 'high' ? ' [LIKELY EXAM]' : '');
-      const notesTag = entry.mentionedInNotes ? ' [PROF FOCUS]' : '';
-      return `${idx + 1}. ${entry.title}${examTag}${notesTag} [${entry.importanceTier ?? 'core'} | priority ${
-        entry.priorityScore ?? 0
-      } | status ${status}${entry.category ? ` | ${entry.category}` : ''}]`;
-    })
-    .join('\n');
-
-  const prompt = `You are an exam readiness coach. Given a study plan with progress and cluster quiz results, estimate a single readiness percentage (0-100) that maps to a German university grade and create a focused roadmap.
-
-German Grading Scale (for reference):
-- 85.5-100%: Grade 1.0 (Excellent)
-- 81-85.4%: Grade 1.3 (Very Good)
-- 76.5-80.9%: Grade 1.7 (Very Good)
-- 72-76.4%: Grade 2.0 (Good)
-- 67.5-71.9%: Grade 2.3 (Good)
-- 63-67.4%: Grade 2.7 (Satisfactory)
-- 58.5-62.9%: Grade 3.0 (Satisfactory)
-- 54-58.4%: Grade 3.3 (Sufficient)
-- 49.5-53.9%: Grade 3.7 (Sufficient)
-- 45-49.4%: Grade 4.0 (Adequate - minimum pass)
-- Below 45%: Failed
-
-Progress counts:
-- Passed: ${progress.passed}
-- In progress: ${progress.inProgress}
-- Not started: ${progress.notStarted}
-- Failed: ${progress.failed}
-- Total sections: ${planEntries.length}
-
-Study plan entries (note: [EXAM TOPIC] = from past exam, [LIKELY EXAM] = high exam relevance, [PROF FOCUS] = mentioned in instructor notes):
-${enhancedPlanSummary || 'No plan entries provided.'}
-
-${clusterQuizBlock}${notesBlock}
-
-IMPORTANT:
-- Estimate a realistic readiness percentage based on progress, quiz scores, and topic coverage
-- Items marked [EXAM TOPIC], [LIKELY EXAM], or [PROF FOCUS] are critical for exam success
-- CLUSTER QUIZ RESULTS are strong indicators of actual exam performance
-- Be conservative - only give high percentages when most topics are passed
-
-Return JSON ONLY with this shape:
-{
-  "readinessPercentage": 0-100,
-  "summary": "1-2 sentence overview of exam readiness",
-  "priorityExplanation": "2-3 sentences explaining WHY items are ordered this way, what factors drove the prioritization",
-  "focusAreas": ["short bullets to improve next"],
-  "roadmap": [
-    {
-      "order": 1,
-      "title": "Topic or cluster",
-      "action": "Specific next actions (1-2 sentences)",
-      "reason": "Why this specific topic is prioritized at this position",
-      "category": "Category name",
-      "estimatedMinutes": 20-90,
-      "examTopics": ["list of exam-related topics covered here, if any"]
-    }
-  ]
-}
-
-Rules:
-- Put critical/weak topics first, then reinforcement, then polish.
-- Prioritize items from past exams and instructor notes FIRST.
-- Clusters with FAILED quizzes need extra focus in the roadmap.
-- Keep roadmap to 5-8 steps max.
-- Each roadmap item's "reason" should explain why it's at that priority position.`;
-
-  let parsed: any = null;
-  try {
-    const output = await callChat([{ type: 'text', text: prompt }]);
-    const clean = stripCodeFences(output);
-    parsed = JSON.parse(clean);
-  } catch (err) {
-    console.warn('[openai] readiness/roadmap parse failed, using fallback', err);
-  }
-
-  const clampPercent = (value: any, fallback: number) => {
-    const num = Number(value);
-    if (Number.isFinite(num)) {
-      return Math.max(0, Math.min(100, Math.round(num)));
-    }
-    return fallback;
+  const jobId = await enqueueJob('readiness_roadmap', {
+    planEntries,
+    additionalNotes,
+    progress,
+    language,
+    lectureId,
+    clusterQuizResults,
+  });
+  const data = await waitForJobResult<{
+    readiness?: StudyReadiness;
+    roadmap?: RoadmapStep[];
+  }>(jobId);
+  return {
+    readiness: data.readiness ?? {
+      percentage: 0,
+      predictedGrade: 'Failed',
+      summary: 'Readiness could not be generated.',
+      focusAreas: [],
+      updatedAt: new Date().toISOString(),
+    },
+    roadmap: Array.isArray(data.roadmap) ? data.roadmap : [],
   };
-
-  // Parse readiness percentage
-  const readinessPercentage = clampPercent(parsed?.readinessPercentage, fallbackPercentage);
-
-  const readiness: StudyReadiness = {
-    percentage: readinessPercentage,
-    predictedGrade: percentageToGrade(readinessPercentage),
-    summary: parsed?.summary || 'AI-estimated readiness based on current progress.',
-    focusAreas: Array.isArray(parsed?.focusAreas)
-      ? parsed.focusAreas.filter(Boolean).map((f: any) => String(f))
-      : ['Focus on core topics first, then high-yield, then stretch.'],
-    priorityExplanation: parsed?.priorityExplanation || undefined,
-    updatedAt: new Date().toISOString(),
-  };
-
-  const roadmapSource = Array.isArray(parsed?.roadmap) ? parsed.roadmap : [];
-  const fallbackRoadmap = planEntries
-    .slice(0, 6)
-    .map((entry, idx) => ({
-      order: idx + 1,
-      title: entry.title,
-      action: entry.description || 'Study this topic and practice 2-3 questions.',
-      reason: 'Derived from study plan priority.',
-      category: entry.category,
-      estimatedMinutes: 45,
-    }));
-
-  const roadmap: RoadmapStep[] =
-    roadmapSource.length > 0
-      ? roadmapSource.map((step: any, idx: number) => ({
-          order: typeof step.order === 'number' ? step.order : idx + 1,
-          title: step.title || `Step ${idx + 1}`,
-          action: step.action || step.next || 'Review and practice.',
-          reason: step.reason || step.rationale || undefined,
-          category: step.category || step.section || undefined,
-          estimatedMinutes: Number.isFinite(Number(step.estimatedMinutes))
-            ? Math.max(10, Math.min(180, Math.round(Number(step.estimatedMinutes))))
-            : undefined,
-          examTopics: Array.isArray(step.examTopics)
-            ? step.examTopics.filter(Boolean).map((t: any) => String(t))
-            : undefined,
-        }))
-      : fallbackRoadmap;
-
-  return { readiness, roadmap };
 };
 
 export const generatePracticeExam = async (params: {

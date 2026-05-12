@@ -557,6 +557,7 @@ export default function LectureDetailScreen() {
           failed: sectionStatusCounts.failed,
         },
         language: agentLanguage,
+        lectureId: lecture.id,
         clusterQuizResults,
       });
       setReadiness(result.readiness);

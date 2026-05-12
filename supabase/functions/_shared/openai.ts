@@ -1,5 +1,11 @@
 import { calculateTokenCostUSD, TokenUsage } from "./pricing.ts";
 import {
+  AIModelConfig,
+  AIUseCase,
+  resolveAIModelConfig,
+  UserAISettings,
+} from "./ai-settings.ts";
+import {
   buildEmbeddingRequestBody,
   extractResponseText,
   getCompletedResponse,
@@ -45,13 +51,16 @@ export type ChatRequestOptions = {
   maxOutputTokens?: number;
   reasoningEffort?: string;
   timeoutMs?: number;
+  useCase?: AIUseCase;
+  aiSettings?: UserAISettings;
 };
 
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-const OPENAI_MODEL = Deno.env.get("OPENAI_MODEL")?.trim() || "gpt-5.5";
-const OPENAI_REASONING_EFFORT = Deno.env.get("OPENAI_REASONING_EFFORT")?.trim() || "high";
-const OPENAI_EMBED_MODEL =
-  Deno.env.get("OPENAI_EMBED_MODEL")?.trim() || "text-embedding-3-large";
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+const OPENROUTER_HTTP_REFERER =
+  Deno.env.get("OPENROUTER_HTTP_REFERER")?.trim() || "https://smart-learning-notes.local";
+const OPENROUTER_APP_TITLE =
+  Deno.env.get("OPENROUTER_APP_TITLE")?.trim() || "Smart Learning Notes";
 const OPENAI_EMBED_DIMENSIONS_RAW = Deno.env.get("OPENAI_EMBED_DIMENSIONS")?.trim();
 const OPENAI_EMBED_DIMENSIONS = Number(OPENAI_EMBED_DIMENSIONS_RAW || "1536");
 const OPENAI_CHAT_TIMEOUT_MS = Number(Deno.env.get("OPENAI_CHAT_TIMEOUT_MS") || "120000");
@@ -62,6 +71,71 @@ export const requireOpenAIKey = () => {
     throw new Error("Missing OPENAI_API_KEY for OpenAI calls.");
   }
   return OPENAI_API_KEY;
+};
+
+const requireProviderKey = (
+  config: AIModelConfig,
+  settings?: UserAISettings,
+) => {
+  if (config.platform === "openrouter") {
+    const key = settings?.providerKeys.openrouter ?? OPENROUTER_API_KEY;
+    if (!key) {
+      throw new Error("Missing OpenRouter API key. Add one in Settings or set OPENROUTER_API_KEY.");
+    }
+    return key;
+  }
+
+  const key = settings?.providerKeys.openai ?? OPENAI_API_KEY;
+  if (!key) {
+    throw new Error("Missing OpenAI API key. Add one in Settings or set OPENAI_API_KEY.");
+  }
+  return key;
+};
+
+const getProviderUrl = (
+  platform: AIModelConfig["platform"],
+  endpoint: "responses" | "embeddings",
+) => {
+  const baseUrl =
+    platform === "openrouter"
+      ? "https://openrouter.ai/api/v1"
+      : "https://api.openai.com/v1";
+  return `${baseUrl}/${endpoint}`;
+};
+
+const getProviderHeaders = (config: AIModelConfig, apiKey: string) => {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`,
+  };
+  if (config.platform === "openrouter") {
+    headers["HTTP-Referer"] = OPENROUTER_HTTP_REFERER;
+    headers["X-OpenRouter-Title"] = OPENROUTER_APP_TITLE;
+  }
+  return headers;
+};
+
+const resolveRequestConfig = (
+  useCase: AIUseCase,
+  options: ChatRequestOptions = {},
+) =>
+  resolveAIModelConfig(options.aiSettings, useCase, {
+    reasoningEffort: options.reasoningEffort as AIModelConfig["reasoningEffort"],
+  });
+
+export const resolveAIProviderRequest = (
+  useCase: AIUseCase,
+  aiSettings?: UserAISettings,
+  overrides: Partial<AIModelConfig> = {},
+) => {
+  const config = resolveAIModelConfig(aiSettings, useCase, overrides);
+  const apiKey = requireProviderKey(config, aiSettings);
+  return {
+    config,
+    apiKey,
+    headers: getProviderHeaders(config, apiKey),
+    url: (endpoint: "responses" | "embeddings") => getProviderUrl(config.platform, endpoint),
+  };
 };
 
 export const stripCodeFences = (text: string) => {
@@ -186,38 +260,35 @@ export const callChat = async (
   content: ChatCompletionContent[],
   options: ChatRequestOptions = {},
 ): Promise<ChatResponse> => {
-  const apiKey = requireOpenAIKey();
-  const model = OPENAI_MODEL;
+  const config = resolveRequestConfig(options.useCase ?? "lecture_metadata", options);
+  const apiKey = requireProviderKey(config, options.aiSettings);
   const body: Record<string, unknown> = {
-    model,
+    model: config.model,
     input: [{ role: "user", content: toResponseContent(content) }],
-    reasoning: { effort: options.reasoningEffort ?? OPENAI_REASONING_EFFORT },
     store: false,
   };
+  if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
   if (options.maxOutputTokens) body.max_output_tokens = options.maxOutputTokens;
-  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
+  const response = await fetchWithTimeout(getProviderUrl(config.platform, "responses"), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers: getProviderHeaders(config, apiKey),
     body: JSON.stringify(body),
-  }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, "OpenAI chat request");
+  }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, `${config.platform} chat request`);
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(`OpenAI request failed: ${message}`);
+    throw new Error(`${config.platform} request failed: ${message}`);
   }
 
   const data = await response.json();
   assertResponseSucceeded(data);
   const usage = toUsage(data);
-  const pricing = calculateTokenCostUSD(data?.model ?? model, usage ?? {});
+  const pricing = calculateTokenCostUSD(data?.model ?? config.model, usage ?? {});
 
   return {
     message: extractResponseText(data),
     usage,
-    model: data?.model ?? model,
+    model: data?.model ?? config.model,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,
@@ -226,38 +297,37 @@ export const callChat = async (
 
 export const callChatWithMessages = async (
   messages: ChatMessage[],
+  options: ChatRequestOptions = {},
 ): Promise<ChatResponse> => {
-  const apiKey = requireOpenAIKey();
-  const model = OPENAI_MODEL;
-  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
+  const config = resolveRequestConfig(options.useCase ?? "tutor_chat", options);
+  const apiKey = requireProviderKey(config, options.aiSettings);
+  const body: Record<string, unknown> = {
+    model: config.model,
+    input: toResponseMessages(messages),
+    instructions: toInstructions(messages),
+    store: false,
+  };
+  if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
+  const response = await fetchWithTimeout(getProviderUrl(config.platform, "responses"), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      input: toResponseMessages(messages),
-      instructions: toInstructions(messages),
-      reasoning: { effort: OPENAI_REASONING_EFFORT },
-      store: false,
-    }),
-  }, OPENAI_CHAT_TIMEOUT_MS, "OpenAI chat request");
+    headers: getProviderHeaders(config, apiKey),
+    body: JSON.stringify(body),
+  }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, `${config.platform} chat request`);
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(`OpenAI request failed: ${message}`);
+    throw new Error(`${config.platform} request failed: ${message}`);
   }
 
   const data = await response.json();
   assertResponseSucceeded(data);
   const usage = toUsage(data);
-  const pricing = calculateTokenCostUSD(data?.model ?? model, usage ?? {});
+  const pricing = calculateTokenCostUSD(data?.model ?? config.model, usage ?? {});
 
   return {
     message: extractResponseText(data),
     usage,
-    model: data?.model ?? model,
+    model: data?.model ?? config.model,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,
@@ -276,28 +346,27 @@ export type StreamChatCallbacks = {
 export const callChatWithMessagesStream = async (
   messages: ChatMessage[],
   callbacks: StreamChatCallbacks,
+  options: ChatRequestOptions = {},
 ): Promise<ChatResponse> => {
-  const apiKey = requireOpenAIKey();
-  const model = OPENAI_MODEL;
-  const response = await fetchWithTimeout("https://api.openai.com/v1/responses", {
+  const config = resolveRequestConfig(options.useCase ?? "tutor_chat", options);
+  const apiKey = requireProviderKey(config, options.aiSettings);
+  const body: Record<string, unknown> = {
+    model: config.model,
+    input: toResponseMessages(messages),
+    instructions: toInstructions(messages),
+    store: false,
+    stream: true,
+  };
+  if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
+  const response = await fetchWithTimeout(getProviderUrl(config.platform, "responses"), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      input: toResponseMessages(messages),
-      instructions: toInstructions(messages),
-      reasoning: { effort: OPENAI_REASONING_EFFORT },
-      store: false,
-      stream: true,
-    }),
-  }, OPENAI_CHAT_TIMEOUT_MS, "OpenAI chat stream");
+    headers: getProviderHeaders(config, apiKey),
+    body: JSON.stringify(body),
+  }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, `${config.platform} chat stream`);
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(`OpenAI request failed: ${message}`);
+    throw new Error(`${config.platform} request failed: ${message}`);
   }
 
   const reader = response.body?.getReader();
@@ -308,7 +377,7 @@ export const callChatWithMessagesStream = async (
   const decoder = new TextDecoder();
   let fullText = "";
   let usage: OpenAIUsage | undefined;
-  let modelUsed = model;
+  let modelUsed = config.model;
   let buffer = "";
   let streamError: string | null = null;
 
@@ -369,9 +438,13 @@ export const callChatWithMessagesStream = async (
   return result;
 };
 
-export const embedTexts = async (inputs: string[]): Promise<EmbeddingResponse> => {
-  requireOpenAIKey();
-  const model = OPENAI_EMBED_MODEL;
+export const embedTexts = async (
+  inputs: string[],
+  options: { useCase?: AIUseCase; aiSettings?: UserAISettings; timeoutMs?: number } = {},
+): Promise<EmbeddingResponse> => {
+  const config = resolveAIModelConfig(options.aiSettings, options.useCase ?? "embeddings");
+  const apiKey = requireProviderKey(config, options.aiSettings);
+  const model = config.model;
   const dimensions = Number.isFinite(OPENAI_EMBED_DIMENSIONS) ? OPENAI_EMBED_DIMENSIONS : undefined;
   const results: number[][] = [];
   const batchSize = 12;
@@ -379,18 +452,15 @@ export const embedTexts = async (inputs: string[]): Promise<EmbeddingResponse> =
 
   for (let i = 0; i < inputs.length; i += batchSize) {
     const slice = inputs.slice(i, i + batchSize);
-    const response = await fetchWithTimeout("https://api.openai.com/v1/embeddings", {
+    const response = await fetchWithTimeout(getProviderUrl(config.platform, "embeddings"), {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
+      headers: getProviderHeaders(config, apiKey),
       body: JSON.stringify(buildEmbeddingRequestBody(model, slice, dimensions)),
-    }, OPENAI_EMBED_TIMEOUT_MS, "OpenAI embeddings request");
+    }, options.timeoutMs ?? OPENAI_EMBED_TIMEOUT_MS, `${config.platform} embeddings request`);
 
     if (!response.ok) {
       const message = await response.text();
-      throw new Error(`OpenAI embeddings failed: ${message}`);
+      throw new Error(`${config.platform} embeddings failed: ${message}`);
     }
 
     const data = await response.json();

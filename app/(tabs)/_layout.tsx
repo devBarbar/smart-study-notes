@@ -10,11 +10,12 @@ import { useLanguage } from '@/contexts/language-context';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { t } = useLanguage();
+  const themeName = colorScheme === 'dark' ? 'dark' : 'light';
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors[themeName].tint,
         headerShown: false,
         tabBarButton: HapticTab,
       }}>
@@ -22,6 +23,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t('tabs.library'),
+          tabBarButtonTestID: 'tab-library',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.fill" color={color} />,
         }}
       />
@@ -29,6 +31,7 @@ export default function TabLayout() {
         name="sessions"
         options={{
           title: t('tabs.sessions'),
+          tabBarButtonTestID: 'tab-sessions',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="brain.head.profile" color={color} />,
         }}
       />
@@ -36,6 +39,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t('tabs.settings'),
+          tabBarButtonTestID: 'tab-settings',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
         }}
       />

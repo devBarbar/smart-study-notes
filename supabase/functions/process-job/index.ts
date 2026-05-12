@@ -8,17 +8,19 @@ import {
   callChatWithMessagesStream,
   chunkText,
   embedTexts,
-  requireOpenAIKey,
+  resolveAIProviderRequest,
   sanitizeForDatabase,
   stripCodeFences,
   truncateToTokenLimit,
 } from "../_shared/openai.ts";
+import { loadUserAISettings, UserAISettings } from "../_shared/ai-settings.ts";
 import { toTokenUsage } from "../_shared/openai-response-utils.ts";
 import {
   feynmanSystemPrompt,
   gradingPrompt,
   lectureMetadataPrompt,
   practiceExamPrompt,
+  questionPrompt,
   studyPlanPrompt,
 } from "../_shared/prompts.ts";
 import {
@@ -39,7 +41,6 @@ declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-const OPENAI_TRANSCRIBE_MODEL = Deno.env.get("OPENAI_TRANSCRIBE_MODEL")?.trim() || "gpt-4o-transcribe";
 const PDF_EXTRACTION_TIMEOUT_MS = Number(Deno.env.get("PDF_EXTRACTION_TIMEOUT_MS") || "90000");
 
 type Job = {
@@ -67,11 +68,36 @@ type UsageLogPayload = {
 
 type JobRunResult = { result: any; usage?: UsageLogPayload };
 
+const percentageToGrade = (percentage: number) => {
+  const clamped = Math.max(0, Math.min(100, percentage));
+  if (clamped >= 85.5) return "1.0";
+  if (clamped >= 81) return "1.3";
+  if (clamped >= 76.5) return "1.7";
+  if (clamped >= 72) return "2.0";
+  if (clamped >= 67.5) return "2.3";
+  if (clamped >= 63) return "2.7";
+  if (clamped >= 58.5) return "3.0";
+  if (clamped >= 54) return "3.3";
+  if (clamped >= 49.5) return "3.7";
+  if (clamped >= 45) return "4.0";
+  return "Failed";
+};
+
 const noJobResponse = () =>
   new Response(JSON.stringify({ message: "no pending jobs" }), {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return fallback;
+  }
+};
 
 const kickProcessJob = (jobId?: string) => {
   if (!SUPABASE_URL) return;
@@ -116,6 +142,24 @@ const decodeDataUrl = (dataUrl: string): Uint8Array => {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+};
+
+const bytesToBase64 = (bytes: Uint8Array) => {
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+};
+
+const inferAudioFormat = (file: File) => {
+  const mime = file.type.toLowerCase();
+  const name = file.name.toLowerCase();
+  if (mime.includes("wav") || name.endsWith(".wav")) return "wav";
+  if (mime.includes("mpeg") || mime.includes("mp3") || name.endsWith(".mp3")) return "mp3";
+  if (mime.includes("webm") || name.endsWith(".webm")) return "webm";
+  if (mime.includes("mp4") || mime.includes("m4a") || name.endsWith(".m4a")) return "m4a";
+  return "m4a";
 };
 
 type ExtractedPage = { pageNumber: number; text: string };
@@ -339,7 +383,10 @@ const learningPathPromptJson = (parsedPath: ReturnType<typeof parseLearningPath>
   })),
 });
 
-const handlePlan = async (payload: any): Promise<JobRunResult> => {
+const handlePlan = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
   const { extractedTexts = [], language = "en", options = {} } = payload ?? {};
 
   const examContentRaw = (extractedTexts ?? [])
@@ -404,7 +451,10 @@ const handlePlan = async (payload: any): Promise<JobRunResult> => {
           additionalNotes: options.additionalNotes,
         });
 
-        const chat = await callChat([{ type: "text", text: prompt }]);
+        const chat = await callChat([{ type: "text", text: prompt }], {
+          aiSettings,
+          useCase: "study_plan",
+        });
         console.log(`[process-job][plan] Completed chunk ${chunkIndex + 1}/${chunks.length}`);
 
         if (chat.usage) {
@@ -517,6 +567,7 @@ const handleLecturePlanV2 = async (
   payload: any,
   supabase: ReturnType<typeof createClient>,
   userId: string | null,
+  _aiSettings: UserAISettings,
 ): Promise<JobRunResult> => {
   const { lectureId, regenerate = false } = payload ?? {};
   if (!lectureId) throw new Error("lectureId is required");
@@ -635,6 +686,7 @@ const saveLecturePlanFromParsedPath = async (
   parsedPath: ReturnType<typeof parseLearningPath>,
   warnings: string[],
   usage: UsageLogPayload | undefined,
+  aiSettings: UserAISettings,
 ): Promise<JobRunResult> => {
   warnings.push(...parsedPath.warnings);
 
@@ -720,7 +772,10 @@ const saveLecturePlanFromParsedPath = async (
   }
 
   if (chunkRows.length > 0) {
-    const embeddingResult = await embedTexts(chunkRows.map((chunk) => chunk.content));
+    const embeddingResult = await embedTexts(chunkRows.map((chunk) => chunk.content), {
+      aiSettings,
+      useCase: "embeddings",
+    });
     usage = aggregateUsage(usage, {
       feature: "lecture_plan_v2",
       model: embeddingResult.model,
@@ -775,6 +830,7 @@ const handleLecturePlanInventory = async (
   payload: any,
   _supabase: ReturnType<typeof createClient>,
   userId: string | null,
+  aiSettings: UserAISettings,
 ): Promise<JobRunResult> => {
   const {
     lectureId,
@@ -792,7 +848,8 @@ const handleLecturePlanInventory = async (
 
   const inventoryPrompt = buildConceptInventoryPrompt(content, planSettings ?? {}, language);
   const chat = await callChat([{ type: "text", text: inventoryPrompt }], {
-    reasoningEffort: "low",
+    aiSettings,
+    useCase: "study_plan_inventory",
     timeoutMs: 120000,
   });
 
@@ -820,6 +877,7 @@ const handleLecturePlanSynthesize = async (
   payload: any,
   supabase: ReturnType<typeof createClient>,
   userId: string | null,
+  aiSettings: UserAISettings,
 ): Promise<JobRunResult> => {
   const { lectureId, runId, totalChunks, language = "en" } = payload ?? {};
   if (!lectureId || !runId) throw new Error("lectureId and runId are required for synthesis");
@@ -896,7 +954,8 @@ const handleLecturePlanSynthesize = async (
     ...entryTarget,
   });
   const pathChat = await callChat([{ type: "text", text: pathPrompt }], {
-    reasoningEffort: "medium",
+    aiSettings,
+    useCase: "study_plan_synthesis",
     timeoutMs: 480000,
   });
   usage = aggregateUsage(usage, {
@@ -930,7 +989,8 @@ ${pathChat.message}
 Return a complete replacement JSON only. Keep prerequisite ordering, keep session-sized entries, include dedicated exam-practice/review sessions, and ensure every uploaded source file appears at least once in sourceRefs using the exact fileName. Target ${entryTarget.minEntries}-${entryTarget.maxEntries} entries across ${entryTarget.minModules}-${entryTarget.maxModules} modules.`;
 
     const repairChat = await callChat([{ type: "text", text: repairPrompt }], {
-      reasoningEffort: "medium",
+      aiSettings,
+      useCase: "study_plan_synthesis",
       timeoutMs: 480000,
     });
     usage = aggregateUsage(usage, {
@@ -966,7 +1026,8 @@ ${JSON.stringify(learningPathPromptJson(parsedPath), null, 2)}
 Return a complete replacement JSON only. Keep prerequisite ordering and the existing module-based structure. Add or split entries for distinct teachable concepts from the under-covered PDFs; do not satisfy coverage by attaching sourceRefs to unrelated broad sessions. Every listed under-covered file must appear in at least its required number of distinct entries. Keep sessions close to ${planSettings.preferredSessionMinutes ?? 45} minutes. Target ${Math.max(entryTarget.minEntries, parsedPath.entries.length + undercoveredSources.length)}-${Math.max(entryTarget.maxEntries, parsedPath.entries.length + undercoveredSources.length * 2)} entries across ${entryTarget.minModules}-${entryTarget.maxModules} modules.`;
 
     const coverageRepairChat = await callChat([{ type: "text", text: coverageRepairPrompt }], {
-      reasoningEffort: "medium",
+      aiSettings,
+      useCase: "study_plan_synthesis",
       timeoutMs: 480000,
     });
     usage = aggregateUsage(usage, {
@@ -987,13 +1048,22 @@ Return a complete replacement JSON only. Keep prerequisite ordering and the exis
     undercoveredSources = findUndercoveredSources(parsedPath, sourceCoverageInputs);
   }
   assertSourceCoverageQuality(parsedPath, sourceCoverageInputs);
-  return await saveLecturePlanFromParsedPath(supabase, lectureId, userId, parsedPath, warnings, usage);
+  return await saveLecturePlanFromParsedPath(
+    supabase,
+    lectureId,
+    userId,
+    parsedPath,
+    warnings,
+    usage,
+    aiSettings,
+  );
 };
 
 const handlePracticeExam = async (
   payload: any,
   supabase: ReturnType<typeof createClient>,
   userId: string | null,
+  aiSettings: UserAISettings,
 ): Promise<JobRunResult> => {
   const { practiceExamId, lectureId, questionCount = 5, language = "en", category = null } = payload ?? {};
   if (!practiceExamId || !lectureId) {
@@ -1069,7 +1139,10 @@ const handlePracticeExam = async (
     categoryName: isClusterQuiz ? category : undefined,
   });
 
-  const chat = await callChat([{ type: "text", text: prompt }]);
+  const chat = await callChat([{ type: "text", text: prompt }], {
+    aiSettings,
+    useCase: "practice_exam",
+  });
 
   let parsed: Array<{ prompt: string; answer?: string; topicTitle?: string; source?: string }> = [];
   try {
@@ -1151,14 +1224,243 @@ const handlePracticeExam = async (
   };
 };
 
-const handleMetadata = async (payload: any): Promise<JobRunResult> => {
+const handleQuestionGeneration = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
+  const {
+    materialTitle = "Study material",
+    outline = "",
+    count = 3,
+    language = "en",
+  } = payload ?? {};
+  const questionCount = Number.isFinite(Number(count))
+    ? Math.max(1, Math.min(20, Math.round(Number(count))))
+    : 3;
+  const truncatedOutline = truncateToTokenLimit(String(outline ?? ""), 500000);
+  const prompt = questionPrompt(String(materialTitle), truncatedOutline, questionCount, language);
+  const chat = await callChat([{ type: "text", text: prompt }], {
+    aiSettings,
+    useCase: "question_generation",
+  });
+
+  const questions = chat.message
+    .split("\n")
+    .map((line: string) => line.replace(/^\d+[\).\s]*/, "").trim())
+    .filter(Boolean)
+    .slice(0, questionCount)
+    .map((prompt: string, idx: number) => ({ id: `q-${idx}`, prompt }));
+
+  return {
+    result: { questions },
+    usage: {
+      feature: "question_generation",
+      model: chat.model ?? null,
+      usage: chat.usage,
+      costUsd: chat.costUsd,
+      inputCostUsd: chat.inputCostUsd,
+      outputCostUsd: chat.outputCostUsd,
+      lectureId: payload?.lectureId ?? payload?.lecture_id ?? null,
+      metadata: { questions: questions.length },
+    },
+  };
+};
+
+const handleReadinessRoadmap = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
+  const {
+    planEntries = [],
+    additionalNotes,
+    progress = { passed: 0, inProgress: 0, notStarted: 0, failed: 0 },
+    language = "en",
+    clusterQuizResults = [],
+  } = payload ?? {};
+  const entries = Array.isArray(planEntries) ? planEntries : [];
+  const quizzes = Array.isArray(clusterQuizResults) ? clusterQuizResults : [];
+  const total = Math.max(entries.length, 1);
+  const passedClusters = quizzes.filter((q: any) => q.passed).length;
+  const totalClusters = quizzes.length;
+  const avgQuizScore = quizzes.length > 0
+    ? quizzes.reduce((sum: number, q: any) => sum + (Number(q.score) || 0), 0) / quizzes.length
+    : 0;
+  const baseCompletionRatio =
+    ((Number(progress.passed) || 0) +
+      (Number(progress.inProgress) || 0) * 0.6 +
+      (Number(progress.failed) || 0) * 0.3) /
+    total;
+  const clusterBonus = totalClusters > 0 ? (passedClusters / totalClusters) * 0.15 : 0;
+  const completionRatio = Math.min(1, baseCompletionRatio + clusterBonus);
+  const fallbackPercentage = Math.max(0, Math.min(100, Math.round(20 + completionRatio * 70)));
+
+  const notesBlock = additionalNotes
+    ? `Instructor / additional notes (HIGH PRIORITY - topics mentioned here should be prioritized):\n${truncateToTokenLimit(String(additionalNotes), 2000)}\n`
+    : "";
+  const clusterQuizBlock = quizzes.length > 0
+    ? `Cluster Quiz Results (IMPORTANT - these demonstrate actual test performance on topic clusters):\n${
+        quizzes.map((q: any) =>
+          `- ${q.category}: ${q.score}% (${q.passed ? "PASSED" : "FAILED"}) - ${q.questionCount} questions`
+        ).join("\n")
+      }\n\nAverage quiz score: ${Math.round(avgQuizScore)}% | Clusters passed: ${passedClusters}/${totalClusters}\n`
+    : "";
+
+  const enhancedPlanSummary = entries
+    .map((entry: any, idx: number) => {
+      const status = (entry.status ?? "not_started").replace("_", " ");
+      const examTag = entry.fromExamSource
+        ? " [EXAM TOPIC]"
+        : (entry.examRelevance === "high" ? " [LIKELY EXAM]" : "");
+      const notesTag = entry.mentionedInNotes ? " [PROF FOCUS]" : "";
+      return `${idx + 1}. ${entry.title}${examTag}${notesTag} [${entry.importanceTier ?? "core"} | priority ${
+        entry.priorityScore ?? 0
+      } | status ${status}${entry.category ? ` | ${entry.category}` : ""}]`;
+    })
+    .join("\n");
+
+  const prompt = `You are an exam readiness coach. Given a study plan with progress and cluster quiz results, estimate a single readiness percentage (0-100) that maps to a German university grade and create a focused roadmap.
+
+German Grading Scale (for reference):
+- 85.5-100%: Grade 1.0 (Excellent)
+- 81-85.4%: Grade 1.3 (Very Good)
+- 76.5-80.9%: Grade 1.7 (Very Good)
+- 72-76.4%: Grade 2.0 (Good)
+- 67.5-71.9%: Grade 2.3 (Good)
+- 63-67.4%: Grade 2.7 (Satisfactory)
+- 58.5-62.9%: Grade 3.0 (Satisfactory)
+- 54-58.4%: Grade 3.3 (Sufficient)
+- 49.5-53.9%: Grade 3.7 (Sufficient)
+- 45-49.4%: Grade 4.0 (Adequate - minimum pass)
+- Below 45%: Failed
+
+Progress counts:
+- Passed: ${progress.passed ?? 0}
+- In progress: ${progress.inProgress ?? 0}
+- Not started: ${progress.notStarted ?? 0}
+- Failed: ${progress.failed ?? 0}
+- Total sections: ${entries.length}
+
+Study plan entries (note: [EXAM TOPIC] = from past exam, [LIKELY EXAM] = high exam relevance, [PROF FOCUS] = mentioned in instructor notes):
+${enhancedPlanSummary || "No plan entries provided."}
+
+${clusterQuizBlock}${notesBlock}
+
+IMPORTANT:
+- Estimate a realistic readiness percentage based on progress, quiz scores, and topic coverage
+- Items marked [EXAM TOPIC], [LIKELY EXAM], or [PROF FOCUS] are critical for exam success
+- CLUSTER QUIZ RESULTS are strong indicators of actual exam performance
+- Be conservative - only give high percentages when most topics are passed
+
+Return JSON ONLY with this shape:
+{
+  "readinessPercentage": 0-100,
+  "summary": "1-2 sentence overview of exam readiness",
+  "priorityExplanation": "2-3 sentences explaining WHY items are ordered this way, what factors drove the prioritization",
+  "focusAreas": ["short bullets to improve next"],
+  "roadmap": [
+    {
+      "order": 1,
+      "title": "Topic or cluster",
+      "action": "Specific next actions (1-2 sentences)",
+      "reason": "Why this specific topic is prioritized at this position",
+      "category": "Category name",
+      "estimatedMinutes": 20-90,
+      "examTopics": ["list of exam-related topics covered here, if any"]
+    }
+  ]
+}
+
+Rules:
+- Put critical/weak topics first, then reinforcement, then polish.
+- Prioritize items from past exams and instructor notes FIRST.
+- Clusters with FAILED quizzes need extra focus in the roadmap.
+- Keep roadmap to 5-8 steps max.
+- Each roadmap item's "reason" should explain why it's at that priority position.`;
+
+  const chat = await callChat([{ type: "text", text: prompt }], {
+    aiSettings,
+    useCase: "readiness_roadmap",
+  });
+
+  let parsed: any = null;
+  try {
+    parsed = JSON.parse(stripCodeFences(chat.message));
+  } catch (err) {
+    console.warn("[process-job][readiness_roadmap] parse failed, using fallback", err);
+  }
+
+  const clampPercent = (value: any, fallback: number) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? Math.max(0, Math.min(100, Math.round(num))) : fallback;
+  };
+
+  const readinessPercentage = clampPercent(parsed?.readinessPercentage, fallbackPercentage);
+  const readiness = {
+    percentage: readinessPercentage,
+    predictedGrade: percentageToGrade(readinessPercentage),
+    summary: parsed?.summary || "AI-estimated readiness based on current progress.",
+    focusAreas: Array.isArray(parsed?.focusAreas)
+      ? parsed.focusAreas.filter(Boolean).map((f: any) => String(f))
+      : ["Focus on core topics first, then high-yield, then stretch."],
+    priorityExplanation: parsed?.priorityExplanation || undefined,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const roadmapSource = Array.isArray(parsed?.roadmap) ? parsed.roadmap : [];
+  const fallbackRoadmap = entries.slice(0, 6).map((entry: any, idx: number) => ({
+    order: idx + 1,
+    title: entry.title,
+    action: entry.description || "Study this topic and practice 2-3 questions.",
+    reason: "Derived from study plan priority.",
+    category: entry.category,
+    estimatedMinutes: 45,
+  }));
+
+  const roadmap = roadmapSource.length > 0
+    ? roadmapSource.map((step: any, idx: number) => ({
+        order: typeof step.order === "number" ? step.order : idx + 1,
+        title: step.title || `Step ${idx + 1}`,
+        action: step.action || step.next || "Review and practice.",
+        reason: step.reason || step.rationale || undefined,
+        category: step.category || step.section || undefined,
+        estimatedMinutes: Number.isFinite(Number(step.estimatedMinutes))
+          ? Math.max(10, Math.min(180, Math.round(Number(step.estimatedMinutes))))
+          : undefined,
+        examTopics: Array.isArray(step.examTopics)
+          ? step.examTopics.filter(Boolean).map((t: any) => String(t))
+          : undefined,
+      }))
+    : fallbackRoadmap;
+
+  return {
+    result: { readiness, roadmap },
+    usage: {
+      feature: "readiness_roadmap",
+      model: chat.model ?? null,
+      usage: chat.usage,
+      costUsd: chat.costUsd,
+      inputCostUsd: chat.inputCostUsd,
+      outputCostUsd: chat.outputCostUsd,
+      lectureId: payload?.lectureId ?? payload?.lecture_id ?? null,
+      metadata: { roadmapSteps: roadmap.length },
+    },
+  };
+};
+
+const handleMetadata = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
   const { files = [], language = "en" } = payload ?? {};
   const summary = (files as Array<{ name: string; notes?: string }>)
     .map((f, idx) => `${idx + 1}. ${f.name}${f.notes ? ` — ${f.notes}` : ""}`)
     .join("\n");
 
   const prompt = lectureMetadataPrompt(summary || "No details provided.", language);
-  const chat = await callChat([{ type: "text", text: prompt }]);
+  const chat = await callChat([{ type: "text", text: prompt }], {
+    aiSettings,
+    useCase: "lecture_metadata",
+  });
 
   let parsedTitle = "New Lecture";
   let parsedDescription = "";
@@ -1186,7 +1488,10 @@ const handleMetadata = async (payload: any): Promise<JobRunResult> => {
   };
 };
 
-const handleChat = async (payload: any): Promise<JobRunResult> => {
+const handleChat = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
   const { messages = [], materialContext = "", language = "en", lectureId } = payload ?? {};
   const truncatedContext = truncateToTokenLimit(materialContext ?? "", 500000);
   const systemPrompt = feynmanSystemPrompt(truncatedContext, language);
@@ -1198,7 +1503,10 @@ const handleChat = async (payload: any): Promise<JobRunResult> => {
     })),
   ];
 
-  const reply = await callChatWithMessages(fullMessages as any);
+  const reply = await callChatWithMessages(fullMessages as any, {
+    aiSettings,
+    useCase: "tutor_chat",
+  });
   return {
     result: { message: reply.message },
     usage: {
@@ -1218,6 +1526,7 @@ const handleChatStreaming = async (
   payload: any,
   supabase: ReturnType<typeof createClient>,
   jobId: string,
+  aiSettings: UserAISettings,
 ): Promise<JobRunResult> => {
   const { messages = [], materialContext = "", language = "en", lectureId } = payload ?? {};
   const truncatedContext = truncateToTokenLimit(materialContext ?? "", 500000);
@@ -1234,19 +1543,23 @@ const handleChatStreaming = async (
   let lastUpdateTime = 0;
   const UPDATE_INTERVAL_MS = 150; // Update every 150ms max
 
-  const reply = await callChatWithMessagesStream(fullMessages as any, {
-    onChunk: async (_chunk, fullText) => {
-      const now = Date.now();
-      if (now - lastUpdateTime >= UPDATE_INTERVAL_MS) {
-        lastUpdateTime = now;
-        // Update partial_result in the database for Realtime subscribers
-        await supabase
-          .from("jobs")
-          .update({ partial_result: fullText })
-          .eq("id", jobId);
-      }
+  const reply = await callChatWithMessagesStream(
+    fullMessages as any,
+    {
+      onChunk: async (_chunk, fullText) => {
+        const now = Date.now();
+        if (now - lastUpdateTime >= UPDATE_INTERVAL_MS) {
+          lastUpdateTime = now;
+          // Update partial_result in the database for Realtime subscribers
+          await supabase
+            .from("jobs")
+            .update({ partial_result: fullText })
+            .eq("id", jobId);
+        }
+      },
     },
-  });
+    { aiSettings, useCase: "tutor_chat" },
+  );
 
   return {
     result: { message: reply.message },
@@ -1262,7 +1575,10 @@ const handleChatStreaming = async (
   };
 };
 
-const handleGrade = async (payload: any): Promise<JobRunResult> => {
+const handleGrade = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
   const {
     question,
     answerText,
@@ -1290,7 +1606,10 @@ const handleGrade = async (payload: any): Promise<JobRunResult> => {
     });
   }
 
-  const chat = await callChat(content);
+  const chat = await callChat(content, {
+    aiSettings,
+    useCase: "answer_grading",
+  });
 
   let feedback: any = null;
   try {
@@ -1334,12 +1653,18 @@ const handleGrade = async (payload: any): Promise<JobRunResult> => {
   };
 };
 
-const handleEmbed = async (payload: any): Promise<JobRunResult> => {
+const handleEmbed = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
   const { inputs, lectureId } = payload ?? {};
   if (!Array.isArray(inputs) || inputs.length === 0) {
     throw new Error("inputs must be a non-empty array");
   }
-  const embeddingResult = await embedTexts(inputs.map((i: any) => String(i)));
+  const embeddingResult = await embedTexts(inputs.map((i: any) => String(i)), {
+    aiSettings,
+    useCase: "embeddings",
+  });
   return {
     result: { embeddings: embeddingResult.embeddings },
     usage: {
@@ -1354,18 +1679,25 @@ const handleEmbed = async (payload: any): Promise<JobRunResult> => {
   };
 };
 
-const handleTranscribe = async (payload: any): Promise<JobRunResult> => {
+const handleTranscribe = async (
+  payload: any,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
   const { audioUrl, language = "en", durationSeconds, lectureId } = payload ?? {};
   if (!audioUrl) {
     throw new Error("audioUrl is required");
   }
 
-  const apiKey = requireOpenAIKey();
+  const provider = resolveAIProviderRequest("transcription", aiSettings);
   let file: File;
 
   if (String(audioUrl).startsWith("data:")) {
     const bytes = decodeDataUrl(String(audioUrl));
-    file = new File([bytes], "audio.m4a", { type: "audio/m4a" });
+    const audioBuffer = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    ) as ArrayBuffer;
+    file = new File([audioBuffer], "audio.m4a", { type: "audio/m4a" });
   } else {
     const response = await fetch(audioUrl);
     if (!response.ok) throw new Error(`Failed to fetch audio: ${response.status}`);
@@ -1373,22 +1705,37 @@ const handleTranscribe = async (payload: any): Promise<JobRunResult> => {
     file = new File([arrayBuffer], "audio.m4a", { type: response.headers.get("content-type") ?? "audio/m4a" });
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("model", OPENAI_TRANSCRIBE_MODEL);
-  formData.append("language", language);
-
-  const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
+  const response =
+    provider.config.platform === "openrouter"
+      ? await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+          method: "POST",
+          headers: provider.headers,
+          body: JSON.stringify({
+            input_audio: {
+              data: bytesToBase64(new Uint8Array(await file.arrayBuffer())),
+              format: inferAudioFormat(file),
+            },
+            model: provider.config.model,
+            language,
+          }),
+        })
+      : await (() => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("model", provider.config.model);
+          formData.append("language", language);
+          return fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${provider.apiKey}`,
+            },
+            body: formData,
+          });
+        })();
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(`Whisper transcription failed: ${message}`);
+    throw new Error(`${provider.config.platform} transcription failed: ${message}`);
   }
 
   const data = await response.json();
@@ -1404,8 +1751,9 @@ const handleTranscribe = async (payload: any): Promise<JobRunResult> => {
     result: { text: data.text || "" },
     usage: {
       feature: "transcribe",
-      model: data?.model ?? OPENAI_TRANSCRIBE_MODEL,
+      model: data?.model ?? provider.config.model,
       usage,
+      costUsd: typeof data?.usage?.cost === "number" ? data.usage.cost : undefined,
       audioDurationSeconds,
       lectureId: lectureId ?? null,
       metadata: { language },
@@ -1416,28 +1764,33 @@ const handleTranscribe = async (payload: any): Promise<JobRunResult> => {
 const runJob = async (
   job: Job,
   supabase: ReturnType<typeof createClient>,
+  aiSettings: UserAISettings,
 ): Promise<JobRunResult> => {
   switch (job.type) {
     case "plan":
-      return await handlePlan(job.payload);
+      return await handlePlan(job.payload, aiSettings);
     case "metadata":
-      return await handleMetadata(job.payload);
+      return await handleMetadata(job.payload, aiSettings);
+    case "question_generation":
+      return await handleQuestionGeneration(job.payload, aiSettings);
+    case "readiness_roadmap":
+      return await handleReadinessRoadmap(job.payload, aiSettings);
     case "chat":
-      return await handleChat(job.payload);
+      return await handleChat(job.payload, aiSettings);
     case "grade":
-      return await handleGrade(job.payload);
+      return await handleGrade(job.payload, aiSettings);
     case "transcribe":
-      return await handleTranscribe(job.payload);
+      return await handleTranscribe(job.payload, aiSettings);
     case "embed":
-      return await handleEmbed(job.payload);
+      return await handleEmbed(job.payload, aiSettings);
     case "practice_exam":
-      return await handlePracticeExam(job.payload, supabase, job.user_id);
+      return await handlePracticeExam(job.payload, supabase, job.user_id, aiSettings);
     case "lecture_plan_v2":
-      return await handleLecturePlanV2(job.payload, supabase, job.user_id);
+      return await handleLecturePlanV2(job.payload, supabase, job.user_id, aiSettings);
     case "lecture_plan_inventory":
-      return await handleLecturePlanInventory(job.payload, supabase, job.user_id);
+      return await handleLecturePlanInventory(job.payload, supabase, job.user_id, aiSettings);
     case "lecture_plan_synthesize":
-      return await handleLecturePlanSynthesize(job.payload, supabase, job.user_id);
+      return await handleLecturePlanSynthesize(job.payload, supabase, job.user_id, aiSettings);
     default:
       throw new Error(`Unknown job type: ${job.type}`);
   }
@@ -1476,10 +1829,14 @@ const enqueueSynthesisIfReady = async (
   });
 };
 
-const processPlanJob = async (supabase: ReturnType<typeof createClient>, locked: Job) => {
+const processPlanJob = async (
+  supabase: ReturnType<typeof createClient>,
+  locked: Job,
+  aiSettings: UserAISettings,
+) => {
   try {
     console.log("[process-job] Background plan job started:", locked.id);
-    const jobResult = await runJob(locked as Job, supabase);
+    const jobResult = await runJob(locked as Job, supabase, aiSettings);
     console.log("[process-job] Background plan job completed:", locked.id);
 
     // Log usage
@@ -1612,13 +1969,14 @@ Deno.serve(async (req: Request) => {
     let result: any = null;
 
     try {
+      const aiSettings = await loadUserAISettings(supabase, locked.user_id);
       if (
         locked.type === "plan" ||
         locked.type === "lecture_plan_v2" ||
         locked.type === "lecture_plan_synthesize"
       ) {
         console.log("[process-job] Scheduling background job:", locked.id);
-        const backgroundPromise = processPlanJob(supabase, locked as Job);
+        const backgroundPromise = processPlanJob(supabase, locked as Job, aiSettings);
         try {
           EdgeRuntime.waitUntil(backgroundPromise);
         } catch (err) {
@@ -1634,9 +1992,9 @@ Deno.serve(async (req: Request) => {
       // Use streaming for chat jobs to enable real-time UI updates
       let jobResult: JobRunResult;
       if (locked.type === "chat") {
-        jobResult = await handleChatStreaming(locked.payload, supabase, locked.id);
+        jobResult = await handleChatStreaming(locked.payload, supabase, locked.id, aiSettings);
       } else {
-        jobResult = await runJob(locked as Job, supabase);
+        jobResult = await runJob(locked as Job, supabase, aiSettings);
       }
       console.log("[process-job] Job completed successfully:", locked.id);
 
@@ -1679,6 +2037,7 @@ Deno.serve(async (req: Request) => {
       }
     } catch (jobError: any) {
       console.error("[process-job] job failed", jobError);
+      const message = getErrorMessage(jobError, "Job failed");
       if (locked.type.startsWith("lecture_plan")) {
         const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
         if (lectureId) {
@@ -1687,7 +2046,7 @@ Deno.serve(async (req: Request) => {
             .update({
               plan_status: "failed",
               plan_generated_at: null,
-              plan_error: jobError?.message?.slice(0, 500) ?? "Job failed",
+              plan_error: message.slice(0, 500),
             })
             .eq("id", lectureId);
         }
@@ -1696,12 +2055,12 @@ Deno.serve(async (req: Request) => {
         .from("jobs")
         .update({
           status: "failed",
-          error: jobError?.message?.slice(0, 500) ?? "Job failed",
+          error: message.slice(0, 500),
           completed_at: new Date().toISOString(),
         })
         .eq("id", locked.id);
       return new Response(
-        JSON.stringify({ error: jobError?.message || "Job failed" }),
+        JSON.stringify({ error: message }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -1712,8 +2071,9 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("[process-job] Error:", error);
+    const message = getErrorMessage(error, "Failed to process job");
     return new Response(
-      JSON.stringify({ error: error?.message || "Failed to process job" }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

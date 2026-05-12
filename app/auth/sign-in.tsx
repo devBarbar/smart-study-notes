@@ -30,7 +30,8 @@ export default function SignInScreen() {
     isAppleAuthAvailable 
   } = useAuth();
   const colorScheme = useColorScheme();
-  const colors = Colors[colorScheme ?? 'light'];
+  const themeName = colorScheme === 'dark' ? 'dark' : 'light';
+  const colors = Colors[themeName];
   const isDark = colorScheme === 'dark';
   const { t } = useLanguage();
 
@@ -162,6 +163,7 @@ export default function SignInScreen() {
           {/* Email Form */}
           <View style={styles.form}>
             <TextInput
+              testID="sign-in-email-input"
               style={inputStyle}
               placeholder={t('auth.placeholder.email')}
               placeholderTextColor={colors.icon}
@@ -175,6 +177,7 @@ export default function SignInScreen() {
             
             {mode !== 'forgot-password' && (
               <TextInput
+                testID="sign-in-password-input"
                 style={inputStyle}
                 placeholder={t('auth.placeholder.password')}
                 placeholderTextColor={colors.icon}
@@ -188,6 +191,7 @@ export default function SignInScreen() {
             
             {mode === 'sign-up' && (
               <TextInput
+                testID="sign-up-confirm-password-input"
                 style={inputStyle}
                 placeholder={t('auth.placeholder.confirmPassword')}
                 placeholderTextColor={colors.icon}
@@ -201,6 +205,7 @@ export default function SignInScreen() {
 
             {/* Primary Action Button */}
             <Pressable
+              testID="auth-primary-button"
               style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
               onPress={() => {
                 if (mode === 'sign-in') handleEmailSignIn();

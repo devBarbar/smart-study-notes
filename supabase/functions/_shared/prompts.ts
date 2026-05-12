@@ -7,6 +7,14 @@ type StudyQuestion = {
   difficulty?: string;
 };
 
+export const questionPrompt = (
+  materialTitle: string,
+  outline: string,
+  count: number,
+  language = "en",
+) =>
+  `You are a tutor using the Feynman technique. Generate ${count} short, concrete questions to test understanding of the material titled "${materialTitle}". Use the following outline or text:\n${outline}\nReturn each question as a numbered item with no explanations. Keep them concise. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when questions involve formulas or equations. Respond in ${language}.`;
+
 export const gradingPrompt = (
   question: StudyQuestion,
   answerText?: string,

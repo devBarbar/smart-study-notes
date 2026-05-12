@@ -16,6 +16,8 @@ const allowedTypes = new Set([
   "lecture_plan_v2",
   "lecture_plan_inventory",
   "lecture_plan_synthesize",
+  "question_generation",
+  "readiness_roadmap",
 ]);
 
 const kickProcessJob = (jobId?: string) => {

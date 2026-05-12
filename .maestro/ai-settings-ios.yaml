@@ -1,0 +1,80 @@
+appId: com.devbarbar.smartlearningnotes
+name: Configure AI provider settings
+tags:
+  - ios
+  - settings
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible:
+      id: "sign-in-email-input"
+    timeout: 20000
+- tapOn:
+    id: "sign-in-email-input"
+- inputText: ${TEST_EMAIL}
+- tapOn:
+    id: "sign-in-password-input"
+- inputText: ${TEST_PASSWORD}
+- tapOn:
+    id: "auth-primary-button"
+- extendedWaitUntil:
+    visible:
+      id: "tab-settings"
+    timeout: 30000
+- tapOn:
+    id: "tab-settings"
+- extendedWaitUntil:
+    visible:
+      id: "ai-settings-section"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "ai-key-openrouter-input"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "ai-key-openrouter-input"
+- inputText: ${OPENROUTER_API_KEY}
+- scrollUntilVisible:
+    element:
+      id: "ai-provider-tutor_chat-openrouter"
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- tapOn:
+    id: "ai-provider-tutor_chat-openrouter"
+- tapOn:
+    id: "ai-model-tutor_chat"
+- eraseText
+- inputText: "openai/gpt-5.2"
+- hideKeyboard
+- tapOn:
+    id: "ai-reasoning-tutor_chat-low"
+- scrollUntilVisible:
+    element:
+      id: "ai-save-button"
+    direction: DOWN
+    timeout: 30000
+- tapOn:
+    id: "ai-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "ai-settings-message"
+    timeout: 30000
+- assertVisible: "AI settings saved"
+- stopApp
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "tab-settings"
+    timeout: 30000
+- tapOn:
+    id: "tab-settings"
+- scrollUntilVisible:
+    element:
+      id: "ai-model-tutor_chat"
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- assertVisible: "openai/gpt-5.2"

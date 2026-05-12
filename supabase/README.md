@@ -8,17 +8,21 @@
 - `OPENAI_EMBED_DIMENSIONS` (optional, defaults to `1536`)
 - `OPENAI_TRANSCRIBE_MODEL` (optional, defaults to `gpt-4o-transcribe`)
 - `OPENAI_TTS_MODEL` (optional, defaults to `gpt-4o-mini-tts`)
+- `OPENROUTER_API_KEY` (optional server fallback; users can also save their own key in Settings)
+- `OPENROUTER_HTTP_REFERER` (optional OpenRouter attribution header)
+- `OPENROUTER_APP_TITLE` (optional OpenRouter attribution header)
+- `AI_SETTINGS_ENCRYPTION_KEY` (required to save per-user provider keys)
 
 Set them once per project:
 ```
-supabase secrets set OPENAI_API_KEY=sk-... OPENAI_MODEL=gpt-5.5 OPENAI_REASONING_EFFORT=high OPENAI_EMBED_MODEL=text-embedding-3-large OPENAI_EMBED_DIMENSIONS=1536 OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe OPENAI_TTS_MODEL=gpt-4o-mini-tts
+supabase secrets set OPENAI_API_KEY=sk-... OPENAI_MODEL=gpt-5.5 OPENAI_REASONING_EFFORT=high OPENAI_EMBED_MODEL=text-embedding-3-large OPENAI_EMBED_DIMENSIONS=1536 OPENAI_TRANSCRIBE_MODEL=gpt-4o-transcribe OPENAI_TTS_MODEL=gpt-4o-mini-tts AI_SETTINGS_ENCRYPTION_KEY=<random-32-byte-secret>
 ```
 
 ## Deploy checklist
 1) Install deps: `npm install` (for any shared deps you add later)  
-2) Deploy functions (including queue + worker + TTS):
+2) Deploy functions (including queue + worker + TTS + AI settings):
 ```
-supabase functions deploy extract-pdf-text enqueue-job process-job stream-tts
+supabase functions deploy extract-pdf-text enqueue-job process-job stream-tts ai-settings generate-practice-exam
 ```
 3) (Optional) keep legacy direct endpoints deployed if still needed:
 ```
