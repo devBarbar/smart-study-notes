@@ -46,9 +46,8 @@ tags:
     id: "ai-provider-tutor_chat-openrouter"
 - tapOn:
     id: "ai-model-tutor_chat"
-- eraseText
-- inputText: "openai/gpt-5.2"
-- hideKeyboard
+- tapOn:
+    id: "ai-model-option-tutor_chat-openai-gpt-5-2"
 - tapOn:
     id: "ai-reasoning-tutor_chat-low"
 - scrollUntilVisible:
