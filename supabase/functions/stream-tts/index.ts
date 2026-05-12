@@ -2,6 +2,7 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { loadUserAISettings } from "../_shared/ai-settings.ts";
 import { resolveAIProviderRequest } from "../_shared/openai.ts";
+import { withSentry } from "../_shared/sentry.ts";
 
 // Rate limiting: max 4096 chars per request (OpenAI TTS limit)
 const MAX_INPUT_LENGTH = 4096;
@@ -46,7 +47,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   }
 };
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withSentry("stream-tts", async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -151,4 +152,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-});
+}));

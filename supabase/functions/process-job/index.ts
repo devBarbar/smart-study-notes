@@ -34,6 +34,7 @@ import {
   SourceCoverageInput,
 } from "../_shared/study-plan-v2.ts";
 import { insertUsageLog } from "../_shared/usage.ts";
+import { captureSentryException, setSentryJobContext, withSentry } from "../_shared/sentry.ts";
 
 // EdgeRuntime is available in Supabase Edge Functions for background work
 declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
@@ -1842,6 +1843,7 @@ const processPlanJob = async (
   locked: Job,
   aiSettings: UserAISettings,
 ) => {
+  setSentryJobContext(locked);
   try {
     console.log("[process-job] Background plan job started:", locked.id);
     const jobResult = await runJob(locked as Job, supabase, aiSettings);
@@ -1884,6 +1886,10 @@ const processPlanJob = async (
     }
   } catch (jobError: any) {
     console.error("[process-job] background job failed", jobError);
+    captureSentryException(jobError, {
+      tags: { area: "process-job", job_type: locked.type },
+      extra: { jobId: locked.id },
+    });
     if (locked.type.startsWith("lecture_plan")) {
       const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
       if (lectureId) {
@@ -1908,7 +1914,7 @@ const processPlanJob = async (
   }
 };
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withSentry("process-job", async (req: Request) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return new Response(
       JSON.stringify({ error: "Missing Supabase service configuration." }),
@@ -1973,6 +1979,7 @@ Deno.serve(async (req: Request) => {
       return noJobResponse();
     }
 
+    setSentryJobContext(locked);
     console.log("[process-job] Processing job:", locked.id, "type:", locked.type);
     let result: any = null;
 
@@ -2045,6 +2052,10 @@ Deno.serve(async (req: Request) => {
       }
     } catch (jobError: any) {
       console.error("[process-job] job failed", jobError);
+      captureSentryException(jobError, {
+        tags: { area: "process-job", job_type: locked.type },
+        extra: { jobId: locked.id },
+      });
       const message = getErrorMessage(jobError, "Job failed");
       if (locked.type.startsWith("lecture_plan")) {
         const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
@@ -2085,4 +2096,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

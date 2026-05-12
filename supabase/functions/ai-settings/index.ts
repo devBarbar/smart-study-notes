@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
+import { withSentry } from "../_shared/sentry.ts";
 import {
   encryptProviderKey,
   loadUserAISettings,
@@ -28,7 +29,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   }
 };
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withSentry("ai-settings", async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -127,4 +128,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

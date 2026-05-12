@@ -1,10 +1,11 @@
 import { corsHeaders } from "../_shared/cors.ts";
+import { withSentry } from "../_shared/sentry.ts";
 import { callChat, stripCodeFences } from "../_shared/openai.ts";
 import { lectureMetadataPrompt } from "../_shared/prompts.ts";
 
 type FileSummary = { name: string; notes?: string };
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withSentry("generate-lecture-metadata", async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -49,4 +50,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

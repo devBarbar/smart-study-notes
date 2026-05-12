@@ -12,6 +12,7 @@ import {
   Session,
   User,
 } from '@/lib/supabase';
+import { captureTelemetryError, setTelemetryUser } from '@/lib/sentry';
 
 type AuthState = {
   user: User | null;
@@ -58,6 +59,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Initialize auth state and listen for changes
   useEffect(() => {
+    setTelemetryUser(state.user);
+  }, [state.user]);
+
+  useEffect(() => {
     // Get initial session
     const initializeAuth = async () => {
       try {
@@ -70,6 +75,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }));
       } catch (error) {
         console.error('[auth] Failed to get initial session:', error);
+        captureTelemetryError(error, { tags: { area: 'auth', action: 'initial_session' } });
         setState((prev) => ({ ...prev, isLoading: false }));
       }
     };
@@ -136,6 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       console.error('[auth] Apple Sign-In failed:', error);
+      captureTelemetryError(error, { tags: { area: 'auth', action: 'apple_sign_in' } });
       throw error;
     }
   }, []);
@@ -157,6 +164,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       setState((prev) => ({ ...prev, isLoading: false }));
       console.error('[auth] Email Sign-In failed:', error);
+      captureTelemetryError(error, { tags: { area: 'auth', action: 'email_sign_in' } });
       throw error;
     }
   }, []);
@@ -179,6 +187,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       setState((prev) => ({ ...prev, isLoading: false }));
       console.error('[auth] Email Sign-Up failed:', error);
+      captureTelemetryError(error, { tags: { area: 'auth', action: 'email_sign_up' } });
       throw error;
     }
   }, []);
@@ -192,6 +201,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       setState((prev) => ({ ...prev, isLoading: false }));
       console.error('[auth] Password reset failed:', error);
+      captureTelemetryError(error, { tags: { area: 'auth', action: 'password_reset' } });
       throw error;
     }
   }, []);
@@ -210,6 +220,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       setState((prev) => ({ ...prev, isLoading: false }));
       console.error('[auth] Sign out failed:', error);
+      captureTelemetryError(error, { tags: { area: 'auth', action: 'sign_out' } });
       throw error;
     }
   }, []);

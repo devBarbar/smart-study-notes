@@ -1,4 +1,5 @@
 import { getSupabase } from './supabase';
+import { captureTelemetryError, traceAsyncOperation } from './sentry';
 import type { AIPlatform, AISettingsResponse, AISettingsUpdate } from './ai-model-options';
 
 export * from './ai-model-options';
@@ -19,25 +20,37 @@ const getAccessToken = async (): Promise<string | null> => {
 const callAISettingsFunction = async <T>(
   payload: Record<string, unknown>,
 ): Promise<T> => {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error('Supabase functions are not configured.');
-  }
-  const accessToken = await getAccessToken();
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-settings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken ?? SUPABASE_ANON_KEY}`,
-      apikey: SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify(payload),
-  });
+  return traceAsyncOperation(
+    'supabase.functions.ai-settings',
+    'function.supabase',
+    async () => {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error('Supabase functions are not configured.');
+      }
+      const accessToken = await getAccessToken();
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-settings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken ?? SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || 'AI settings request failed.');
-  }
-  return (await response.json()) as T;
+      if (!response.ok) {
+        const message = await response.text();
+        const error = new Error(message || 'AI settings request failed.');
+        captureTelemetryError(error, {
+          tags: { area: 'supabase_function', function_name: 'ai-settings' },
+          extra: { status: response.status, action: payload.action },
+        });
+        throw error;
+      }
+      return (await response.json()) as T;
+    },
+    { 'supabase.function': 'ai-settings' }
+  );
 };
 
 export const getAISettings = async () =>

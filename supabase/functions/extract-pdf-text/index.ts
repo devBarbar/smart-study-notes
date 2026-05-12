@@ -1,9 +1,10 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { withSentry } from '../_shared/sentry.ts';
 
 // Use unpdf which is designed for serverless/edge environments
 import { getDocumentProxy } from 'npm:unpdf';
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withSentry("extract-pdf-text", async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -68,4 +69,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-});
+}));

@@ -12,6 +12,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { LanguageProvider } from '@/contexts/language-context';
 import { Colors } from '@/constants/theme';
+import { wrapWithTelemetry } from '@/lib/sentry';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -22,7 +23,7 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   useEffect(() => {
     if (isLoading) return;
@@ -59,10 +60,10 @@ function RootLayoutNav() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const colorScheme = useColorScheme();
   const queryClient = useMemo(() => new QueryClient(), []);
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -79,6 +80,8 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
+
+export default wrapWithTelemetry(RootLayout);
 
 const styles = StyleSheet.create({
   loadingContainer: {

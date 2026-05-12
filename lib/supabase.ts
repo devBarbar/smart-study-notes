@@ -2,6 +2,7 @@ import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDiffic
 import { createClient, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import { captureTelemetryError, instrumentSupabaseTelemetry, traceAsyncOperation } from '@/lib/sentry';
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -54,6 +55,7 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       detectSessionInUrl: false,
     },
   });
+  instrumentSupabaseTelemetry(supabase);
   console.log('[supabase] client created', {
     hasUrl: Boolean(SUPABASE_URL),
     hasKey: Boolean(SUPABASE_ANON_KEY),
@@ -363,24 +365,36 @@ const callSupabaseFunction = async <T = any>(
   functionName: string,
   payload: Record<string, unknown>
 ): Promise<T> => {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error('Supabase functions are not configured.');
-  }
-  const accessToken = await getAccessToken();
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken ?? SUPABASE_ANON_KEY}`,
-      apikey: SUPABASE_ANON_KEY,
+  return traceAsyncOperation(
+    `supabase.functions.${functionName}`,
+    'function.supabase',
+    async () => {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error('Supabase functions are not configured.');
+      }
+      const accessToken = await getAccessToken();
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken ?? SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        const error = new Error(message || `Supabase function ${functionName} failed.`);
+        captureTelemetryError(error, {
+          tags: { area: 'supabase_function', function_name: functionName },
+          extra: { status: response.status },
+        });
+        throw error;
+      }
+      return (await response.json()) as T;
     },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || `Supabase function ${functionName} failed.`);
-  }
-  return (await response.json()) as T;
+    { 'supabase.function': functionName }
+  );
 };
 
 export const enqueueLecturePlanGeneration = async (

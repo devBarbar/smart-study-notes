@@ -1,9 +1,10 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { requireOpenAIKey } from "../_shared/openai.ts";
+import { withSentry } from "../_shared/sentry.ts";
 
 const OPENAI_TRANSCRIBE_MODEL = Deno.env.get("OPENAI_TRANSCRIBE_MODEL")?.trim() || "gpt-4o-transcribe";
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withSentry("transcribe-audio", async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -65,4 +66,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

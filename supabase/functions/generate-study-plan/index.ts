@@ -1,4 +1,5 @@
 import { corsHeaders } from "../_shared/cors.ts";
+import { withSentry } from "../_shared/sentry.ts";
 import {
   callChat,
   chunkText,
@@ -64,7 +65,7 @@ const normalizeExamRelevance = (value: any): ExamRelevance | undefined => {
   return undefined;
 };
 
-Deno.serve(async (req: Request) => {
+Deno.serve(withSentry("generate-study-plan", async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -215,4 +216,4 @@ Deno.serve(async (req: Request) => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
-});
+}));

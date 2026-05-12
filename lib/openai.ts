@@ -1,5 +1,6 @@
 import { LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness } from '@/types';
 import type { AIPlatform } from './ai-model-options';
+import { captureTelemetryError, traceAsyncOperation } from './sentry';
 import { getSupabase } from './supabase';
 
 export type ChatMessage = {
@@ -436,29 +437,41 @@ const callSupabaseFunction = async <T = any>(
   payload: BodyInit | Record<string, unknown>,
   options: { isFormData?: boolean } = {}
 ): Promise<T> => {
-  const { supabaseUrl, supabaseAnonKey } = ensureSupabaseFunctionConfig();
-  const accessToken = await getAccessToken();
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken ?? supabaseAnonKey}`,
-    apikey: supabaseAnonKey,
-  };
-  const body = options.isFormData ? (payload as BodyInit) : JSON.stringify(payload);
-  if (!options.isFormData) {
-    headers['Content-Type'] = 'application/json';
-  }
+  return traceAsyncOperation(
+    `supabase.functions.${functionName}`,
+    'function.supabase',
+    async () => {
+      const { supabaseUrl, supabaseAnonKey } = ensureSupabaseFunctionConfig();
+      const accessToken = await getAccessToken();
+      const headers: Record<string, string> = {
+        Authorization: `Bearer ${accessToken ?? supabaseAnonKey}`,
+        apikey: supabaseAnonKey,
+      };
+      const body = options.isFormData ? (payload as BodyInit) : JSON.stringify(payload);
+      if (!options.isFormData) {
+        headers['Content-Type'] = 'application/json';
+      }
 
-  const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
-    method: 'POST',
-    headers,
-    body,
-  });
+      const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+        method: 'POST',
+        headers,
+        body,
+      });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `Supabase function ${functionName} failed.`);
-  }
+      if (!response.ok) {
+        const message = await response.text();
+        const error = new Error(message || `Supabase function ${functionName} failed.`);
+        captureTelemetryError(error, {
+          tags: { area: 'supabase_function', function_name: functionName },
+          extra: { status: response.status },
+        });
+        throw error;
+      }
 
-  return (await response.json()) as T;
+      return (await response.json()) as T;
+    },
+    { 'supabase.function': functionName }
+  );
 };
 
 const enqueueJob = async (type: string, payload: any): Promise<string> => {
@@ -544,18 +557,29 @@ export const extractPdfText = async (pdfUrl: string): Promise<ExtractedPdfResult
   
   console.log('[openai] Extracting PDF text from:', pdfUrl);
   
-  const response = await fetch(functionUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${supabaseAnonKey}`,
-    },
-    body: JSON.stringify({ pdfUrl }),
-  });
+  const response = await traceAsyncOperation(
+    'supabase.functions.extract-pdf-text',
+    'function.supabase',
+    () =>
+      fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({ pdfUrl }),
+      }),
+    { 'supabase.function': 'extract-pdf-text' }
+  );
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`PDF extraction failed: ${error}`);
+    const extractionError = new Error(`PDF extraction failed: ${error}`);
+    captureTelemetryError(extractionError, {
+      tags: { area: 'supabase_function', function_name: 'extract-pdf-text' },
+      extra: { status: response.status },
+    });
+    throw extractionError;
   }
 
   const data = await response.json();
