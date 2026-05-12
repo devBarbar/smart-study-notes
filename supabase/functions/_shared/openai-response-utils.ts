@@ -47,6 +47,23 @@ export const extractResponseText = (data: any): string => {
   return parts.join("");
 };
 
+export const extractChatCompletionText = (data: any): string => {
+  const parts: string[] = [];
+  for (const choice of data?.choices ?? []) {
+    const content = choice?.message?.content;
+    if (typeof content === "string") {
+      parts.push(content);
+    } else if (Array.isArray(content)) {
+      for (const item of content) {
+        if (typeof item?.text === "string") {
+          parts.push(item.text);
+        }
+      }
+    }
+  }
+  return parts.join("");
+};
+
 export const parseSseDataLine = (line: string): any | null => {
   const trimmed = line.trim();
   if (!trimmed || trimmed === "data: [DONE]" || !trimmed.startsWith("data: ")) {
@@ -58,6 +75,11 @@ export const parseSseDataLine = (line: string): any | null => {
 export const getResponseTextDelta = (event: any): string => {
   if (event?.type !== "response.output_text.delta") return "";
   return typeof event.delta === "string" ? event.delta : "";
+};
+
+export const getChatCompletionTextDelta = (event: any): string => {
+  const content = event?.choices?.[0]?.delta?.content;
+  return typeof content === "string" ? content : "";
 };
 
 export const getCompletedResponse = (event: any): any | null => {
@@ -74,6 +96,17 @@ export const getResponseStreamError = (event: any): string | null => {
   }
   if (event?.type === "response.failed") {
     return event?.response?.error?.message ?? "OpenAI response failed";
+  }
+  return null;
+};
+
+export const getChatCompletionStreamError = (event: any): string | null => {
+  if (event?.error) {
+    return event.error?.message ?? event.message ?? "OpenRouter stream failed";
+  }
+  const choice = event?.choices?.[0];
+  if (choice?.finish_reason === "error") {
+    return event?.error?.message ?? choice?.error?.message ?? "OpenRouter stream failed";
   }
   return null;
 };

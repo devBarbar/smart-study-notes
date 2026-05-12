@@ -7,7 +7,10 @@ import {
 } from "./ai-settings.ts";
 import {
   buildEmbeddingRequestBody,
+  extractChatCompletionText,
   extractResponseText,
+  getChatCompletionStreamError,
+  getChatCompletionTextDelta,
   getCompletedResponse,
   getResponseStreamError,
   getResponseTextDelta,
@@ -95,7 +98,7 @@ const requireProviderKey = (
 
 const getProviderUrl = (
   platform: AIModelConfig["platform"],
-  endpoint: "responses" | "embeddings",
+  endpoint: "responses" | "chat/completions" | "embeddings",
 ) => {
   const baseUrl =
     platform === "openrouter"
@@ -135,7 +138,8 @@ export const resolveAIProviderRequest = (
     config,
     apiKey,
     headers: getProviderHeaders(config, apiKey),
-    url: (endpoint: "responses" | "embeddings") => getProviderUrl(config.platform, endpoint),
+    url: (endpoint: "responses" | "chat/completions" | "embeddings") =>
+      getProviderUrl(config.platform, endpoint),
   };
 };
 
@@ -219,6 +223,28 @@ const toResponseMessages = (messages: ChatMessage[]) =>
       content: String(message.content ?? ""),
     }));
 
+const toChatCompletionContent = (content: ChatCompletionContent[]) =>
+  content.length === 1 && content[0]?.type === "text"
+    ? String(content[0].text ?? "")
+    : content.map((part) => {
+        if (part.type === "image_url") {
+          return {
+            type: "image_url",
+            image_url: part.image_url ?? { url: "" },
+          };
+        }
+        return {
+          type: "text",
+          text: part.text ?? "",
+        };
+      });
+
+const toChatCompletionMessages = (messages: ChatMessage[]) =>
+  messages.map((message) => ({
+    role: message.role,
+    content: String(message.content ?? ""),
+  }));
+
 const toInstructions = (messages: ChatMessage[]) => {
   const systemMessages = messages
     .filter((message) => message.role === "system")
@@ -263,6 +289,39 @@ export const callChat = async (
 ): Promise<ChatResponse> => {
   const config = resolveRequestConfig(options.useCase ?? "lecture_metadata", options);
   const apiKey = requireProviderKey(config, options.aiSettings);
+  if (config.platform === "openrouter") {
+    const body: Record<string, unknown> = {
+      model: config.model,
+      messages: [{ role: "user", content: toChatCompletionContent(content) }],
+    };
+    if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
+    if (options.maxOutputTokens) body.max_tokens = options.maxOutputTokens;
+    const response = await fetchWithTimeout(getProviderUrl(config.platform, "chat/completions"), {
+      method: "POST",
+      headers: getProviderHeaders(config, apiKey),
+      body: JSON.stringify(body),
+    }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, `${config.platform} chat request`);
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(`${config.platform} request failed: ${message}`);
+    }
+
+    const data = await response.json();
+    const usage = toUsage(data);
+    const pricing = calculateTokenCostUSD(data?.model ?? config.model, usage ?? {});
+
+    return {
+      message: extractChatCompletionText(data),
+      usage,
+      model: data?.model ?? config.model,
+      platform: config.platform,
+      costUsd: pricing.totalCost,
+      inputCostUsd: pricing.inputCost,
+      outputCostUsd: pricing.outputCost,
+    };
+  }
+
   const body: Record<string, unknown> = {
     model: config.model,
     input: [{ role: "user", content: toResponseContent(content) }],
@@ -303,6 +362,38 @@ export const callChatWithMessages = async (
 ): Promise<ChatResponse> => {
   const config = resolveRequestConfig(options.useCase ?? "tutor_chat", options);
   const apiKey = requireProviderKey(config, options.aiSettings);
+  if (config.platform === "openrouter") {
+    const body: Record<string, unknown> = {
+      model: config.model,
+      messages: toChatCompletionMessages(messages),
+    };
+    if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
+    const response = await fetchWithTimeout(getProviderUrl(config.platform, "chat/completions"), {
+      method: "POST",
+      headers: getProviderHeaders(config, apiKey),
+      body: JSON.stringify(body),
+    }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, `${config.platform} chat request`);
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(`${config.platform} request failed: ${message}`);
+    }
+
+    const data = await response.json();
+    const usage = toUsage(data);
+    const pricing = calculateTokenCostUSD(data?.model ?? config.model, usage ?? {});
+
+    return {
+      message: extractChatCompletionText(data),
+      usage,
+      model: data?.model ?? config.model,
+      platform: config.platform,
+      costUsd: pricing.totalCost,
+      inputCostUsd: pricing.inputCost,
+      outputCostUsd: pricing.outputCost,
+    };
+  }
+
   const body: Record<string, unknown> = {
     model: config.model,
     input: toResponseMessages(messages),
@@ -353,6 +444,92 @@ export const callChatWithMessagesStream = async (
 ): Promise<ChatResponse> => {
   const config = resolveRequestConfig(options.useCase ?? "tutor_chat", options);
   const apiKey = requireProviderKey(config, options.aiSettings);
+  if (config.platform === "openrouter") {
+    const body: Record<string, unknown> = {
+      model: config.model,
+      messages: toChatCompletionMessages(messages),
+      stream: true,
+      stream_options: { include_usage: true },
+    };
+    if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
+    const response = await fetchWithTimeout(getProviderUrl(config.platform, "chat/completions"), {
+      method: "POST",
+      headers: getProviderHeaders(config, apiKey),
+      body: JSON.stringify(body),
+    }, options.timeoutMs ?? OPENAI_CHAT_TIMEOUT_MS, `${config.platform} chat stream`);
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(`${config.platform} request failed: ${message}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("No response body for streaming");
+    }
+
+    const decoder = new TextDecoder();
+    let fullText = "";
+    let usage: OpenAIUsage | undefined;
+    let modelUsed = config.model;
+    let buffer = "";
+    let streamError: string | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === "data: [DONE]") continue;
+        if (!trimmed.startsWith("data: ")) continue;
+
+        try {
+          const json = parseSseDataLine(trimmed);
+          if (!json) continue;
+
+          streamError = getChatCompletionStreamError(json);
+          if (streamError) break;
+
+          modelUsed = json?.model ?? modelUsed;
+          usage = toUsage(json) ?? usage;
+
+          const delta = getChatCompletionTextDelta(json);
+          if (delta) {
+            fullText += delta;
+            await callbacks.onChunk(delta, fullText);
+          }
+        } catch {
+          // Ignore parse errors for partial lines
+        }
+      }
+
+      if (streamError) break;
+    }
+
+    if (streamError) {
+      throw new Error(streamError);
+    }
+
+    const pricing = calculateTokenCostUSD(modelUsed, usage ?? {});
+    const result: ChatResponse = {
+      message: fullText,
+      usage,
+      model: modelUsed,
+      platform: config.platform,
+      costUsd: pricing.totalCost,
+      inputCostUsd: pricing.inputCost,
+      outputCostUsd: pricing.outputCost,
+    };
+
+    await callbacks.onDone?.(result);
+    return result;
+  }
+
   const body: Record<string, unknown> = {
     model: config.model,
     input: toResponseMessages(messages),
