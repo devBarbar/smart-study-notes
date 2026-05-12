@@ -81,11 +81,11 @@ export function StudyChatInputArea({
           onListeningModeEnd={onListeningModeEnd}
           ttsFinished={ttsFinished}
         />
-        {isChatting && (
+        {(isChatting || grading) && (
           <View style={styles.thinkingIndicator}>
             <ActivityIndicator color="#10b981" size="small" />
             <ThemedText style={{ color: "#94a3b8", fontSize: 12 }}>
-              {t("study.thinking")}
+              {grading ? t("study.checking") : t("study.thinking")}
             </ThemedText>
           </View>
         )}

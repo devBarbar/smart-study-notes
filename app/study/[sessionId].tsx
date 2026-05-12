@@ -2442,6 +2442,7 @@ export default function StudySessionScreen() {
       questionToEvaluate.assessmentKind === "final_quiz";
     setMemorizationSecondsRemaining(null);
     setTutorCollapsed(false);
+    setStudyPhase("grading");
     stopSpeaking().catch((err) =>
       console.warn("[study] Failed to stop tutor audio before grading:", err),
     );
@@ -2456,8 +2457,6 @@ export default function StudySessionScreen() {
           })
         : undefined;
       const dataUrl = base64 ? `data:image/png;base64,${base64}` : undefined;
-
-      setStudyPhase("grading");
 
       const gradingChunks = await fetchRelevantChunks(
         `${questionToEvaluate.prompt}\n${answerDraft || answerText}`,
@@ -3013,6 +3012,7 @@ export default function StudySessionScreen() {
       setAnswerDraft("");
     } catch (error) {
       console.warn(error);
+      setStudyPhase("answer");
     } finally {
       setGrading(false);
     }
@@ -3334,7 +3334,7 @@ export default function StudySessionScreen() {
     );
   }
 
-  const showCanvasSurface = studyPhase === "answer";
+  const showCanvasSurface = studyPhase === "answer" || grading;
   const finalQuizProgressLabel =
     finalQuizState.status === "generating"
       ? t("study.finalQuizGenerating")

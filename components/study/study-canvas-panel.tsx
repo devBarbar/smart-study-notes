@@ -398,6 +398,23 @@ export function StudyCanvasPanel({
         </View>
 
         <View style={styles.canvasScrollShell}>
+          {grading && (
+            <View style={styles.gradingCanvasOverlay} pointerEvents="auto">
+              <View style={styles.gradingCanvasCard}>
+                <View style={styles.gradingCanvasIcon}>
+                  <ActivityIndicator color="#0f172a" size="small" />
+                </View>
+                <View style={styles.gradingCanvasCopy}>
+                  <ThemedText style={styles.gradingCanvasTitle}>
+                    {t("study.gradingPanelTitle")}
+                  </ThemedText>
+                  <ThemedText style={styles.gradingCanvasSubtitle}>
+                    {t("study.gradingPanelSubtitle")}
+                  </ThemedText>
+                </View>
+              </View>
+            </View>
+          )}
           <ScrollView
             ref={canvasHScrollRef}
             horizontal

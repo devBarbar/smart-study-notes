@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { RefObject } from "react";
-import { FlatList, View } from "react-native";
+import { ActivityIndicator, FlatList, View } from "react-native";
 
 import { StudyChatHeader } from "@/components/study/study-chat-header";
 import { StudyChatInputArea } from "@/components/study/study-chat-input-area";
@@ -190,6 +190,8 @@ export function StudyChatPanel({
         />
       )}
 
+      {grading && <GradingStatusCard styles={styles} t={t} />}
+
       <StudyChatList
         styles={styles}
         t={t}
@@ -227,6 +229,59 @@ export function StudyChatPanel({
           onSendMessage={onSendQuickAction}
         />
       )}
+    </View>
+  );
+}
+
+function GradingStatusCard({
+  styles,
+  t,
+}: {
+  styles: StudyStyles;
+  t: (key: string, params?: Record<string, any>) => string;
+}) {
+  const steps = [
+    {
+      icon: "scan-outline" as const,
+      label: t("study.gradingStepCapture"),
+    },
+    {
+      icon: "library-outline" as const,
+      label: t("study.gradingStepSources"),
+    },
+    {
+      icon: "school-outline" as const,
+      label: t("study.gradingStepFeedback"),
+    },
+  ];
+
+  return (
+    <View style={styles.gradingStatusCard}>
+      <View style={styles.gradingStatusHeader}>
+        <View style={styles.gradingStatusIcon}>
+          <ActivityIndicator color="#0f172a" size="small" />
+        </View>
+        <View style={styles.gradingStatusCopy}>
+          <ThemedText style={styles.gradingStatusTitle}>
+            {t("study.gradingPanelTitle")}
+          </ThemedText>
+          <ThemedText style={styles.gradingStatusSubtitle}>
+            {t("study.gradingPanelSubtitle")}
+          </ThemedText>
+        </View>
+      </View>
+      <View style={styles.gradingStatusSteps}>
+        {steps.map((step) => (
+          <View key={step.label} style={styles.gradingStatusStep}>
+            <View style={styles.gradingStatusStepIcon}>
+              <Ionicons name={step.icon} size={13} color="#0f172a" />
+            </View>
+            <ThemedText style={styles.gradingStatusStepText}>
+              {step.label}
+            </ThemedText>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
