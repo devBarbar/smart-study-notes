@@ -30,9 +30,29 @@ export function StudyChatHeader({
   return (
     <View style={styles.chatHeader}>
       <View style={styles.chatTitleRow}>
-        <ThemedText type="title" style={{ color: "#fff" }}>
-          {t("study.aiTutor")}
-        </ThemedText>
+        <View style={styles.tutorIdentity}>
+          <View style={styles.tutorAvatar}>
+            <View style={styles.tutorAvatarSpark} />
+            <Ionicons name="school" size={22} color="#f8fafc" />
+          </View>
+          <View style={styles.tutorTitleStack}>
+            <View style={styles.tutorBadge}>
+              <Ionicons name="sparkles" size={12} color="#f59e0b" />
+              <ThemedText style={styles.tutorBadgeText}>
+                {t("study.tutorBadge")}
+              </ThemedText>
+            </View>
+            <ThemedText type="title" style={styles.tutorTitle}>
+              {t("study.aiTutor")}
+            </ThemedText>
+            <View style={styles.tutorStatusRow}>
+              <View style={styles.tutorStatusDot} />
+              <ThemedText style={styles.tutorStatusText}>
+                {t("study.tutorOnline")}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
         {canCollapseTutor && (
           <Pressable
             style={styles.collapseTutorButton}

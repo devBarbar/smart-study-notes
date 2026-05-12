@@ -134,14 +134,19 @@ export function StudyChatPanel({
         onToggleListening={onToggleListening}
         onRestartSession={onRestartSession}
       />
-      <ThemedText
-        style={styles.chatSubtitle}
-        numberOfLines={1}
-      >
-        {studyPlanEntry
-          ? t("study.focusedOn", { title: studyPlanEntry.title })
-          : t("study.aiSubtitle")}
-      </ThemedText>
+      <View style={styles.tutorFocusCard}>
+        <View style={styles.tutorFocusIcon}>
+          <Ionicons name="book-outline" size={15} color="#06b6d4" />
+        </View>
+        <ThemedText
+          style={styles.chatSubtitle}
+          numberOfLines={2}
+        >
+          {studyPlanEntry
+            ? t("study.focusedOn", { title: studyPlanEntry.title })
+            : t("study.aiSubtitle")}
+        </ThemedText>
+      </View>
       {memorizationSecondsRemaining !== null && (
         <View style={styles.recallTimerBanner}>
           <View style={styles.recallTimerHeader}>
@@ -190,6 +195,7 @@ export function StudyChatPanel({
         t={t}
         messages={messages}
         answerMarkers={answerMarkers}
+        isChatting={isChatting}
         chatListRef={chatListRef}
         getItemLayout={getItemLayout}
         ttsEnabled={ttsEnabled}

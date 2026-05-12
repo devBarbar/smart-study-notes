@@ -10,6 +10,7 @@ type StudyChatListProps = {
   t: (key: string, params?: Record<string, any>) => string;
   messages: StudyChatMessage[];
   answerMarkers: CanvasAnswerMarker[];
+  isChatting: boolean;
   chatListRef: RefObject<FlatList<StudyChatMessage> | null>;
   getItemLayout: (
     data: any,
@@ -36,6 +37,7 @@ export function StudyChatList({
   t,
   messages,
   answerMarkers,
+  isChatting,
   chatListRef,
   getItemLayout,
   ttsEnabled,
@@ -49,6 +51,8 @@ export function StudyChatList({
   onViewNotes,
   onViewDiagram,
 }: StudyChatListProps) {
+  const latestAiMessageId = [...messages].reverse().find((message) => message.role === "ai")?.id;
+
   return (
     <FlatList
       ref={chatListRef}
@@ -64,6 +68,7 @@ export function StudyChatList({
           <StudyChatMessageItem
             item={item}
             marker={marker}
+            isStreaming={isChatting && item.id === latestAiMessageId}
             styles={styles}
             t={t}
             getCitationLabel={getCitationLabel}

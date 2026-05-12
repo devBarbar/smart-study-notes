@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { MarkdownText } from "@/components/markdown-text";
 import { StudyStyles } from "@/components/study/study-styles";
@@ -11,6 +11,7 @@ import { CanvasAnswerMarker, StudyChatMessage, StudyCitation } from "@/types";
 type StudyChatMessageProps = {
   item: StudyChatMessage;
   marker: CanvasAnswerMarker | null;
+  isStreaming: boolean;
   styles: StudyStyles;
   t: (key: string, params?: Record<string, any>) => string;
   getCitationLabel: (citation: StudyCitation) => string;
@@ -28,6 +29,7 @@ type StudyChatMessageProps = {
 export function StudyChatMessageItem({
   item,
   marker,
+  isStreaming,
   styles,
   t,
   getCitationLabel,
@@ -49,6 +51,8 @@ export function StudyChatMessageItem({
       : [];
   const modelBadge =
     item.role === "ai" ? formatAIModelBadge(item.aiModel, item.aiPlatform) : null;
+  const hasTutorText = item.text.trim().length > 0;
+  const showThinkingProcess = item.role === "ai" && isStreaming;
 
   return (
     <ThemedView
@@ -59,12 +63,34 @@ export function StudyChatMessageItem({
     >
       <View style={styles.bubbleHeader}>
         <View style={styles.bubbleTitleRow}>
-          <ThemedText
-            type="defaultSemiBold"
-            style={{ color: item.role === "ai" ? "#10b981" : "#60a5fa" }}
+          <View
+            style={[
+              styles.bubbleRoleIcon,
+              item.role === "ai" ? styles.bubbleRoleIconTutor : styles.bubbleRoleIconUser,
+            ]}
           >
-            {item.role === "ai" ? t("study.tutorLabel") : t("study.youLabel")}
-          </ThemedText>
+            <Ionicons
+              name={item.role === "ai" ? "school-outline" : "person-outline"}
+              size={13}
+              color={item.role === "ai" ? "#22c55e" : "#60a5fa"}
+            />
+          </View>
+          <View style={styles.bubbleRoleTextStack}>
+            <ThemedText
+              type="defaultSemiBold"
+              style={item.role === "ai" ? styles.bubbleTutorLabel : styles.bubbleUserLabel}
+            >
+              {item.role === "ai" ? t("study.tutorLabel") : t("study.youLabel")}
+            </ThemedText>
+            {showThinkingProcess && (
+              <View style={styles.bubbleLiveRow}>
+                <View style={styles.bubbleLiveDot} />
+                <ThemedText style={styles.bubbleLiveText}>
+                  {hasTutorText ? t("study.thinkingLive") : t("study.thinking")}
+                </ThemedText>
+              </View>
+            )}
+          </View>
           {marker && (
             <View style={styles.questionBadge}>
               <ThemedText style={styles.questionBadgeText}>
@@ -113,10 +139,25 @@ export function StudyChatMessageItem({
           </Pressable>
         )}
       </View>
-      {item.role === "ai" ? (
+      {showThinkingProcess && (
+        <TutorThinkingProcess
+          styles={styles}
+          t={t}
+          hasTutorText={hasTutorText}
+        />
+      )}
+      {item.role === "ai" && hasTutorText ? (
         <MarkdownText content={item.text} />
-      ) : (
+      ) : item.role !== "ai" ? (
         <ThemedText style={{ color: "#e2e8f0" }}>{item.text}</ThemedText>
+      ) : null}
+      {item.role === "ai" && showThinkingProcess && hasTutorText && (
+        <View style={styles.streamingFooter}>
+          <ActivityIndicator color="#22c55e" size="small" />
+          <ThemedText style={styles.streamingFooterText}>
+            {t("study.thinkingLive")}
+          </ThemedText>
+        </View>
       )}
       {citations.length > 0 && (
         <View style={styles.citationRow}>
@@ -166,6 +207,79 @@ export function StudyChatMessageItem({
         </Pressable>
       )}
     </ThemedView>
+  );
+}
+
+function TutorThinkingProcess({
+  styles,
+  t,
+  hasTutorText,
+}: {
+  styles: StudyStyles;
+  t: (key: string, params?: Record<string, any>) => string;
+  hasTutorText: boolean;
+}) {
+  const steps = [
+    {
+      icon: "search-outline" as const,
+      label: t("study.thinkingStepSources"),
+      active: !hasTutorText,
+    },
+    {
+      icon: "bulb-outline" as const,
+      label: t("study.thinkingStepExplain"),
+      active: hasTutorText,
+    },
+    {
+      icon: "chatbubble-ellipses-outline" as const,
+      label: t("study.thinkingStepQuestion"),
+      active: hasTutorText,
+    },
+  ];
+
+  return (
+    <View style={styles.tutorThinkingCard}>
+      <View style={styles.tutorThinkingHeader}>
+        <View style={styles.tutorThinkingIcon}>
+          <ActivityIndicator color="#0f172a" size="small" />
+        </View>
+        <View style={styles.tutorThinkingCopy}>
+          <ThemedText style={styles.tutorThinkingTitle}>
+            {hasTutorText ? t("study.thinkingLive") : t("study.thinkingPanelTitle")}
+          </ThemedText>
+          {!hasTutorText && (
+            <ThemedText style={styles.tutorThinkingSubtitle}>
+              {t("study.thinkingPanelSubtitle")}
+            </ThemedText>
+          )}
+        </View>
+      </View>
+      {!hasTutorText && (
+        <View style={styles.tutorThinkingSteps}>
+          {steps.map((step, index) => (
+            <View
+              key={step.label}
+              style={[
+                styles.tutorThinkingStep,
+                step.active && styles.tutorThinkingStepActive,
+              ]}
+            >
+              <View style={styles.tutorThinkingStepIcon}>
+                <Ionicons
+                  name={step.icon}
+                  size={14}
+                  color={step.active ? "#0f172a" : "#64748b"}
+                />
+              </View>
+              <ThemedText style={styles.tutorThinkingStepText}>
+                {step.label}
+              </ThemedText>
+              {index === 0 && <View style={styles.tutorThinkingStepPulse} />}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
