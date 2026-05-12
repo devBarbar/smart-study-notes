@@ -291,23 +291,25 @@ export const saveMaterial = async (material: Omit<Material, 'createdAt'>) => {
   }
 };
 
+const mapSessionRow = (row: any): StudySession => ({
+  id: row.id,
+  materialId: row.material_id ?? undefined,
+  lectureId: row.lecture_id ?? undefined,
+  studyPlanEntryId: row.study_plan_entry_id ?? undefined,
+  title: row.title,
+  status: row.status,
+  lastQuestionId: row.last_question_id ?? undefined,
+  canvasData: row.canvas_data ?? undefined,
+  canvasPages: (row.canvas_pages as CanvasPage[] | null) ?? undefined,
+  notesText: row.notes_text ?? undefined,
+  createdAt: row.created_at,
+});
+
 export const listSessions = async (): Promise<StudySession[]> => {
   const client = ensureClient();
   const { data, error } = await client.from('sessions').select().order('created_at', { ascending: false });
   if (error) throw error;
-  return data.map((row) => ({
-    id: row.id,
-    materialId: row.material_id ?? undefined,
-    lectureId: row.lecture_id ?? undefined,
-    studyPlanEntryId: row.study_plan_entry_id ?? undefined,
-    title: row.title,
-    status: row.status,
-    lastQuestionId: row.last_question_id ?? undefined,
-    canvasData: row.canvas_data ?? undefined,
-    canvasPages: (row.canvas_pages as CanvasPage[] | null) ?? undefined,
-    notesText: row.notes_text ?? undefined,
-    createdAt: row.created_at,
-  }));
+  return data.map(mapSessionRow);
 };
 
 export const createSession = async (session: Omit<StudySession, 'createdAt'>) => {
@@ -1250,6 +1252,34 @@ export const getSessionByLectureId = async (
     notesText: data.notes_text ?? undefined,
     createdAt: data.created_at,
   };
+};
+
+export const getLatestSessionForLectureScope = async (
+  lectureId: string,
+  studyPlanEntryId?: string | null
+): Promise<StudySession | null> => {
+  const client = ensureClient();
+
+  let query = client
+    .from('sessions')
+    .select()
+    .eq('lecture_id', lectureId);
+
+  query = studyPlanEntryId
+    ? query.eq('study_plan_entry_id', studyPlanEntryId)
+    : query.is('study_plan_entry_id', null);
+
+  const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+
+  return mapSessionRow(data);
 };
 
 export const getSessionById = async (sessionId: string): Promise<StudySession | null> => {

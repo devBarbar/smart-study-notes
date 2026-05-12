@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -21,7 +22,7 @@ import { useLectures } from '@/hooks/use-lectures';
 import { usePracticeExams } from '@/hooks/use-practice-exams';
 import { useSessions } from '@/hooks/use-sessions';
 import { generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
-import { createSession, deleteLecture, enqueueLecturePlanGeneration, getLectureTotalCost, getSupabase, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
+import { createSession, deleteLecture, enqueueLecturePlanGeneration, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
 import { PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 
 const stripCodeFences = (text: string) => {
@@ -30,6 +31,35 @@ const stripCodeFences = (text: string) => {
 };
 
 type TabKey = 'overview' | 'studyPlan' | 'flashcards' | 'practice' | 'materials';
+
+const getSessionTime = (session: StudySession) => {
+  const time = Date.parse(session.createdAt);
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const pickMoreRecentSession = (
+  current: StudySession | null,
+  candidate: StudySession
+) => {
+  if (!current) return candidate;
+  return getSessionTime(candidate) > getSessionTime(current) ? candidate : current;
+};
+
+const getMostRecentSession = (
+  sessions: StudySession[],
+  matches: (session: StudySession) => boolean
+) =>
+  sessions.reduce<StudySession | null>(
+    (latest, session) => (matches(session) ? pickMoreRecentSession(latest, session) : latest),
+    null
+  );
+
+const sortSessionsByRecency = (sessions: StudySession[]) =>
+  [...sessions].sort((a, b) => {
+    const timeDifference = getSessionTime(b) - getSessionTime(a);
+    if (timeDifference !== 0) return timeDifference;
+    return b.id.localeCompare(a.id);
+  });
 
 export default function LectureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -88,7 +118,7 @@ export default function LectureDetailScreen() {
   
   // Find existing sessions for this lecture
   const existingFullSession = useMemo(() => 
-    sessions.find(s => s.lectureId === id && !s.studyPlanEntryId),
+    getMostRecentSession(sessions, s => s.lectureId === id && !s.studyPlanEntryId),
     [sessions, id]
   );
   
@@ -97,20 +127,28 @@ export default function LectureDetailScreen() {
     const map: Record<string, StudySession> = {};
     for (const session of sessions) {
       if (session.lectureId === id && session.studyPlanEntryId) {
-        // Keep the most recent session per entry
-        if (!map[session.studyPlanEntryId] || 
-            new Date(session.createdAt) > new Date(map[session.studyPlanEntryId].createdAt)) {
-          map[session.studyPlanEntryId] = session;
-        }
+        map[session.studyPlanEntryId] = pickMoreRecentSession(
+          map[session.studyPlanEntryId] ?? null,
+          session
+        );
       }
     }
     return map;
   }, [sessions, id]);
+
+  const upsertSessionCache = useCallback((session: StudySession) => {
+    queryClient.setQueryData<StudySession[]>(['sessions'], (current = []) =>
+      sortSessionsByRecency([
+        session,
+        ...current.filter((cachedSession) => cachedSession.id !== session.id),
+      ])
+    );
+  }, [queryClient]);
   
-  // Refetch sessions on mount
-  useEffect(() => {
+  // Refetch sessions whenever returning from the study screen.
+  useFocusEffect(useCallback(() => {
     refetchSessions();
-  }, [refetchSessions]);
+  }, [refetchSessions]));
 
   // Fetch lecture total cost
   useEffect(() => {
@@ -189,6 +227,8 @@ export default function LectureDetailScreen() {
 
       if (getSupabase()) {
         await createSession(newSession);
+        upsertSessionCache(newSession);
+        void queryClient.invalidateQueries({ queryKey: ['sessions'] });
       }
 
       const params = new URLSearchParams({
@@ -202,23 +242,50 @@ export default function LectureDetailScreen() {
     } finally {
       setStartingSession(null);
     }
-  }, [lecture, router]);
+  }, [lecture, queryClient, router, upsertSessionCache]);
   
-  const continueSession = useCallback((session: StudySession) => {
+  const continueSession = useCallback(async (session: StudySession) => {
     if (!lecture) return;
     
-    setStartingSession(session.studyPlanEntryId || 'full');
-    
-    const params = new URLSearchParams({
-      lectureId: lecture.id,
-    });
-    if (session.studyPlanEntryId) {
-      params.set('studyPlanEntryId', session.studyPlanEntryId);
-    }
+    const entryId = session.studyPlanEntryId;
+    setStartingSession(entryId || 'full');
 
-    router.push(`/study/${session.id}?${params.toString()}`);
-    setStartingSession(null);
-  }, [lecture, router]);
+    try {
+      let sessionToOpen =
+        getMostRecentSession(
+          sessions,
+          (candidate) =>
+            candidate.lectureId === lecture.id &&
+            (entryId ? candidate.studyPlanEntryId === entryId : !candidate.studyPlanEntryId)
+        ) ?? session;
+
+      if (getSupabase()) {
+        try {
+          const latestSession = await getLatestSessionForLectureScope(
+            lecture.id,
+            entryId ?? null
+          );
+          if (latestSession) {
+            sessionToOpen = latestSession;
+            upsertSessionCache(latestSession);
+          }
+        } catch (err) {
+          console.warn('[lecture] failed to resolve latest session', err);
+        }
+      }
+
+      const params = new URLSearchParams({
+        lectureId: lecture.id,
+      });
+      if (sessionToOpen.studyPlanEntryId) {
+        params.set('studyPlanEntryId', sessionToOpen.studyPlanEntryId);
+      }
+
+      router.push(`/study/${sessionToOpen.id}?${params.toString()}`);
+    } finally {
+      setStartingSession(null);
+    }
+  }, [lecture, router, sessions, upsertSessionCache]);
 
   const goToPracticeExam = useCallback((examId: string) => {
     if (!lecture) return;
