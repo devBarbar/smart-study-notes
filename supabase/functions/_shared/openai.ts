@@ -33,6 +33,7 @@ export type ChatResponse = {
   message: string;
   usage?: OpenAIUsage;
   model?: string;
+  platform?: AIModelConfig["platform"];
   costUsd?: number;
   inputCostUsd?: number;
   outputCostUsd?: number;
@@ -289,6 +290,7 @@ export const callChat = async (
     message: extractResponseText(data),
     usage,
     model: data?.model ?? config.model,
+    platform: config.platform,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,
@@ -328,6 +330,7 @@ export const callChatWithMessages = async (
     message: extractResponseText(data),
     usage,
     model: data?.model ?? config.model,
+    platform: config.platform,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,
@@ -429,6 +432,7 @@ export const callChatWithMessagesStream = async (
     message: fullText,
     usage,
     model: modelUsed,
+    platform: config.platform,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,

@@ -297,6 +297,8 @@ export type StudyChatMessage = {
   text: string;
   questionId?: string;
   answerLinkId?: string;
+  aiModel?: string;
+  aiPlatform?: 'openai' | 'openrouter';
   citations?: StudyCitation[];
   tutorQuestion?: TutorQuestionMetadata;
   /** IDs of visual blocks rendered on canvas for this message */

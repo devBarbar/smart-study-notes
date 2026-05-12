@@ -1508,7 +1508,11 @@ const handleChat = async (
     useCase: "tutor_chat",
   });
   return {
-    result: { message: reply.message },
+    result: {
+      message: reply.message,
+      model: reply.model,
+      platform: reply.platform,
+    },
     usage: {
       feature: "chat",
       model: reply.model ?? null,
@@ -1562,7 +1566,11 @@ const handleChatStreaming = async (
   );
 
   return {
-    result: { message: reply.message },
+    result: {
+      message: reply.message,
+      model: reply.model,
+      platform: reply.platform,
+    },
     usage: {
       feature: "chat",
       model: reply.model ?? null,

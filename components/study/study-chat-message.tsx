@@ -5,6 +5,7 @@ import { MarkdownText } from "@/components/markdown-text";
 import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { formatAIModelBadge } from "@/lib/ai-model-display";
 import { CanvasAnswerMarker, StudyChatMessage, StudyCitation } from "@/types";
 
 type StudyChatMessageProps = {
@@ -46,6 +47,8 @@ export function StudyChatMessageItem({
     item.role === "ai" && item.citations
       ? dedupeCitationsBySourcePage(item.citations)
       : [];
+  const modelBadge =
+    item.role === "ai" ? formatAIModelBadge(item.aiModel, item.aiPlatform) : null;
 
   return (
     <ThemedView
@@ -66,6 +69,22 @@ export function StudyChatMessageItem({
             <View style={styles.questionBadge}>
               <ThemedText style={styles.questionBadgeText}>
                 Q{marker.questionIndex}
+              </ThemedText>
+            </View>
+          )}
+          {modelBadge && (
+            <View
+              style={styles.modelBadge}
+              testID={`ai-model-badge-${item.id}`}
+              accessibilityLabel={modelBadge}
+            >
+              <Ionicons name="hardware-chip-outline" size={12} color="#22c55e" />
+              <ThemedText
+                style={styles.modelBadgeText}
+                numberOfLines={1}
+                ellipsizeMode="middle"
+              >
+                {modelBadge}
               </ThemedText>
             </View>
           )}

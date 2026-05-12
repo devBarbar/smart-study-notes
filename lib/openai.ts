@@ -1,4 +1,5 @@
 import { LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness } from '@/types';
+import type { AIPlatform } from './ai-model-options';
 import { getSupabase } from './supabase';
 
 export type ChatMessage = {
@@ -21,7 +22,11 @@ const sanitizeForDatabase = (text: string): string => {
     .trim();
 };
 
-export type AIActionResult<T> = T & { costUsd?: number };
+export type AIActionResult<T> = T & {
+  costUsd?: number;
+  model?: string;
+  aiPlatform?: AIPlatform;
+};
 
 export const generateLectureMetadata = async (
   files: { name: string; notes?: string }[],
@@ -261,9 +266,19 @@ export const feynmanChat = async (
   lectureId?: string
 ): Promise<AIActionResult<{ message: string }>> => {
   const jobId = await enqueueJob('chat', { messages, materialContext, language, lectureId });
-  const data = await waitForJobResult<{ message?: string; costUsd?: number }>(jobId);
+  const data = await waitForJobResult<{
+    message?: string;
+    costUsd?: number;
+    model?: string;
+    platform?: AIPlatform;
+  }>(jobId);
 
-  return { message: data?.message ?? '', costUsd: data?.costUsd };
+  return {
+    message: data?.message ?? '',
+    costUsd: data?.costUsd,
+    model: data?.model,
+    aiPlatform: data?.platform,
+  };
 };
 
 export type StreamChatCallbacks = {
@@ -324,6 +339,8 @@ export const streamFeynmanChat = async (
             const result: AIActionResult<{ message: string }> = {
               message: row.result?.message ?? lastPartialResult ?? '',
               costUsd: row.result?.costUsd,
+              model: row.result?.model,
+              aiPlatform: row.result?.platform,
             };
             callbacks.onDone?.(result);
             resolve(result);
@@ -372,6 +389,8 @@ export const streamFeynmanChat = async (
             const result: AIActionResult<{ message: string }> = {
               message: current.result?.message ?? lastPartialResult ?? '',
               costUsd: current.result?.costUsd,
+              model: current.result?.model,
+              aiPlatform: current.result?.platform,
             };
             callbacks.onDone?.(result);
             resolve(result);

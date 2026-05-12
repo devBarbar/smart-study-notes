@@ -49,6 +49,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLectures } from "@/hooks/use-lectures";
 import { useMaterials } from "@/hooks/use-materials";
 import { textToStrokes } from "@/lib/handwriting-font";
+import { getAISettings } from "@/lib/ai-settings";
 import { computeMasteryScore, computeNextReviewDate } from "@/lib/mastery";
 import {
   ChatMessage,
@@ -1936,8 +1937,23 @@ export default function StudySessionScreen() {
       const aiMsgId = uuid();
       streamingAiMessageIdsRef.current.add(aiMsgId);
       pushMessage({ id: aiMsgId, role: "ai", text: "" }, false);
+      let tutorModelInfo: Pick<StudyChatMessage, "aiModel" | "aiPlatform"> = {};
 
       try {
+        try {
+          const aiSettings = await getAISettings();
+          const tutorConfig = aiSettings.modelConfig.tutor_chat;
+          if (tutorConfig?.model) {
+            tutorModelInfo = {
+              aiModel: tutorConfig.model,
+              aiPlatform: tutorConfig.platform,
+            };
+            updateMessage(aiMsgId, tutorModelInfo);
+          }
+        } catch (error) {
+          console.warn("[study] Failed to load tutor model metadata:", error);
+        }
+
         const retrievedChunks = await fetchRelevantChunks(
           retrievalQuery ?? userMessage,
           6,
@@ -1987,6 +2003,7 @@ export default function StudySessionScreen() {
                 id: aiMsgId,
                 role: "ai",
                 text: visibleTutorText,
+                ...tutorModelInfo,
                 tutorQuestion: learningParsed.tutorQuestion,
               };
               const questionText =
@@ -2031,6 +2048,8 @@ export default function StudySessionScreen() {
                 id: aiMsgId,
                 role: "ai",
                 text: visibleTutorText + costSuffix, // Use cleaned text without visual blocks
+                aiModel: result.model ?? tutorModelInfo.aiModel,
+                aiPlatform: result.aiPlatform ?? tutorModelInfo.aiPlatform,
                 citations,
                 tutorQuestion: learningParsed.tutorQuestion,
                 visualBlockIds:

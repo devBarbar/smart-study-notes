@@ -393,6 +393,7 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: Spacing.xs,
         },
         replayButton: {
             padding: 8,
@@ -663,6 +664,8 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             flexDirection: "row",
             alignItems: "center",
             gap: Spacing.xs,
+            flex: 1,
+            flexWrap: "wrap",
         },
         questionBadge: {
             backgroundColor: `${palette.primary}18`,
@@ -674,6 +677,24 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             color: palette.primary,
             fontSize: 11,
             fontWeight: "600",
+        },
+        modelBadge: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 4,
+            maxWidth: "100%",
+            backgroundColor: `${palette.success}14`,
+            borderWidth: 1,
+            borderColor: `${palette.success}33`,
+            borderRadius: Radii.sm,
+            paddingVertical: 2,
+            paddingHorizontal: 7,
+        },
+        modelBadgeText: {
+            color: palette.text,
+            fontSize: 11,
+            fontWeight: "600",
+            flexShrink: 1,
         },
         viewNotesButton: {
             flexDirection: "row",
