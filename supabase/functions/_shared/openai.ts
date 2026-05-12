@@ -69,6 +69,7 @@ const OPENAI_EMBED_DIMENSIONS_RAW = Deno.env.get("OPENAI_EMBED_DIMENSIONS")?.tri
 const OPENAI_EMBED_DIMENSIONS = Number(OPENAI_EMBED_DIMENSIONS_RAW || "1536");
 const OPENAI_CHAT_TIMEOUT_MS = Number(Deno.env.get("OPENAI_CHAT_TIMEOUT_MS") || "120000");
 const OPENAI_EMBED_TIMEOUT_MS = Number(Deno.env.get("OPENAI_EMBED_TIMEOUT_MS") || "90000");
+const OPENROUTER_PROVIDER_PREFERENCES = { sort: "throughput" };
 
 export const requireOpenAIKey = () => {
   if (!OPENAI_API_KEY) {
@@ -293,6 +294,7 @@ export const callChat = async (
     const body: Record<string, unknown> = {
       model: config.model,
       messages: [{ role: "user", content: toChatCompletionContent(content) }],
+      provider: OPENROUTER_PROVIDER_PREFERENCES,
     };
     if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
     if (options.maxOutputTokens) body.max_tokens = options.maxOutputTokens;
@@ -366,6 +368,7 @@ export const callChatWithMessages = async (
     const body: Record<string, unknown> = {
       model: config.model,
       messages: toChatCompletionMessages(messages),
+      provider: OPENROUTER_PROVIDER_PREFERENCES,
     };
     if (config.reasoningEffort) body.reasoning = { effort: config.reasoningEffort };
     const response = await fetchWithTimeout(getProviderUrl(config.platform, "chat/completions"), {
@@ -448,6 +451,7 @@ export const callChatWithMessagesStream = async (
     const body: Record<string, unknown> = {
       model: config.model,
       messages: toChatCompletionMessages(messages),
+      provider: OPENROUTER_PROVIDER_PREFERENCES,
       stream: true,
       stream_options: { include_usage: true },
     };
