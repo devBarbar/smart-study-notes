@@ -1,3 +1,5 @@
+import { OPENROUTER_TEXT_MODELS } from './openrouter-model-options';
+
 export type AIPlatform = 'openai' | 'openrouter';
 export type AIReasoningEffort = 'minimal' | 'low' | 'medium' | 'high';
 
@@ -96,51 +98,6 @@ const openAITextModels: AIModelOption[] = [
     label: 'GPT-4o mini',
     model: 'gpt-4o-mini',
     description: 'Lower-cost option for lightweight text tasks.',
-  },
-];
-
-const openRouterTextModels: AIModelOption[] = [
-  {
-    id: 'openai-gpt-5-5',
-    label: 'OpenAI GPT-5.5',
-    model: 'openai/gpt-5.5',
-    description: 'OpenAI frontier model routed through OpenRouter.',
-  },
-  {
-    id: 'openai-gpt-5-5-pro',
-    label: 'OpenAI GPT-5.5 Pro',
-    model: 'openai/gpt-5.5-pro',
-    description: 'Highest-accuracy OpenAI route through OpenRouter.',
-  },
-  {
-    id: 'openai-gpt-5-2',
-    label: 'OpenAI GPT-5.2',
-    model: 'openai/gpt-5.2',
-    description: 'Strong general OpenAI route through OpenRouter.',
-  },
-  {
-    id: 'openrouter-openai-gpt-latest',
-    label: 'OpenAI GPT latest',
-    model: '~openai/gpt-latest',
-    description: 'OpenRouter alias for the latest OpenAI GPT family model.',
-  },
-  {
-    id: 'openrouter-claude-sonnet-latest',
-    label: 'Claude Sonnet latest',
-    model: '~anthropic/claude-sonnet-latest',
-    description: 'OpenRouter alias for Anthropic Sonnet.',
-  },
-  {
-    id: 'openrouter-gemini-pro-latest',
-    label: 'Gemini Pro latest',
-    model: '~google/gemini-pro-latest',
-    description: 'OpenRouter alias for Google Gemini Pro.',
-  },
-  {
-    id: 'openrouter-openai-gpt-mini-latest',
-    label: 'OpenAI GPT mini latest',
-    model: '~openai/gpt-mini-latest',
-    description: 'Lower-cost OpenAI mini route through OpenRouter.',
   },
 ];
 
@@ -245,7 +202,7 @@ const ttsModels: Record<AIPlatform, AIModelOption[]> = {
 
 const textModelOptions: Record<AIPlatform, AIModelOption[]> = {
   openai: openAITextModels,
-  openrouter: openRouterTextModels,
+  openrouter: OPENROUTER_TEXT_MODELS,
 };
 
 export const AI_USE_CASES: Array<{

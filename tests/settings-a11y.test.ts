@@ -96,6 +96,30 @@ test('every AI use case has selectable models for each provider', () => {
   });
 });
 
+test('OpenRouter text dropdown exposes the full popularity-sorted catalog', () => {
+  const options = AI_MODEL_OPTIONS.tutor_chat.openrouter;
+  const modelIds = new Set(options.map((option) => option.model));
+  const topModels = options.slice(0, 20).map((option) => option.model);
+
+  assert.ok(options.length >= 300, 'OpenRouter text models should include the full catalog');
+  [
+    'moonshotai/kimi-k2.6',
+    'tencent/hy3-preview',
+    'deepseek/deepseek-v4-flash',
+    'minimax/minimax-m2.7',
+    'qwen/qwen3-max',
+    'z-ai/glm-5.1',
+  ].forEach((model) => {
+    assert.ok(modelIds.has(model), `${model} should be selectable`);
+  });
+  assert.ok(
+    topModels.some((model) => model.startsWith('moonshotai/')) &&
+      topModels.some((model) => model.startsWith('tencent/')) &&
+      topModels.some((model) => model.startsWith('deepseek/')),
+    'OpenRouter models should be sorted with high-usage Chinese routes near the top',
+  );
+});
+
 test('settings screen uses selectable model options instead of manual model typing', () => {
   const settingsSource = readFileSync(
     path.join(process.cwd(), 'app', '(tabs)', 'settings.tsx'),
