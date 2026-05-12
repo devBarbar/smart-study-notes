@@ -20,6 +20,9 @@ console.log('[StreamingTTS] Module loaded', {
 
 // Maximum text length for TTS (OpenAI limit is 4096)
 const MAX_TTS_LENGTH = 4096;
+const FIRST_TTS_CHUNK_TARGET = 650;
+const FOLLOW_UP_TTS_CHUNK_TARGET = 1100;
+const MIN_SENTENCE_SPLIT_LENGTH = 240;
 
 export type TTSPlayerState = {
   isPlaying: boolean;
@@ -46,6 +49,55 @@ type AudioPlayerWithEvents = AudioPlayer & {
   ) => PlaybackSubscription;
 };
 
+const findChunkSplitIndex = (text: string, targetLength: number) => {
+  const searchStart = Math.min(text.length, MIN_SENTENCE_SPLIT_LENGTH);
+  const searchEnd = Math.min(text.length, targetLength);
+  const searchWindow = text.slice(searchStart, searchEnd);
+  const sentenceMatch = [...searchWindow.matchAll(/[.!?]\s+/g)].pop();
+
+  if (sentenceMatch?.index !== undefined) {
+    return searchStart + sentenceMatch.index + sentenceMatch[0].length;
+  }
+
+  const paragraphIndex = text.lastIndexOf('\n\n', searchEnd);
+  if (paragraphIndex >= searchStart) {
+    return paragraphIndex + 2;
+  }
+
+  const lineIndex = text.lastIndexOf('\n', searchEnd);
+  if (lineIndex >= searchStart) {
+    return lineIndex + 1;
+  }
+
+  const spaceIndex = text.lastIndexOf(' ', searchEnd);
+  if (spaceIndex >= searchStart) {
+    return spaceIndex + 1;
+  }
+
+  return searchEnd;
+};
+
+const splitTextForFastTTSStart = (text: string) => {
+  const chunks: string[] = [];
+  let remaining = text.trim();
+
+  while (remaining.length > 0) {
+    const targetLength =
+      chunks.length === 0 ? FIRST_TTS_CHUNK_TARGET : FOLLOW_UP_TTS_CHUNK_TARGET;
+
+    if (remaining.length <= targetLength) {
+      chunks.push(remaining);
+      break;
+    }
+
+    const splitIndex = findChunkSplitIndex(remaining, targetLength);
+    chunks.push(remaining.slice(0, splitIndex).trim());
+    remaining = remaining.slice(splitIndex).trim();
+  }
+
+  return chunks.filter(Boolean);
+};
+
 /**
  * Streaming TTS player using OpenAI via Supabase edge function
  * Falls back to expo-speech if streaming fails
@@ -53,6 +105,7 @@ type AudioPlayerWithEvents = AudioPlayer & {
 export class StreamingTTSPlayer {
   private player: AudioPlayer | null = null;
   private playbackSubscription: PlaybackSubscription | null = null;
+  private playbackEndResolver: (() => void) | null = null;
   private callbacks: TTSPlayerCallbacks;
   private state: TTSPlayerState = {
     isPlaying: false,
@@ -61,6 +114,7 @@ export class StreamingTTSPlayer {
     currentText: null,
   };
   private language: LanguageCode = 'en';
+  private playbackGeneration = 0;
 
   constructor(callbacks: TTSPlayerCallbacks = {}) {
     this.callbacks = callbacks;
@@ -96,6 +150,7 @@ export class StreamingTTSPlayer {
 
     // Stop any current playback
     await this.stop();
+    const generation = ++this.playbackGeneration;
 
     this.updateState({
       isLoading: true,
@@ -108,18 +163,59 @@ export class StreamingTTSPlayer {
       const truncatedText = text.length > MAX_TTS_LENGTH 
         ? text.slice(0, MAX_TTS_LENGTH - 3) + '...'
         : text;
+      const chunks = splitTextForFastTTSStart(truncatedText);
 
-      // Try streaming TTS first
-      console.log('[StreamingTTS] Attempting OpenAI TTS via edge function...');
-      const audioUri = await this.fetchStreamingTTS(truncatedText);
-      
-      if (audioUri) {
-        console.log('[StreamingTTS] Got audio URI, playing via expo-audio:', audioUri);
-        await this.playAudioFile(audioUri);
-      } else {
-        // Fallback to native speech
-        console.log('[StreamingTTS] No audio URI returned, falling back to expo-speech');
-        await this.fallbackToNativeSpeech(truncatedText);
+      console.log('[StreamingTTS] Attempting OpenAI TTS via edge function...', {
+        chunks: chunks.length,
+        firstChunkLength: chunks[0]?.length ?? 0,
+      });
+
+      let nextAudioUriPromise: Promise<string | null> | null =
+        chunks[0] ? this.fetchStreamingTTS(chunks[0]) : null;
+      let playedAnyChunk = false;
+
+      for (let index = 0; index < chunks.length; index += 1) {
+        if (generation !== this.playbackGeneration || !nextAudioUriPromise) {
+          return;
+        }
+
+        this.updateState({ isLoading: true, isPlaying: false });
+        const audioUri = await nextAudioUriPromise;
+        if (generation !== this.playbackGeneration) {
+          return;
+        }
+
+        nextAudioUriPromise =
+          chunks[index + 1]
+            ? this.fetchStreamingTTS(chunks[index + 1]).catch((chunkError) => {
+                console.warn('[StreamingTTS] Failed to prefetch next chunk:', chunkError);
+                return null;
+              })
+            : null;
+
+        if (!audioUri) {
+          if (!playedAnyChunk) {
+            console.log('[StreamingTTS] No audio URI returned, falling back to expo-speech');
+            await this.fallbackToNativeSpeech(truncatedText);
+          }
+          return;
+        }
+
+        console.log('[StreamingTTS] Got audio URI, playing chunk:', {
+          chunk: index + 1,
+          totalChunks: chunks.length,
+          uri: audioUri,
+        });
+        await this.playAudioFile(audioUri, {
+          generation,
+          notifyStart: !playedAnyChunk,
+        });
+        playedAnyChunk = true;
+      }
+
+      if (generation === this.playbackGeneration && playedAnyChunk) {
+        this.updateState({ isLoading: false, isPlaying: false, currentText: null });
+        this.callbacks.onPlaybackEnd?.();
       }
     } catch (error) {
       console.warn('[StreamingTTS] Error in speak(), falling back to native:', error);
@@ -264,7 +360,10 @@ export class StreamingTTSPlayer {
   /**
    * Play an audio file using expo-audio
    */
-  private async playAudioFile(uri: string): Promise<void> {
+  private async playAudioFile(
+    uri: string,
+    options: { generation: number; notifyStart: boolean },
+  ): Promise<void> {
     console.log('[StreamingTTS] playAudioFile called:', uri);
     
     try {
@@ -279,10 +378,6 @@ export class StreamingTTSPlayer {
       // Create and load the player
       console.log('[StreamingTTS] Creating player from URI...');
       const player = createAudioPlayer({ uri }, { updateInterval: 500 });
-      this.playbackSubscription = (player as AudioPlayerWithEvents).addListener(
-        'playbackStatusUpdate',
-        this.onPlaybackStatusUpdate
-      );
       this.player = player;
 
       console.log('[StreamingTTS] Sound created successfully', {
@@ -290,28 +385,35 @@ export class StreamingTTSPlayer {
         durationMs: Math.round((player.duration ?? 0) * 1000),
       });
 
-      player.play();
-      this.updateState({ isLoading: false, isPlaying: true });
-      this.callbacks.onPlaybackStart?.();
-      console.log('[StreamingTTS] OpenAI TTS playback started successfully!');
+      await new Promise<void>((resolve) => {
+        this.playbackEndResolver = resolve;
+        this.playbackSubscription = (player as AudioPlayerWithEvents).addListener(
+          'playbackStatusUpdate',
+          (status) => {
+            if (!status.isLoaded || !status.didJustFinish) return;
+            this.playbackEndResolver = null;
+            this.cleanup();
+            resolve();
+          }
+        );
+
+        player.play();
+        if (options.generation !== this.playbackGeneration) {
+          this.cleanup();
+          resolve();
+          return;
+        }
+
+        this.updateState({ isLoading: false, isPlaying: true });
+        if (options.notifyStart) {
+          this.callbacks.onPlaybackStart?.();
+        }
+        console.log('[StreamingTTS] OpenAI TTS playback started successfully!');
+      });
     } catch (playError) {
       console.error('[StreamingTTS] Failed to play audio file:', playError);
       throw playError;
     }
-  }
-
-  private onPlaybackStatusUpdate = (status: AudioStatus) => {
-    if (!status.isLoaded) return;
-    
-    if (status.didJustFinish) {
-      this.handlePlaybackEnd();
-    }
-  };
-
-  private handlePlaybackEnd() {
-    this.updateState({ isPlaying: false, currentText: null });
-    this.callbacks.onPlaybackEnd?.();
-    this.cleanup();
   }
 
   /**
@@ -370,6 +472,12 @@ export class StreamingTTSPlayer {
    * Stop current playback
    */
   async stop(): Promise<void> {
+    this.playbackGeneration += 1;
+    if (this.playbackEndResolver) {
+      this.playbackEndResolver();
+      this.playbackEndResolver = null;
+    }
+
     // Stop expo-audio player
     if (this.player) {
       try {
