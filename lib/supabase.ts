@@ -1137,6 +1137,7 @@ export const saveSessionMessage = async (
     answer_link_id: message.answerLinkId ?? null,
     ai_model: message.aiModel ?? null,
     ai_platform: message.aiPlatform ?? null,
+    reasoning: message.reasoning ?? null,
     citations: message.citations ?? null,
     tutor_question: message.tutorQuestion ?? null,
     visual_block_ids: message.visualBlockIds ?? null,
@@ -1150,13 +1151,15 @@ export const saveSessionMessage = async (
       error.message?.includes('tutor_question') ||
       error.message?.includes('visual_block_ids') ||
       error.message?.includes('ai_model') ||
-      error.message?.includes('ai_platform')
+      error.message?.includes('ai_platform') ||
+      error.message?.includes('reasoning')
     ) {
       const legacyPayload: Record<string, unknown> = { ...payload };
       delete legacyPayload.tutor_question;
       delete legacyPayload.visual_block_ids;
       delete legacyPayload.ai_model;
       delete legacyPayload.ai_platform;
+      delete legacyPayload.reasoning;
       const { error: legacyError } = await client
         .from('session_messages')
         .upsert(legacyPayload, { onConflict: 'id' });
@@ -1197,6 +1200,7 @@ export const listSessionMessages = async (sessionId: string): Promise<StudyChatM
     answerLinkId: row.answer_link_id ?? undefined,
     aiModel: row.ai_model ?? undefined,
     aiPlatform: row.ai_platform ?? undefined,
+    reasoning: row.reasoning ?? undefined,
     citations: row.citations ?? undefined,
     tutorQuestion: row.tutor_question ?? undefined,
     visualBlockIds: row.visual_block_ids ?? undefined,

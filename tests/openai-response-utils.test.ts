@@ -44,6 +44,9 @@ test('toTokenUsage maps Responses token fields to existing usage shape', () => {
       input_tokens: 11,
       output_tokens: 7,
       total_tokens: 18,
+      output_tokens_details: {
+        reasoning_tokens: 3,
+      },
     },
   });
 
@@ -51,6 +54,27 @@ test('toTokenUsage maps Responses token fields to existing usage shape', () => {
     promptTokens: 11,
     completionTokens: 7,
     totalTokens: 18,
+    reasoningTokens: 3,
+  });
+});
+
+test('toTokenUsage maps OpenRouter reasoning token details', () => {
+  const usage = toTokenUsage({
+    usage: {
+      prompt_tokens: 13,
+      completion_tokens: 21,
+      total_tokens: 34,
+      completion_tokens_details: {
+        reasoning_tokens: 8,
+      },
+    },
+  });
+
+  assert.deepEqual(usage, {
+    promptTokens: 13,
+    completionTokens: 21,
+    totalTokens: 34,
+    reasoningTokens: 8,
   });
 });
 

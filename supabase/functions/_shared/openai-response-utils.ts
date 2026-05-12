@@ -2,6 +2,7 @@ export type OpenAIUsageShape = {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+  reasoningTokens?: number;
 };
 
 export const toTokenUsage = (data: any): OpenAIUsageShape | undefined => {
@@ -11,11 +12,17 @@ export const toTokenUsage = (data: any): OpenAIUsageShape | undefined => {
   const promptTokens = usage.input_tokens ?? usage.prompt_tokens;
   const completionTokens = usage.output_tokens ?? usage.completion_tokens;
   const totalTokens = usage.total_tokens;
+  const reasoningTokens =
+    usage.output_tokens_details?.reasoning_tokens ??
+    usage.completion_tokens_details?.reasoning_tokens ??
+    usage.completion_tokens_details?.reasoning ??
+    usage.reasoning_tokens;
 
   if (
     promptTokens === undefined &&
     completionTokens === undefined &&
-    totalTokens === undefined
+    totalTokens === undefined &&
+    reasoningTokens === undefined
   ) {
     return undefined;
   }
@@ -24,6 +31,7 @@ export const toTokenUsage = (data: any): OpenAIUsageShape | undefined => {
     promptTokens: typeof promptTokens === "number" ? promptTokens : undefined,
     completionTokens: typeof completionTokens === "number" ? completionTokens : undefined,
     totalTokens: typeof totalTokens === "number" ? totalTokens : undefined,
+    reasoningTokens: typeof reasoningTokens === "number" ? reasoningTokens : undefined,
   };
 };
 

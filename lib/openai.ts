@@ -3,6 +3,13 @@ import type { AIPlatform } from './ai-model-options';
 import { captureTelemetryError, traceAsyncOperation } from './sentry';
 import { getSupabase } from './supabase';
 
+export type AIUsageSummary = {
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  reasoningTokens?: number;
+};
+
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -27,6 +34,8 @@ export type AIActionResult<T> = T & {
   costUsd?: number;
   model?: string;
   aiPlatform?: AIPlatform;
+  reasoningEffort?: string | null;
+  usage?: AIUsageSummary;
 };
 
 export const generateLectureMetadata = async (
@@ -272,6 +281,8 @@ export const feynmanChat = async (
     costUsd?: number;
     model?: string;
     platform?: AIPlatform;
+    reasoningEffort?: string | null;
+    usage?: AIUsageSummary;
   }>(jobId);
 
   return {
@@ -279,6 +290,8 @@ export const feynmanChat = async (
     costUsd: data?.costUsd,
     model: data?.model,
     aiPlatform: data?.platform,
+    reasoningEffort: data?.reasoningEffort ?? null,
+    usage: data?.usage,
   };
 };
 
@@ -342,6 +355,8 @@ export const streamFeynmanChat = async (
               costUsd: row.result?.costUsd,
               model: row.result?.model,
               aiPlatform: row.result?.platform,
+              reasoningEffort: row.result?.reasoningEffort ?? null,
+              usage: row.result?.usage,
             };
             callbacks.onDone?.(result);
             resolve(result);
@@ -392,6 +407,8 @@ export const streamFeynmanChat = async (
               costUsd: current.result?.costUsd,
               model: current.result?.model,
               aiPlatform: current.result?.platform,
+              reasoningEffort: current.result?.reasoningEffort ?? null,
+              usage: current.result?.usage,
             };
             callbacks.onDone?.(result);
             resolve(result);

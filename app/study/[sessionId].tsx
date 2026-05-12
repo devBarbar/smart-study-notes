@@ -379,6 +379,12 @@ const balanceCitationChunks = (
   return selected;
 };
 
+const estimateTokenCount = (text: string) => {
+  const compact = text.trim();
+  if (!compact) return 0;
+  return Math.max(1, Math.ceil(compact.length / 4));
+};
+
 export default function StudySessionScreen() {
   const { sessionId, materialId, lectureId, studyPlanEntryId } =
     useLocalSearchParams<{
@@ -1980,7 +1986,7 @@ export default function StudySessionScreen() {
       const aiMsgId = uuid();
       streamingAiMessageIdsRef.current.add(aiMsgId);
       pushMessage({ id: aiMsgId, role: "ai", text: "" }, false);
-      let tutorModelInfo: Pick<StudyChatMessage, "aiModel" | "aiPlatform"> = {};
+      let tutorModelInfo: Pick<StudyChatMessage, "aiModel" | "aiPlatform" | "reasoning"> = {};
 
       try {
         try {
@@ -1990,6 +1996,9 @@ export default function StudySessionScreen() {
             tutorModelInfo = {
               aiModel: tutorConfig.model,
               aiPlatform: tutorConfig.platform,
+              reasoning: {
+                effort: tutorConfig.reasoningEffort ?? null,
+              },
             };
             updateMessage(aiMsgId, tutorModelInfo);
           }
@@ -2016,7 +2025,13 @@ export default function StudySessionScreen() {
           {
             onChunk: (partialText) => {
               // Update the AI message with the partial text
-              updateMessage(aiMsgId, { text: partialText });
+              updateMessage(aiMsgId, {
+                text: partialText,
+                reasoning: {
+                  ...tutorModelInfo.reasoning,
+                  completionTokens: estimateTokenCount(partialText),
+                },
+              });
             },
             onDone: (result) => {
               if (completedAiMessageIdsRef.current.has(aiMsgId)) {
@@ -2047,6 +2062,11 @@ export default function StudySessionScreen() {
                 role: "ai",
                 text: visibleTutorText,
                 ...tutorModelInfo,
+                reasoning: {
+                  ...tutorModelInfo.reasoning,
+                  effort: result.reasoningEffort ?? tutorModelInfo.reasoning?.effort ?? null,
+                  ...result.usage,
+                },
                 tutorQuestion: learningParsed.tutorQuestion,
               };
               const questionText =
@@ -2093,6 +2113,11 @@ export default function StudySessionScreen() {
                 text: visibleTutorText + costSuffix, // Use cleaned text without visual blocks
                 aiModel: result.model ?? tutorModelInfo.aiModel,
                 aiPlatform: result.aiPlatform ?? tutorModelInfo.aiPlatform,
+                reasoning: {
+                  ...tutorModelInfo.reasoning,
+                  effort: result.reasoningEffort ?? tutorModelInfo.reasoning?.effort ?? null,
+                  ...result.usage,
+                },
                 citations,
                 tutorQuestion: learningParsed.tutorQuestion,
                 visualBlockIds:

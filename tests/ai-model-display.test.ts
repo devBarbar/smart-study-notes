@@ -32,9 +32,15 @@ test('tutor chat passes model metadata from job result into the message UI', () 
 
   assert.match(streamSource, /model:\s*row\.result\?\.model/);
   assert.match(streamSource, /aiPlatform:\s*row\.result\?\.platform/);
+  assert.match(streamSource, /usage:\s*row\.result\?\.usage/);
+  assert.match(streamSource, /reasoningEffort:\s*row\.result\?\.reasoningEffort/);
   assert.match(studySource, /aiModel:\s*result\.model\s*\?\?/);
   assert.match(studySource, /aiPlatform:\s*result\.aiPlatform\s*\?\?/);
+  assert.match(studySource, /reasoning:\s*\{/);
   assert.match(messageSource, /ai-model-badge-\$\{item\.id\}/);
+  assert.match(messageSource, /ai-reasoning-badge-\$\{item\.id\}/);
   assert.match(processJobSource, /model:\s*reply\.model/);
   assert.match(processJobSource, /platform:\s*reply\.platform/);
+  assert.match(processJobSource, /usage:\s*reply\.usage/);
+  assert.match(processJobSource, /reasoningEffort:\s*reply\.reasoningEffort/);
 });

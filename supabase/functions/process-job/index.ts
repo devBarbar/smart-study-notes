@@ -58,6 +58,7 @@ type UsageLogPayload = {
     promptTokens?: number;
     completionTokens?: number;
     totalTokens?: number;
+    reasoningTokens?: number;
   };
   costUsd?: number;
   inputCostUsd?: number;
@@ -295,6 +296,7 @@ const aggregateUsage = (
     promptTokens: (current?.usage?.promptTokens ?? 0) + (next.usage?.promptTokens ?? 0),
     completionTokens: (current?.usage?.completionTokens ?? 0) + (next.usage?.completionTokens ?? 0),
     totalTokens: (current?.usage?.totalTokens ?? 0) + (next.usage?.totalTokens ?? 0),
+    reasoningTokens: (current?.usage?.reasoningTokens ?? 0) + (next.usage?.reasoningTokens ?? 0),
   },
   costUsd: (current?.costUsd ?? 0) + (next.costUsd ?? 0),
   inputCostUsd: (current?.inputCostUsd ?? 0) + (next.inputCostUsd ?? 0),
@@ -464,6 +466,8 @@ const handlePlan = async (
             completionTokens:
               (aggregatedUsage?.completionTokens ?? 0) + (chat.usage.completionTokens ?? 0),
             totalTokens: (aggregatedUsage?.totalTokens ?? 0) + (chat.usage.totalTokens ?? 0),
+            reasoningTokens:
+              (aggregatedUsage?.reasoningTokens ?? 0) + (chat.usage.reasoningTokens ?? 0),
           };
         }
         totalInputCost += chat.inputCostUsd ?? 0;
@@ -1513,6 +1517,8 @@ const handleChat = async (
       message: reply.message,
       model: reply.model,
       platform: reply.platform,
+      reasoningEffort: reply.reasoningEffort ?? null,
+      usage: reply.usage,
     },
     usage: {
       feature: "chat",
@@ -1522,6 +1528,10 @@ const handleChat = async (
       inputCostUsd: reply.inputCostUsd,
       outputCostUsd: reply.outputCostUsd,
       lectureId: lectureId ?? null,
+      metadata: {
+        reasoningEffort: reply.reasoningEffort ?? null,
+        reasoningTokens: reply.usage?.reasoningTokens ?? null,
+      },
     },
   };
 };
@@ -1571,6 +1581,8 @@ const handleChatStreaming = async (
       message: reply.message,
       model: reply.model,
       platform: reply.platform,
+      reasoningEffort: reply.reasoningEffort ?? null,
+      usage: reply.usage,
     },
     usage: {
       feature: "chat",
@@ -1580,6 +1592,10 @@ const handleChatStreaming = async (
       inputCostUsd: reply.inputCostUsd,
       outputCostUsd: reply.outputCostUsd,
       lectureId: lectureId ?? null,
+      metadata: {
+        reasoningEffort: reply.reasoningEffort ?? null,
+        reasoningTokens: reply.usage?.reasoningTokens ?? null,
+      },
     },
   };
 };

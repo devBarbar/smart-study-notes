@@ -53,6 +53,10 @@ export function StudyChatMessageItem({
     item.role === "ai" ? formatAIModelBadge(item.aiModel, item.aiPlatform) : null;
   const hasTutorText = item.text.trim().length > 0;
   const showThinkingProcess = item.role === "ai" && isStreaming;
+  const reasoning = item.role === "ai" ? item.reasoning : undefined;
+  const showReasoningBadge =
+    item.role === "ai" &&
+    Boolean(reasoning?.reasoningTokens || reasoning?.effort || reasoning?.completionTokens);
 
   return (
     <ThemedView
@@ -114,6 +118,21 @@ export function StudyChatMessageItem({
               </ThemedText>
             </View>
           )}
+          {showReasoningBadge && (
+            <View
+              style={styles.reasoningBadge}
+              testID={`ai-reasoning-badge-${item.id}`}
+              accessibilityLabel={formatReasoningAccessibilityLabel(t, reasoning)}
+            >
+              <Ionicons name="sparkles-outline" size={12} color="#f59e0b" />
+              <ThemedText
+                style={styles.reasoningBadgeText}
+                numberOfLines={1}
+              >
+                {formatReasoningBadgeText(t, reasoning)}
+              </ThemedText>
+            </View>
+          )}
         </View>
         {item.role === "ai" && ttsEnabled && (
           <Pressable
@@ -144,6 +163,7 @@ export function StudyChatMessageItem({
           styles={styles}
           t={t}
           hasTutorText={hasTutorText}
+          reasoning={reasoning}
         />
       )}
       {item.role === "ai" && hasTutorText ? (
@@ -214,11 +234,16 @@ function TutorThinkingProcess({
   styles,
   t,
   hasTutorText,
+  reasoning,
 }: {
   styles: StudyStyles;
   t: (key: string, params?: Record<string, any>) => string;
   hasTutorText: boolean;
+  reasoning?: StudyChatMessage["reasoning"];
 }) {
+  const visibleTokens = reasoning?.completionTokens ?? 0;
+  const reasoningTokens = reasoning?.reasoningTokens;
+  const totalTokens = reasoning?.totalTokens;
   const steps = [
     {
       icon: "search-outline" as const,
@@ -239,6 +264,7 @@ function TutorThinkingProcess({
 
   return (
     <View style={styles.tutorThinkingCard}>
+      <View style={styles.tutorThinkingAura} />
       <View style={styles.tutorThinkingHeader}>
         <View style={styles.tutorThinkingIcon}>
           <ActivityIndicator color="#0f172a" size="small" />
@@ -252,6 +278,54 @@ function TutorThinkingProcess({
               {t("study.thinkingPanelSubtitle")}
             </ThemedText>
           )}
+        </View>
+      </View>
+      <View style={styles.reasoningTracePanel}>
+        <View style={styles.reasoningTraceRail}>
+          <View style={styles.reasoningTraceNodeStrong} />
+          <View style={styles.reasoningTraceLine} />
+          <View style={styles.reasoningTraceNode} />
+          <View style={styles.reasoningTraceLineAccent} />
+          <View style={styles.reasoningTraceNodeStrong} />
+        </View>
+        <View style={styles.reasoningTraceContent}>
+          <View style={styles.reasoningTraceHeaderRow}>
+            <View style={styles.reasoningTraceTitleRow}>
+              <Ionicons name="analytics-outline" size={14} color="#f59e0b" />
+              <ThemedText style={styles.reasoningTraceTitle}>
+                {t("study.reasoningTraceTitle")}
+              </ThemedText>
+            </View>
+            <ThemedText style={styles.reasoningTraceEffort}>
+              {formatReasoningEffort(t, reasoning?.effort)}
+            </ThemedText>
+          </View>
+          <View style={styles.reasoningMetricGrid}>
+            <ReasoningMetric
+              styles={styles}
+              label={t("study.reasoningTokens")}
+              value={
+                typeof reasoningTokens === "number"
+                  ? formatCompactNumber(reasoningTokens)
+                  : t("study.reasoningPending")
+              }
+              emphasized={typeof reasoningTokens === "number" && reasoningTokens > 0}
+            />
+            <ReasoningMetric
+              styles={styles}
+              label={hasTutorText ? t("study.visibleTokens") : t("study.visibleTokensQueued")}
+              value={visibleTokens > 0 ? formatCompactNumber(visibleTokens) : "0"}
+            />
+            <ReasoningMetric
+              styles={styles}
+              label={t("study.totalTokens")}
+              value={
+                typeof totalTokens === "number"
+                  ? formatCompactNumber(totalTokens)
+                  : t("study.reasoningPendingShort")
+              }
+            />
+          </View>
         </View>
       </View>
       {!hasTutorText && (
@@ -282,6 +356,67 @@ function TutorThinkingProcess({
     </View>
   );
 }
+
+function ReasoningMetric({
+  styles,
+  label,
+  value,
+  emphasized,
+}: {
+  styles: StudyStyles;
+  label: string;
+  value: string;
+  emphasized?: boolean;
+}) {
+  return (
+    <View style={[styles.reasoningMetric, emphasized && styles.reasoningMetricEmphasized]}>
+      <ThemedText style={styles.reasoningMetricValue} numberOfLines={1}>
+        {value}
+      </ThemedText>
+      <ThemedText style={styles.reasoningMetricLabel} numberOfLines={1}>
+        {label}
+      </ThemedText>
+    </View>
+  );
+}
+
+const formatCompactNumber = (value: number) =>
+  new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(value);
+
+const titleCase = (value: string) =>
+  value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+
+const formatReasoningEffort = (
+  t: (key: string, params?: Record<string, any>) => string,
+  effort?: string | null,
+) => {
+  if (!effort) return t("study.reasoningEffortAuto");
+  return t("study.reasoningEffortValue", { value: titleCase(effort) });
+};
+
+const formatReasoningBadgeText = (
+  t: (key: string, params?: Record<string, any>) => string,
+  reasoning?: StudyChatMessage["reasoning"],
+) => {
+  if (typeof reasoning?.reasoningTokens === "number") {
+    return t("study.reasoningBadgeTokens", {
+      count: formatCompactNumber(reasoning.reasoningTokens),
+    });
+  }
+  return formatReasoningEffort(t, reasoning?.effort);
+};
+
+const formatReasoningAccessibilityLabel = (
+  t: (key: string, params?: Record<string, any>) => string,
+  reasoning?: StudyChatMessage["reasoning"],
+) => {
+  if (typeof reasoning?.reasoningTokens === "number") {
+    return t("study.reasoningAccessibilityTokens", {
+      count: reasoning.reasoningTokens,
+    });
+  }
+  return t("study.reasoningAccessibilityPending");
+};
 
 const citationKey = (citation: StudyCitation, index: number) =>
   citation.lectureFileId

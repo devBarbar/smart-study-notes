@@ -299,6 +299,13 @@ export type StudyChatMessage = {
   answerLinkId?: string;
   aiModel?: string;
   aiPlatform?: 'openai' | 'openrouter';
+  reasoning?: {
+    effort?: string | null;
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+    reasoningTokens?: number;
+  };
   citations?: StudyCitation[];
   tutorQuestion?: TutorQuestionMetadata;
   /** IDs of visual blocks rendered on canvas for this message */

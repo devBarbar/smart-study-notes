@@ -37,6 +37,7 @@ export type ChatResponse = {
   usage?: OpenAIUsage;
   model?: string;
   platform?: AIModelConfig["platform"];
+  reasoningEffort?: string | null;
   costUsd?: number;
   inputCostUsd?: number;
   outputCostUsd?: number;
@@ -318,6 +319,7 @@ export const callChat = async (
       usage,
       model: data?.model ?? config.model,
       platform: config.platform,
+      reasoningEffort: config.reasoningEffort ?? null,
       costUsd: pricing.totalCost,
       inputCostUsd: pricing.inputCost,
       outputCostUsd: pricing.outputCost,
@@ -352,6 +354,7 @@ export const callChat = async (
     usage,
     model: data?.model ?? config.model,
     platform: config.platform,
+    reasoningEffort: config.reasoningEffort ?? null,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,
@@ -391,6 +394,7 @@ export const callChatWithMessages = async (
       usage,
       model: data?.model ?? config.model,
       platform: config.platform,
+      reasoningEffort: config.reasoningEffort ?? null,
       costUsd: pricing.totalCost,
       inputCostUsd: pricing.inputCost,
       outputCostUsd: pricing.outputCost,
@@ -425,6 +429,7 @@ export const callChatWithMessages = async (
     usage,
     model: data?.model ?? config.model,
     platform: config.platform,
+    reasoningEffort: config.reasoningEffort ?? null,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,
@@ -525,6 +530,7 @@ export const callChatWithMessagesStream = async (
       usage,
       model: modelUsed,
       platform: config.platform,
+      reasoningEffort: config.reasoningEffort ?? null,
       costUsd: pricing.totalCost,
       inputCostUsd: pricing.inputCost,
       outputCostUsd: pricing.outputCost,
@@ -614,6 +620,7 @@ export const callChatWithMessagesStream = async (
     usage,
     model: modelUsed,
     platform: config.platform,
+    reasoningEffort: config.reasoningEffort ?? null,
     costUsd: pricing.totalCost,
     inputCostUsd: pricing.inputCost,
     outputCostUsd: pricing.outputCost,
@@ -655,6 +662,7 @@ export const embedTexts = async (
         promptTokens: (aggregatedUsage?.promptTokens ?? 0) + (usage.promptTokens ?? 0),
         completionTokens: (aggregatedUsage?.completionTokens ?? 0) + (usage.completionTokens ?? 0),
         totalTokens: (aggregatedUsage?.totalTokens ?? 0) + (usage.totalTokens ?? 0),
+        reasoningTokens: (aggregatedUsage?.reasoningTokens ?? 0) + (usage.reasoningTokens ?? 0),
       };
     }
 

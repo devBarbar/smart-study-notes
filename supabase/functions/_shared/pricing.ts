@@ -2,6 +2,7 @@ export type TokenUsage = {
   promptTokens?: number;
   completionTokens?: number;
   totalTokens?: number;
+  reasoningTokens?: number;
 };
 
 type ModelPricing = {
