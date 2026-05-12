@@ -118,7 +118,7 @@ const FINAL_QUIZ_PASS_SCORE = DEPTH_PASS_SCORE;
 
 // Initial canvas size (will grow as user draws near edges)
 const INITIAL_CANVAS_WIDTH = 1400;
-const INITIAL_CANVAS_HEIGHT = 1200;
+const INITIAL_CANVAS_HEIGHT = 760;
 // How much to grow the canvas when user reaches the edge
 const CANVAS_GROW_CHUNK = 600;
 // Threshold from edge to trigger growth (px)
@@ -2021,7 +2021,7 @@ export default function StudySessionScreen() {
                   if (result) {
                     visualBlockIds.push(result.id);
                     // Add extra padding between blocks
-                    currentBatchY = result.bottom + 20;
+                    currentBatchY = result.bottom + 12;
                   }
                 }
                 console.log(
@@ -3213,6 +3213,35 @@ export default function StudySessionScreen() {
     [lecture],
   );
 
+  const canvasReferences = useMemo(() => {
+    const seen = new Set<string>();
+
+    return messages
+      .flatMap((message) =>
+        message.role === "ai"
+          ? (message.citations ?? []).map((citation, index) => ({
+              citation,
+              index,
+              messageId: message.id,
+            }))
+          : [],
+      )
+      .filter(({ citation }) => {
+        const key = citation.lectureFileId
+          ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}`
+          : `${citation.chunkId ?? "chunk"}-${citation.pageNumber ?? "unknown"}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map(({ citation, index, messageId }) => ({
+        key: `${messageId}-${citation.lectureFileId ?? citation.chunkId ?? index}-${citation.pageNumber ?? "source"}`,
+        citation,
+        label: getCitationLabel(citation),
+        sourceLabel: getCitationSourceLabel(citation),
+      }));
+  }, [getCitationLabel, getCitationSourceLabel, messages]);
+
   // FlatList getItemLayout for reliable scrollToIndex
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
@@ -3370,6 +3399,8 @@ export default function StudySessionScreen() {
           onMarkerPress={scrollToQuestionMessage}
           answerText={answerText}
           onNotesChange={handleNotesChange}
+          references={canvasReferences}
+          onOpenCitation={openCitationSource}
           depthProgressItems={depthProgressItems}
         />
       ) : (

@@ -261,7 +261,11 @@ const de = {
   'study.depthGateTitle': 'Tiefenchecks vor dem Bestehen (je 90+)',
   'study.depthProgress': 'Tiefenfortschritt',
   'study.focusConceptsFallback': 'Schlüsselkonzepte',
-  'study.canvasTitle': 'Canvas (mit Apple Pencil zeichnen, mit dem Finger scrollen)',
+  'study.canvasTitle': 'Antwortbereich',
+  'study.referencesTitle': 'Quellen',
+  'study.referencesCount': '{{count}} Quelle(n)',
+  'study.referencesEmpty': 'Keine Quellen',
+  'study.referencesEmptyLong': 'Quellen erscheinen hier, sobald der Tutor Materialstellen zitiert.',
   'study.notesPlaceholder': 'Schreibe hier deine Notizen...',
   'study.typedNotes': 'Getippte Notizen',
   'study.aiTutor': 'KI-Tutor',
@@ -329,6 +333,8 @@ const de = {
   'study.showTutor': 'KI-Tutor anzeigen',
   'study.hideTutor': 'KI-Tutor ausblenden',
   'study.restartSession': 'Sitzung neu starten',
+
+  'common.close': 'Schließen',
 
   'modal.title': 'Dies ist ein Modal',
   'modal.goHome': 'Zur Startseite',

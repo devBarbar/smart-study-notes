@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { RefObject } from "react";
+import { RefObject, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   LayoutChangeEvent,
+  Modal,
   Pressable,
   ScrollView,
   TextInput,
@@ -28,6 +29,7 @@ import {
   CanvasPage,
   CanvasStrokeData,
   CanvasVisualBlock as CanvasVisualBlockType,
+  StudyCitation,
   StudyPlanEntry,
   TutorCheckType,
 } from "@/types";
@@ -82,6 +84,13 @@ type StudyCanvasPanelProps = {
   onMarkerPress: (messageId: string) => void;
   answerText: string;
   onNotesChange: (text: string) => void;
+  references: {
+    key: string;
+    citation: StudyCitation;
+    label: string;
+    sourceLabel: string;
+  }[];
+  onOpenCitation: (citation: StudyCitation) => void;
   depthProgressItems: {
     type: TutorCheckType;
     label: string;
@@ -138,8 +147,17 @@ export function StudyCanvasPanel({
   onMarkerPress,
   answerText,
   onNotesChange,
+  references,
+  onOpenCitation,
   depthProgressItems,
 }: StudyCanvasPanelProps) {
+  const [referencesOpen, setReferencesOpen] = useState(false);
+  const visibleReferences = useMemo(() => references.slice(0, 4), [references]);
+  const referenceCountLabel =
+    references.length > 0
+      ? t("study.referencesCount", { count: references.length })
+      : t("study.referencesEmpty");
+
   return (
     <View
       style={[
@@ -185,10 +203,23 @@ export function StudyCanvasPanel({
 
         {lockedAnswerMode && (
           <View style={styles.answerModeBanner}>
-            <Ionicons name="eye-off-outline" size={16} color={palette.primary} />
+            <View style={styles.answerModeBannerIcon}>
+              <Ionicons name="eye-off-outline" size={16} color="#ffffff" />
+            </View>
             <ThemedText style={styles.answerModeBannerText}>
               {t("study.answerModeLocked")}
             </ThemedText>
+            <Pressable
+              style={styles.referenceSummaryButton}
+              onPress={() => setReferencesOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t("study.referencesTitle")}
+            >
+              <Ionicons name="library-outline" size={15} color={palette.primary} />
+              <ThemedText style={styles.referenceSummaryText}>
+                {referenceCountLabel}
+              </ThemedText>
+            </Pressable>
           </View>
         )}
 
@@ -249,81 +280,122 @@ export function StudyCanvasPanel({
           </ThemedText>
         )}
 
-        <ThemedText
-          type="defaultSemiBold"
-          style={{ marginTop: 12, marginBottom: 8 }}
-        >
-          {t("study.canvasTitle")}
-        </ThemedText>
-
-        <View style={styles.pageNavContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.pageTabsContent}
-          >
-            {canvasPages.map((page, index) => (
-              <Pressable
-                key={page.id}
-                style={[
-                  styles.pageTab,
-                  page.id === activePageId && styles.pageTabActive,
-                ]}
-                onPress={() => onSelectPage(page.id)}
-              >
-                {page.titleStrokes.length > 0 ? (
-                  <View style={styles.pageTitlePreview}>
-                    <HandwritingCanvas
-                      width={60}
-                      height={20}
-                      initialStrokes={page.titleStrokes}
-                      mode="pen"
-                    />
-                  </View>
-                ) : (
-                  <ThemedText
-                    style={[
-                      styles.pageTabText,
-                      page.id === activePageId && styles.pageTabTextActive,
-                    ]}
-                  >
-                    {t("study.pageLabel", { number: index + 1 })}
-                  </ThemedText>
-                )}
-              </Pressable>
-            ))}
-            <Pressable style={styles.addPageButton} onPress={onAddPage}>
-              <Ionicons name="add" size={20} color="#10b981" />
+        <View style={styles.workspaceRail}>
+          <View style={styles.workspaceRailHeader}>
+            <View style={styles.workspaceTitleStack}>
+              <ThemedText type="defaultSemiBold" style={styles.workspaceTitle}>
+                {t("study.canvasTitle")}
+              </ThemedText>
+              <ThemedText style={styles.workspaceSubtitle}>
+                {activePage
+                  ? t("study.pageLabel", {
+                      number:
+                        canvasPages.findIndex((page) => page.id === activePage.id) + 1,
+                    })
+                  : t("study.pageLabel", { number: 1 })}
+              </ThemedText>
+            </View>
+            <Pressable
+              style={styles.referencesButton}
+              onPress={() => setReferencesOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t("study.referencesTitle")}
+            >
+              <Ionicons name="library-outline" size={16} color={palette.primary} />
+              <ThemedText style={styles.referencesButtonText}>
+                {referenceCountLabel}
+              </ThemedText>
             </Pressable>
-          </ScrollView>
-        </View>
-
-        <View style={styles.pageTitleContainer}>
-          <ThemedText style={styles.pageTitleLabel}>
-            {t("study.pageTitleLabel")}
-          </ThemedText>
-          <View style={styles.pageTitleCanvasWrapper}>
-            <HandwritingCanvas
-              key={activePage?.id ? `${activePage.id}-title` : "title-default"}
-              ref={titleCanvasRef}
-              width={300}
-              height={40}
-              strokeColor={canvasColor}
-              strokeWidth={2}
-              initialStrokes={activePage?.titleStrokes}
-              onStrokesChange={onTitleStrokesChange}
-            />
           </View>
-        </View>
 
-        <CanvasToolbar
-          mode={canvasMode}
-          color={canvasColor}
-          onModeChange={onCanvasModeChange}
-          onColorChange={onCanvasColorChange}
-          onClear={onClearCanvas}
-          onUndo={onUndo}
-        />
+          <View style={styles.pageNavContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pageTabsContent}
+            >
+              {canvasPages.map((page, index) => (
+                <Pressable
+                  key={page.id}
+                  style={[
+                    styles.pageTab,
+                    page.id === activePageId && styles.pageTabActive,
+                  ]}
+                  onPress={() => onSelectPage(page.id)}
+                >
+                  {page.titleStrokes.length > 0 ? (
+                    <View style={styles.pageTitlePreview}>
+                      <HandwritingCanvas
+                        width={60}
+                        height={20}
+                        initialStrokes={page.titleStrokes}
+                        mode="pen"
+                      />
+                    </View>
+                  ) : (
+                    <ThemedText
+                      style={[
+                        styles.pageTabText,
+                        page.id === activePageId && styles.pageTabTextActive,
+                      ]}
+                    >
+                      {t("study.pageLabel", { number: index + 1 })}
+                    </ThemedText>
+                  )}
+                </Pressable>
+              ))}
+              <Pressable style={styles.addPageButton} onPress={onAddPage}>
+                <Ionicons name="add" size={20} color="#10b981" />
+              </Pressable>
+            </ScrollView>
+          </View>
+
+          <View style={styles.pageTitleContainer}>
+            <ThemedText style={styles.pageTitleLabel}>
+              {t("study.pageTitleLabel")}
+            </ThemedText>
+            <View style={styles.pageTitleCanvasWrapper}>
+              <HandwritingCanvas
+                key={activePage?.id ? `${activePage.id}-title` : "title-default"}
+                ref={titleCanvasRef}
+                width={260}
+                height={34}
+                strokeColor={canvasColor}
+                strokeWidth={2}
+                initialStrokes={activePage?.titleStrokes}
+                onStrokesChange={onTitleStrokesChange}
+              />
+            </View>
+          </View>
+
+          {visibleReferences.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.referenceStrip}
+            >
+              {visibleReferences.map((item) => (
+                <Pressable
+                  key={item.key}
+                  style={styles.referenceChip}
+                  onPress={() => onOpenCitation(item.citation)}
+                  accessibilityRole="button"
+                >
+                  <ThemedText style={styles.referenceChipSource}>
+                    {item.sourceLabel}
+                  </ThemedText>
+                  <ThemedText
+                    style={styles.referenceChipText}
+                    numberOfLines={1}
+                    ellipsizeMode="middle"
+                  >
+                    {item.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
         <View style={styles.canvasScrollShell}>
           <ScrollView
@@ -463,6 +535,96 @@ export function StudyCanvasPanel({
           onChangeText={onNotesChange}
         />
       </ScrollView>
+      <View pointerEvents="box-none" style={styles.floatingToolDock}>
+        <CanvasToolbar
+          mode={canvasMode}
+          color={canvasColor}
+          onModeChange={onCanvasModeChange}
+          onColorChange={onCanvasColorChange}
+          onClear={onClearCanvas}
+          onUndo={onUndo}
+          variant="floating"
+        />
+      </View>
+      <Modal
+        visible={referencesOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReferencesOpen(false)}
+      >
+        <Pressable
+          style={styles.referencesModalBackdrop}
+          onPress={() => setReferencesOpen(false)}
+        >
+          <Pressable style={styles.referencesModal} onPress={() => undefined}>
+            <View style={styles.referencesModalHeader}>
+              <View>
+                <ThemedText type="defaultSemiBold" style={styles.referencesModalTitle}>
+                  {t("study.referencesTitle")}
+                </ThemedText>
+                <ThemedText style={styles.referencesModalSubtitle}>
+                  {referenceCountLabel}
+                </ThemedText>
+              </View>
+              <Pressable
+                style={styles.referencesCloseButton}
+                onPress={() => setReferencesOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel={t("common.close")}
+              >
+                <Ionicons name="close" size={18} color={palette.text} />
+              </Pressable>
+            </View>
+            {references.length > 0 ? (
+              <ScrollView contentContainerStyle={styles.referencesModalList}>
+                {references.map((item) => (
+                  <Pressable
+                    key={item.key}
+                    style={styles.referenceModalRow}
+                    onPress={() => {
+                      setReferencesOpen(false);
+                      onOpenCitation(item.citation);
+                    }}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.referenceModalIcon}>
+                      <Ionicons
+                        name="document-text-outline"
+                        size={16}
+                        color={palette.primary}
+                      />
+                    </View>
+                    <View style={styles.referenceModalTextStack}>
+                      <ThemedText style={styles.referenceModalSource}>
+                        {item.sourceLabel}
+                      </ThemedText>
+                      <ThemedText style={styles.referenceModalLabel}>
+                        {item.label}
+                      </ThemedText>
+                    </View>
+                    <Ionicons
+                      name="open-outline"
+                      size={16}
+                      color={palette.textMuted}
+                    />
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.referencesEmptyState}>
+                <Ionicons
+                  name="library-outline"
+                  size={24}
+                  color={palette.textMuted}
+                />
+                <ThemedText style={styles.referencesEmptyText}>
+                  {t("study.referencesEmptyLong")}
+                </ThemedText>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

@@ -11,6 +11,7 @@ type Props = {
   onColorChange: (color: string) => void;
   onClear: () => void;
   onUndo: () => void;
+  variant?: 'inline' | 'floating';
 };
 
 const COLORS = [
@@ -22,30 +23,70 @@ const COLORS = [
   { name: 'Orange', value: '#ea580c' },
 ];
 
-export const CanvasToolbar = ({ mode, color, onModeChange, onColorChange, onClear, onUndo }: Props) => {
+export const CanvasToolbar = ({
+  mode,
+  color,
+  onModeChange,
+  onColorChange,
+  onClear,
+  onUndo,
+  variant = 'inline',
+}: Props) => {
+  const floating = variant === 'floating';
+
   return (
-    <View style={styles.container}>
-      {/* Mode selection */}
+    <View style={[styles.container, floating && styles.containerFloating]}>
       <View style={styles.section}>
         <Pressable
-          style={[styles.toolButton, mode === 'pen' && styles.toolButtonActive]}
+          style={[
+            styles.toolButton,
+            floating && styles.toolButtonFloating,
+            mode === 'pen' && styles.toolButtonActive,
+          ]}
           onPress={() => onModeChange('pen')}
+          accessibilityRole="button"
+          accessibilityLabel="Pen"
         >
-          <Ionicons name="pencil" size={20} color={mode === 'pen' ? '#fff' : '#64748b'} />
-          <ThemedText style={[styles.toolLabel, mode === 'pen' && styles.toolLabelActive]}>Pen</ThemedText>
+          <Ionicons
+            name="pencil"
+            size={20}
+            color={mode === 'pen' ? '#fff' : floating ? '#cbd5e1' : '#64748b'}
+          />
+          {!floating && (
+            <ThemedText
+              style={[styles.toolLabel, mode === 'pen' && styles.toolLabelActive]}
+            >
+              Pen
+            </ThemedText>
+          )}
         </Pressable>
         <Pressable
-          style={[styles.toolButton, mode === 'eraser' && styles.toolButtonActive]}
+          style={[
+            styles.toolButton,
+            floating && styles.toolButtonFloating,
+            mode === 'eraser' && styles.toolButtonActive,
+          ]}
           onPress={() => onModeChange('eraser')}
+          accessibilityRole="button"
+          accessibilityLabel="Eraser"
         >
-          <Ionicons name="backspace-outline" size={20} color={mode === 'eraser' ? '#fff' : '#64748b'} />
-          <ThemedText style={[styles.toolLabel, mode === 'eraser' && styles.toolLabelActive]}>Eraser</ThemedText>
+          <Ionicons
+            name="backspace-outline"
+            size={20}
+            color={mode === 'eraser' ? '#fff' : floating ? '#cbd5e1' : '#64748b'}
+          />
+          {!floating && (
+            <ThemedText
+              style={[styles.toolLabel, mode === 'eraser' && styles.toolLabelActive]}
+            >
+              Eraser
+            </ThemedText>
+          )}
         </Pressable>
       </View>
 
-      {/* Color palette */}
       <View style={styles.section}>
-        <ThemedText style={styles.sectionLabel}>Color</ThemedText>
+        {!floating && <ThemedText style={styles.sectionLabel}>Color</ThemedText>}
         <View style={styles.colorRow}>
           {COLORS.map((c) => (
             <Pressable
@@ -56,6 +97,8 @@ export const CanvasToolbar = ({ mode, color, onModeChange, onColorChange, onClea
                 color === c.value && styles.colorButtonActive,
               ]}
               onPress={() => onColorChange(c.value)}
+              accessibilityRole="button"
+              accessibilityLabel={c.name}
             >
               {color === c.value && (
                 <Ionicons name="checkmark" size={14} color="#fff" />
@@ -65,15 +108,36 @@ export const CanvasToolbar = ({ mode, color, onModeChange, onColorChange, onClea
         </View>
       </View>
 
-      {/* Actions */}
       <View style={styles.section}>
-        <Pressable style={styles.actionButton} onPress={onUndo}>
-          <Ionicons name="arrow-undo" size={18} color="#64748b" />
-          <ThemedText style={styles.actionLabel}>Undo</ThemedText>
+        <Pressable
+          style={[styles.actionButton, floating && styles.actionButtonFloating]}
+          onPress={onUndo}
+          accessibilityRole="button"
+          accessibilityLabel="Undo"
+        >
+          <Ionicons
+            name="arrow-undo"
+            size={18}
+            color={floating ? '#cbd5e1' : '#64748b'}
+          />
+          {!floating && <ThemedText style={styles.actionLabel}>Undo</ThemedText>}
         </Pressable>
-        <Pressable style={[styles.actionButton, styles.clearButton]} onPress={onClear}>
+        <Pressable
+          style={[
+            styles.actionButton,
+            styles.clearButton,
+            floating && styles.clearButtonFloating,
+          ]}
+          onPress={onClear}
+          accessibilityRole="button"
+          accessibilityLabel="Clear canvas"
+        >
           <Ionicons name="trash-outline" size={18} color="#dc2626" />
-          <ThemedText style={[styles.actionLabel, styles.clearLabel]}>Clear</ThemedText>
+          {!floating && (
+            <ThemedText style={[styles.actionLabel, styles.clearLabel]}>
+              Clear
+            </ThemedText>
+          )}
         </Pressable>
       </View>
     </View>
@@ -85,12 +149,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     padding: 8,
-    gap: 16,
+    gap: 14,
     flexWrap: 'wrap',
+  },
+  containerFloating: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.94)',
+    borderColor: 'rgba(148, 163, 184, 0.35)',
+    borderRadius: 18,
+    padding: 7,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.24,
+    shadowRadius: 22,
+    elevation: 12,
   },
   section: {
     flexDirection: 'row',
@@ -111,8 +188,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#f1f5f9',
   },
+  toolButtonFloating: {
+    width: 38,
+    height: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
   toolButtonActive: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#4338ca',
   },
   toolLabel: {
     fontSize: 13,
@@ -126,16 +211,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   colorButton: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
   },
   colorButtonActive: {
-    borderColor: '#0f172a',
+    borderColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -151,6 +236,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#f1f5f9',
   },
+  actionButtonFloating: {
+    width: 38,
+    height: 38,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
   actionLabel: {
     fontSize: 12,
     color: '#64748b',
@@ -158,10 +251,11 @@ const styles = StyleSheet.create({
   clearButton: {
     backgroundColor: '#fef2f2',
   },
+  clearButtonFloating: {
+    backgroundColor: 'rgba(239, 68, 68, 0.14)',
+  },
   clearLabel: {
     color: '#dc2626',
   },
 });
-
-
 

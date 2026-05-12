@@ -261,7 +261,11 @@ const en = {
   'study.depthGateTitle': 'Depth checks before pass (90+ each)',
   'study.depthProgress': 'Depth progress',
   'study.focusConceptsFallback': 'Key concepts',
-  'study.canvasTitle': 'Canvas (use Apple Pencil to draw, finger to scroll)',
+  'study.canvasTitle': 'Answer workspace',
+  'study.referencesTitle': 'References',
+  'study.referencesCount': '{{count}} source(s)',
+  'study.referencesEmpty': 'No sources',
+  'study.referencesEmptyLong': 'References appear here after the tutor cites source material.',
   'study.notesPlaceholder': 'Jot down your notes here...',
   'study.typedNotes': 'Typed notes',
   'study.aiTutor': 'AI Tutor',
@@ -329,6 +333,8 @@ const en = {
   'study.showTutor': 'Show AI Tutor',
   'study.hideTutor': 'Hide AI Tutor',
   'study.restartSession': 'Restart session',
+
+  'common.close': 'Close',
 
   'modal.title': 'This is a modal',
   'modal.goHome': 'Go to home screen',
