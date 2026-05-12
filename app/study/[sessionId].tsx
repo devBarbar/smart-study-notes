@@ -124,6 +124,24 @@ const CANVAS_GROW_CHUNK = 600;
 // Threshold from edge to trigger growth (px)
 const EDGE_THRESHOLD = 80;
 
+const canvasPagesHaveWork = (pages?: CanvasPage[]) =>
+  Boolean(
+    pages?.some(
+      (page) =>
+        (page.strokes?.length ?? 0) > 0 ||
+        (page.titleStrokes?.length ?? 0) > 0 ||
+        (page.visualBlocks?.length ?? 0) > 0,
+    ),
+  );
+
+const sessionHasInProgressCanvasWork = (session: StudySession | null) =>
+  Boolean(
+    session?.lastQuestionId ||
+      session?.notesText?.trim() ||
+      (session?.canvasData?.length ?? 0) > 0 ||
+      canvasPagesHaveWork(session?.canvasPages),
+  );
+
 const cleanSourceFileName = (nameOrUri: string) => {
   const withoutQuery = nameOrUri.split(/[?#]/)[0];
   const lastSegment = withoutQuery.split(/[\\/]/).filter(Boolean).pop() ?? nameOrUri;
@@ -671,6 +689,8 @@ export default function StudySessionScreen() {
   // Track if we should auto-explain on first load (new session with no messages)
   const shouldAutoExplainRef = useRef(false);
   const hasTriggeredAutoExplainRef = useRef(false);
+  const shouldOpenCanvasOnResumeRef = useRef(false);
+  const restoredMessageIdsRef = useRef<Set<string>>(new Set());
 
   // Initial canvas strokes to restore (loaded from session) - for current active page
   const initialCanvasStrokes = useMemo(() => activePage?.strokes, [activePage]);
@@ -1263,6 +1283,14 @@ export default function StudySessionScreen() {
         // Load session data (canvas + notes)
         const session = await getSessionById(sessionId);
         if (session) {
+          if (sessionHasInProgressCanvasWork(session)) {
+            shouldOpenCanvasOnResumeRef.current = true;
+            shouldAutoExplainRef.current = false;
+            setMemorizationSecondsRemaining(null);
+            setTutorCollapsed(true);
+            setStudyPhase("answer");
+          }
+
           // Restore canvas pages (prefer new format, fallback to old canvasData)
           if (session.canvasPages && session.canvasPages.length > 0) {
             const normalized = normalizeCanvasPageVisualBlocks(session.canvasPages);
@@ -1342,6 +1370,9 @@ export default function StudySessionScreen() {
           // Restore messages from database
           setMessages(savedMessages);
           messageIdsRef.current = new Set(savedMessages.map((message) => message.id));
+          restoredMessageIdsRef.current = new Set(
+            savedMessages.map((message) => message.id),
+          );
 
           // Rebuild chat history for AI context
           const history: ChatMessage[] = savedMessages
@@ -1375,7 +1406,8 @@ export default function StudySessionScreen() {
       messages.length === 0 &&
       !loadingEntry &&
       !loadingMessages &&
-      !hasTriggeredAutoExplainRef.current
+      !hasTriggeredAutoExplainRef.current &&
+      !shouldOpenCanvasOnResumeRef.current
     ) {
       // Flag that we need to auto-explain once sendToFeynmanAI is ready
       shouldAutoExplainRef.current = true;
@@ -1762,8 +1794,19 @@ export default function StudySessionScreen() {
       writeQuestionToCanvas(questionText);
     }
 
-    setTutorCollapsed(false);
     setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
+    if (
+      shouldOpenCanvasOnResumeRef.current ||
+      restoredMessageIdsRef.current.has(latestUnansweredTutorQuestionMessage.id)
+    ) {
+      shouldOpenCanvasOnResumeRef.current = false;
+      setMemorizationSecondsRemaining(null);
+      setTutorCollapsed(true);
+      setStudyPhase("answer");
+      return;
+    }
+
+    setTutorCollapsed(false);
     setMemorizationSecondsRemaining(MEMORIZATION_SECONDS);
     setStudyPhase(
       latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
@@ -3059,7 +3102,8 @@ export default function StudySessionScreen() {
       !loadingMessages &&
       !loadingEntry &&
       studyTitle &&
-      messages.length === 0
+      messages.length === 0 &&
+      !shouldOpenCanvasOnResumeRef.current
     ) {
       hasTriggeredAutoExplainRef.current = true;
       shouldAutoExplainRef.current = false;
