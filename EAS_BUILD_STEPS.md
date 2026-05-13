@@ -46,7 +46,7 @@ Notes: keep `developmentClient: false` so the JS is bundled; adjust `enterpriseP
 - Store-ready:  
   - Android: `eas build --platform android --profile production`  
   - iOS: `eas build --platform ios --profile production`
-- Local build (optional): add `--local` if you want to build on your machine.
+- Local iOS production build: run `npm run build:ios:local:production`. This loads `.env.local` before calling EAS so the release IPA contains the required public Supabase configuration.
 
 ## Install or submit
 - Download the artifact from the EAS dashboard; install the APK on Android or distribute the IPA via TestFlight/ad-hoc.

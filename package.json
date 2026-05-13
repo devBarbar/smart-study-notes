@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "build:ios:local:production": "bash ./scripts/eas-local-ios-production.sh",
     "deploy-functions": "npx supabase functions deploy extract-pdf-text embed-texts generate-lecture-metadata generate-study-plan feynman-chat evaluate-answer transcribe-audio enqueue-job process-job stream-tts ai-settings generate-practice-exam",
     "maestro:test:ios": "maestro test .maestro/ai-settings-ios.yaml",
     "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\"}' node --require ts-node/register --test tests/*.test.ts"
