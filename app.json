@@ -46,16 +46,14 @@
           }
         }
       ],
+      "expo-font",
+      "expo-image",
       "expo-secure-store",
       "expo-apple-authentication",
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "expo-web-browser"
     ],
-    "splash": {
-      "image": "./assets/splashscreen.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#0f172a"
-    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
