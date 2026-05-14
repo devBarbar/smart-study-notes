@@ -19,6 +19,8 @@ if (shouldValidatePublicEnv) {
 
 module.exports = ({ config }) => {
   const plugins = [...(config.plugins ?? [])];
+  const runtimeVersion =
+    process.env.EXPO_UPDATES_FINGERPRINT_OVERRIDE ?? config.runtimeVersion;
 
   if (sentryOrg && sentryProject) {
     plugins.push([
@@ -33,6 +35,7 @@ module.exports = ({ config }) => {
 
   return {
     ...config,
+    runtimeVersion,
     plugins,
   };
 };
