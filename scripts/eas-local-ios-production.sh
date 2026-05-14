@@ -28,6 +28,8 @@ output_path="${1:-./dist/smart-learning-notes-production.ipa}"
 mkdir -p "$(dirname "$output_path")"
 
 export SENTRY_DISABLE_AUTO_UPLOAD="${SENTRY_DISABLE_AUTO_UPLOAD:-true}"
+export SENTRY_ORG="${SENTRY_ORG:-devbarbar}"
+export SENTRY_PROJECT="${SENTRY_PROJECT:-smart-learning-notes}"
 export EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP="${EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP:-1}"
 
 npx eas-cli@latest build \
