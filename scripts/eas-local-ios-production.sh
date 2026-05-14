@@ -32,6 +32,17 @@ export SENTRY_ORG="${SENTRY_ORG:-devbarbar}"
 export SENTRY_PROJECT="${SENTRY_PROJECT:-smart-learning-notes}"
 export EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP="${EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP:-1}"
 
+if [[ -z "${EXPO_UPDATES_FINGERPRINT_OVERRIDE:-}" ]]; then
+  resolved_runtime="$(
+    npx expo-updates runtimeversion:resolve --platform ios --workflow managed |
+      node -e "let input = ''; process.stdin.on('data', chunk => input += chunk); process.stdin.on('end', () => { const parsed = JSON.parse(input); if (parsed.runtimeVersion) console.log(parsed.runtimeVersion); });"
+  )"
+
+  if [[ -n "$resolved_runtime" ]]; then
+    export EXPO_UPDATES_FINGERPRINT_OVERRIDE="$resolved_runtime"
+  fi
+fi
+
 npx eas-cli@latest build \
   --platform ios \
   --profile production \
