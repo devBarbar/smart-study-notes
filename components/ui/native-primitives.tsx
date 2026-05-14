@@ -1,14 +1,22 @@
-import { PropsWithChildren } from 'react';
 import {
-  Pressable,
-  TextInput as RNTextInput,
+  Button as ExpoButton,
+  Host,
+  TextInput as ExpoTextInput,
+  useNativeState,
+} from '@expo/ui';
+import {
+  GlassContainer,
+  GlassView,
+  isGlassEffectAPIAvailable,
+  isLiquidGlassAvailable,
+} from 'expo-glass-effect';
+import { PropsWithChildren, useEffect } from 'react';
+import {
+  Platform,
   StyleSheet,
-  Text,
   View,
   type ColorValue,
   type KeyboardTypeOptions,
-  type NativeSyntheticEvent,
-  type TextInputSubmitEditingEventData,
   type ReturnKeyTypeOptions,
   type StyleProp,
   type TextStyle,
@@ -36,7 +44,7 @@ type NativeTextInputProps = {
   returnKeyType?: ReturnKeyTypeOptions;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   autoCorrect?: boolean;
-  autoComplete?: React.ComponentProps<typeof RNTextInput>['autoComplete'];
+  autoComplete?: React.ComponentProps<typeof ExpoTextInput>['autoComplete'];
   placeholderTextColor?: ColorValue;
   testID?: string;
   style?: StyleProp<ViewStyle | TextStyle>;
@@ -50,26 +58,49 @@ type LiquidGlassSurfaceProps = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
   spacing?: number;
   tintColor?: string;
-  glassEffectStyle?: 'clear' | 'regular';
+  glassEffectStyle?: React.ComponentProps<typeof GlassView>['glassEffectStyle'];
   isInteractive?: boolean;
   testID?: string;
 }>;
 
-export const isLiquidGlassSupported = () => false;
+export const isLiquidGlassSupported = () => {
+  if (Platform.OS !== 'ios') return false;
+
+  try {
+    return isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+  } catch {
+    return false;
+  }
+};
 
 export function LiquidGlassSurface({
   children,
   style,
-  spacing: _spacing = 12,
-  tintColor: _tintColor,
-  glassEffectStyle: _glassEffectStyle = 'regular',
-  isInteractive: _isInteractive = false,
+  spacing = 12,
+  tintColor,
+  glassEffectStyle = 'regular',
+  isInteractive = false,
   testID,
 }: LiquidGlassSurfaceProps) {
+  if (!isLiquidGlassSupported()) {
+    return (
+      <View style={style} testID={testID}>
+        {children}
+      </View>
+    );
+  }
+
   return (
-    <View style={style} testID={testID}>
-      {children}
-    </View>
+    <GlassContainer spacing={spacing} style={styles.glassContainer} testID={testID}>
+      <GlassView
+        glassEffectStyle={glassEffectStyle}
+        tintColor={tintColor}
+        isInteractive={isInteractive}
+        style={style}
+      >
+        {children}
+      </GlassView>
+    </GlassContainer>
   );
 }
 
@@ -80,34 +111,19 @@ export function NativeButton({
   testID,
   variant = 'filled',
   style,
-  textStyle,
+  textStyle: _textStyle,
 }: NativeButtonProps) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
-      testID={testID}
-      style={({ pressed }) => [
-        styles.button,
-        variant === 'outlined' && styles.outlinedButton,
-        variant === 'text' && styles.textButton,
-        style as StyleProp<ViewStyle>,
-        (pressed || disabled) && styles.buttonPressedOrDisabled,
-      ]}
-    >
-      <Text
-        style={[
-          styles.buttonText,
-          variant === 'outlined' && styles.outlinedButtonText,
-          variant === 'text' && styles.textButtonText,
-          textStyle,
-        ]}
-      >
-        {label}
-      </Text>
-    </Pressable>
+    <Host matchContents={{ vertical: true }} style={style as StyleProp<ViewStyle>}>
+      <ExpoButton
+        label={label}
+        onPress={onPress}
+        disabled={disabled}
+        testID={testID}
+        variant={variant}
+        style={StyleSheet.flatten(style) as React.ComponentProps<typeof ExpoButton>['style']}
+      />
+    </Host>
   );
 }
 
@@ -131,59 +147,44 @@ export function NativeTextInput({
   maxLength,
   onSubmitEditing,
 }: NativeTextInputProps) {
-  const handleSubmitEditing = (
-    event: NativeSyntheticEvent<TextInputSubmitEditingEventData>
-  ) => {
-    onSubmitEditing?.(event.nativeEvent.text);
-  };
+  const nativeValue = useNativeState(value);
+
+  useEffect(() => {
+    if (nativeValue.value !== value) {
+      nativeValue.value = value;
+    }
+  }, [nativeValue, value]);
 
   return (
-    <RNTextInput
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={placeholder}
-      editable={editable}
-      secureTextEntry={secureTextEntry}
-      multiline={multiline}
-      keyboardType={keyboardType}
-      returnKeyType={returnKeyType}
-      autoCapitalize={autoCapitalize}
-      autoCorrect={autoCorrect}
-      autoComplete={autoComplete}
-      placeholderTextColor={placeholderTextColor}
-      testID={testID}
-      style={[style as StyleProp<TextStyle>, textStyle]}
-      numberOfLines={numberOfLines}
-      maxLength={maxLength}
-      onSubmitEditing={handleSubmitEditing}
-    />
+    <Host matchContents={{ vertical: true }} style={style as StyleProp<ViewStyle>}>
+      <ExpoTextInput
+        value={nativeValue}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        editable={editable}
+        secureTextEntry={secureTextEntry}
+        multiline={multiline}
+        keyboardType={keyboardType}
+        returnKeyType={returnKeyType}
+        autoCapitalize={autoCapitalize}
+        autoCorrect={autoCorrect}
+        autoComplete={autoComplete}
+        placeholderTextColor={placeholderTextColor}
+        testID={testID}
+        style={StyleSheet.flatten(style) as React.ComponentProps<typeof ExpoTextInput>['style']}
+        textStyle={
+          StyleSheet.flatten(textStyle) as React.ComponentProps<typeof ExpoTextInput>['textStyle']
+        }
+        numberOfLines={numberOfLines}
+        maxLength={maxLength}
+        onSubmitEditing={onSubmitEditing}
+      />
+    </Host>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonPressedOrDisabled: {
-    opacity: 0.65,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  outlinedButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-  },
-  outlinedButtonText: {
-    color: '#0f172a',
-  },
-  textButton: {
-    backgroundColor: 'transparent',
-  },
-  textButtonText: {
-    color: '#0f172a',
+  glassContainer: {
+    width: '100%',
   },
 });
