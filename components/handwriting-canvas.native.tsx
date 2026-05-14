@@ -234,7 +234,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       const path = makePathFromPoints(stroke.points, false);
       activeStrokeRef.current = stroke;
       activeMutablePathRef.current = path;
-      activePath.value = path.copy();
+      activePath.value = path;
       setActiveStrokeStyle({ color: stroke.color, width: stroke.width });
     }, [activePath]);
 
@@ -243,8 +243,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         const current = activeStrokeRef.current;
         if (!current || !appendPoint(current.points, point)) return;
 
-        activeMutablePathRef.current.lineTo(point.x, point.y);
-        activePath.value = activeMutablePathRef.current.copy();
+        activePath.modify((path) => {
+          path.lineTo(point.x, point.y);
+          activeMutablePathRef.current = path;
+          return path;
+        }, true);
       },
       [activePath],
     );
