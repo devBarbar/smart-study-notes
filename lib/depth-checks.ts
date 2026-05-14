@@ -32,6 +32,8 @@ export const TUTOR_CHECK_DESCRIPTIONS: Record<TutorCheckType, string> = {
   teach_back: 'teach it clearly in simple words',
 };
 
+export type DepthProgressState = 'done' | 'open';
+
 const CHECK_TYPE_ALIASES: Record<string, TutorCheckType> = {
   recall: 'recall',
   definition: 'recall',
@@ -49,6 +51,82 @@ const CHECK_TYPE_ALIASES: Record<string, TutorCheckType> = {
   teach_back: 'teach_back',
   teachback: 'teach_back',
   feynman: 'teach_back',
+};
+
+const DEPTH_PROGRESS_LABEL_PATTERN = /^\s*(?:Depth progress|Tiefenfortschritt)\s*:\s*(.+?)\s*$/i;
+
+const CHECK_SEGMENT_PATTERNS: Record<TutorCheckType, RegExp> = {
+  recall: /\b(recall|definition|define|erinnern|wiedergeben)\b/i,
+  why: /\b(why|reasoning|mechanism|warum|begruendung|begründung|mechanismus)\b/i,
+  apply: /\b(apply|application|problem|anwenden|anwendung)\b/i,
+  transfer: /\b(transfer|edge|edge[-_\s]?case|uebertragen|übertragen)\b/i,
+  teach_back: /\b(teach[-_\s]?back|teachback|feynman|erklaeren|erklären)\b/i,
+};
+
+const parseDepthProgressState = (segment: string): DepthProgressState | null => {
+  if (/\b(done|passed|complete|completed|bestanden|fertig|erledigt)\b/i.test(segment)) {
+    return 'done';
+  }
+
+  if (/\b(open|pending|not started|not_started|offen|ausstehend)\b/i.test(segment)) {
+    return 'open';
+  }
+
+  return null;
+};
+
+export const parseDepthProgressLine = (
+  line: string,
+): Partial<Record<TutorCheckType, DepthProgressState>> | null => {
+  const match = line.match(DEPTH_PROGRESS_LABEL_PATTERN);
+  if (!match) return null;
+
+  const parsed: Partial<Record<TutorCheckType, DepthProgressState>> = {};
+
+  match[1]
+    .split('|')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .forEach((segment) => {
+      const checkType = REQUIRED_TUTOR_CHECK_TYPES.find((type) =>
+        CHECK_SEGMENT_PATTERNS[type].test(segment),
+      );
+      const state = parseDepthProgressState(segment);
+
+      if (checkType && state) {
+        parsed[checkType] = state;
+      }
+    });
+
+  return Object.keys(parsed).length > 0 ? parsed : null;
+};
+
+export const findDepthProgressInText = (
+  text: string,
+): Partial<Record<TutorCheckType, DepthProgressState>> | null => {
+  const lines = text.split('\n');
+
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const parsed = parseDepthProgressLine(lines[index]);
+    if (parsed) return parsed;
+  }
+
+  return null;
+};
+
+export const stripDepthProgressFromText = (text: string): string => {
+  let changed = false;
+  const filtered = text.split('\n').filter((line) => {
+    const isDepthProgressLine = Boolean(parseDepthProgressLine(line));
+    if (isDepthProgressLine) {
+      changed = true;
+    }
+    return !isDepthProgressLine;
+  });
+
+  if (!changed) return text;
+
+  return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 };
 
 export const normalizeTutorCheckType = (

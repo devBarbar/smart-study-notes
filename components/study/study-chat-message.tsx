@@ -6,6 +6,7 @@ import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { formatAIModelBadge } from "@/lib/ai-model-display";
+import { stripDepthProgressFromText } from "@/lib/depth-checks";
 import { CanvasAnswerMarker, StudyChatMessage, StudyCitation } from "@/types";
 
 type StudyChatMessageProps = {
@@ -51,7 +52,9 @@ export function StudyChatMessageItem({
       : [];
   const modelBadge =
     item.role === "ai" ? formatAIModelBadge(item.aiModel, item.aiPlatform) : null;
-  const hasTutorText = item.text.trim().length > 0;
+  const displayText =
+    item.role === "ai" ? stripDepthProgressFromText(item.text) : item.text;
+  const hasTutorText = displayText.trim().length > 0;
   const showThinkingProcess = item.role === "ai" && isStreaming;
   const reasoning = item.role === "ai" ? item.reasoning : undefined;
   const showReasoningBadge =
@@ -139,7 +142,7 @@ export function StudyChatMessageItem({
             onPress={() =>
               isActiveTtsMessage
                 ? onStopSpeaking()
-                : onReplay(item.text, item.id)
+                : onReplay(displayText, item.id)
             }
             style={styles.replayButton}
             accessibilityRole="button"
@@ -167,9 +170,9 @@ export function StudyChatMessageItem({
         />
       )}
       {item.role === "ai" && hasTutorText ? (
-        <MarkdownText content={item.text} />
+        <MarkdownText content={displayText} />
       ) : item.role !== "ai" ? (
-        <ThemedText style={{ color: "#e2e8f0" }}>{item.text}</ThemedText>
+        <ThemedText style={{ color: "#e2e8f0" }}>{displayText}</ThemedText>
       ) : null}
       {item.role === "ai" && showThinkingProcess && hasTutorText && (
         <View style={styles.streamingFooter}>

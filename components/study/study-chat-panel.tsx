@@ -1,13 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
-import { RefObject } from "react";
-import { ActivityIndicator, FlatList, View } from "react-native";
+import { RefObject, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  TextInput,
+  View,
+} from "react-native";
 
 import { StudyChatHeader } from "@/components/study/study-chat-header";
 import { StudyChatInputArea } from "@/components/study/study-chat-input-area";
 import { StudyChatList } from "@/components/study/study-chat-list";
 import { StudyChatToolbar } from "@/components/study/study-chat-toolbar";
+import {
+  StudyDepthProgress,
+  StudyDepthProgressItem,
+} from "@/components/study/study-depth-progress";
 import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
+import { Colors } from "@/constants/theme";
 import {
     CanvasAnswerMarker,
     StudyChatMessage,
@@ -18,6 +29,7 @@ import {
 
 type StudyChatPanelProps = {
   styles: StudyStyles;
+  palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
   studyPlanEntry: StudyPlanEntry | null;
   ttsEnabled: boolean;
@@ -35,6 +47,8 @@ type StudyChatPanelProps = {
   memorizationSecondsRemaining?: number | null;
   memorizationTotalSeconds?: number;
   finalQuizProgressLabel?: string | null;
+  diagnosticQuestion?: string | null;
+  depthProgressItems: StudyDepthProgressItem[];
   chatListRef: RefObject<FlatList<StudyChatMessage> | null>;
   getItemLayout: (
     data: any,
@@ -64,12 +78,15 @@ type StudyChatPanelProps = {
   onViewNotes: (answerLinkId: string) => void;
   onViewDiagram: (blockId: string) => void;
   onSubmitAnswer: () => void;
+  onSubmitDiagnosticAttempt: (text: string) => void;
+  onDiagnosticNoClue: () => void;
   answerDraft: string;
   onAnswerDraftChange: (text: string) => void;
 };
 
 export function StudyChatPanel({
   styles,
+  palette,
   t,
   studyPlanEntry,
   ttsEnabled,
@@ -87,6 +104,8 @@ export function StudyChatPanel({
   memorizationSecondsRemaining = null,
   memorizationTotalSeconds = 60,
   finalQuizProgressLabel = null,
+  diagnosticQuestion = null,
+  depthProgressItems,
   chatListRef,
   getItemLayout,
   onToggleTutor,
@@ -109,6 +128,8 @@ export function StudyChatPanel({
   onViewNotes,
   onViewDiagram,
   onSubmitAnswer,
+  onSubmitDiagnosticAttempt,
+  onDiagnosticNoClue,
   answerDraft,
   onAnswerDraftChange,
 }: StudyChatPanelProps) {
@@ -147,6 +168,14 @@ export function StudyChatPanel({
             : t("study.aiSubtitle")}
         </ThemedText>
       </View>
+      {studyPlanEntry && depthProgressItems.length > 0 && (
+        <StudyDepthProgress
+          styles={styles}
+          palette={palette}
+          t={t}
+          items={depthProgressItems}
+        />
+      )}
       {memorizationSecondsRemaining !== null && (
         <View style={styles.recallTimerBanner}>
           <View style={styles.recallTimerHeader}>
@@ -175,7 +204,7 @@ export function StudyChatPanel({
           </ThemedText>
         </View>
       )}
-      {!isMemorizing && (
+      {!isMemorizing && !diagnosticQuestion && (
         <StudyChatToolbar
           styles={styles}
           t={t}
@@ -191,6 +220,17 @@ export function StudyChatPanel({
       )}
 
       {grading && <GradingStatusCard styles={styles} t={t} />}
+
+      {diagnosticQuestion && (
+        <DiagnosticAttemptCard
+          styles={styles}
+          t={t}
+          question={diagnosticQuestion}
+          disabled={isChatting}
+          onSubmit={onSubmitDiagnosticAttempt}
+          onNoClue={onDiagnosticNoClue}
+        />
+      )}
 
       <StudyChatList
         styles={styles}
@@ -212,7 +252,7 @@ export function StudyChatPanel({
         onViewDiagram={onViewDiagram}
       />
 
-      {!isMemorizing && (
+      {!isMemorizing && !diagnosticQuestion && (
         <StudyChatInputArea
           styles={styles}
           t={t}
@@ -229,6 +269,96 @@ export function StudyChatPanel({
           onSendMessage={onSendQuickAction}
         />
       )}
+    </View>
+  );
+}
+
+function DiagnosticAttemptCard({
+  styles,
+  t,
+  question,
+  disabled,
+  onSubmit,
+  onNoClue,
+}: {
+  styles: StudyStyles;
+  t: (key: string, params?: Record<string, any>) => string;
+  question: string;
+  disabled: boolean;
+  onSubmit: (text: string) => void;
+  onNoClue: () => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const trimmedDraft = draft.trim();
+
+  const submit = () => {
+    if (!trimmedDraft || disabled) return;
+    setDraft("");
+    onSubmit(trimmedDraft);
+  };
+
+  const submitNoClue = () => {
+    if (disabled) return;
+    setDraft("");
+    onNoClue();
+  };
+
+  return (
+    <View style={styles.diagnosticAttemptCard}>
+      <View style={styles.diagnosticAttemptHeader}>
+        <View style={styles.diagnosticAttemptIcon}>
+          <Ionicons name="search-outline" size={16} color="#ffffff" />
+        </View>
+        <View style={styles.diagnosticAttemptCopy}>
+          <ThemedText style={styles.diagnosticAttemptTitle}>
+            {t("study.coldStartTitle")}
+          </ThemedText>
+          <ThemedText style={styles.diagnosticAttemptSubtitle}>
+            {t("study.coldStartSubtitle")}
+          </ThemedText>
+        </View>
+      </View>
+      <ThemedText style={styles.diagnosticAttemptQuestion}>
+        {question}
+      </ThemedText>
+      <TextInput
+        style={styles.diagnosticAttemptInput}
+        placeholder={t("study.coldStartPlaceholder")}
+        placeholderTextColor="#64748b"
+        value={draft}
+        onChangeText={setDraft}
+        editable={!disabled}
+        multiline
+      />
+      <View style={styles.diagnosticAttemptActions}>
+        <Pressable
+          style={[
+            styles.submitButton,
+            (!trimmedDraft || disabled) && styles.disabledButton,
+          ]}
+          onPress={submit}
+          disabled={!trimmedDraft || disabled}
+          accessibilityRole="button"
+          accessibilityLabel={t("study.coldStartSubmit")}
+        >
+          <Ionicons name="arrow-forward-circle" size={18} color="#fff" />
+          <ThemedText style={styles.primaryButtonText}>
+            {t("study.coldStartSubmit")}
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          style={[styles.noClueButton, disabled && styles.disabledButton]}
+          onPress={submitNoClue}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel={t("study.noClueYet")}
+        >
+          <Ionicons name="help-circle-outline" size={17} color="#0f766e" />
+          <ThemedText style={styles.noClueButtonText}>
+            {t("study.noClueYet")}
+          </ThemedText>
+        </Pressable>
+      </View>
     </View>
   );
 }

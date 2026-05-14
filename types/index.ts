@@ -383,7 +383,7 @@ export type TutorCheckType = 'recall' | 'why' | 'apply' | 'transfer' | 'teach_ba
 
 export type TutorQuestionDifficulty = 'basic' | 'exam' | 'edge_case';
 
-export type AssessmentKind = 'depth' | 'final_quiz';
+export type AssessmentKind = 'diagnostic' | 'depth' | 'final_quiz';
 
 export type StudyDepthCheck = {
   id?: string;

@@ -21,6 +21,10 @@ import {
   HandwritingCanvasHandle,
 } from "@/components/handwriting-canvas";
 import { StudyStyles } from "@/components/study/study-styles";
+import {
+  StudyDepthProgress,
+  StudyDepthProgressItem,
+} from "@/components/study/study-depth-progress";
 import { ThemedText } from "@/components/themed-text";
 import { Colors } from "@/constants/theme";
 import {
@@ -31,7 +35,6 @@ import {
   CanvasVisualBlock as CanvasVisualBlockType,
   StudyCitation,
   StudyPlanEntry,
-  TutorCheckType,
 } from "@/types";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -91,12 +94,7 @@ type StudyCanvasPanelProps = {
     sourceLabel: string;
   }[];
   onOpenCitation: (citation: StudyCitation) => void;
-  depthProgressItems: {
-    type: TutorCheckType;
-    label: string;
-    passed: boolean;
-    current: boolean;
-  }[];
+  depthProgressItems: StudyDepthProgressItem[];
 };
 
 export function StudyCanvasPanel({
@@ -236,42 +234,13 @@ export function StudyCanvasPanel({
           </View>
         )}
 
-        {!lockedAnswerMode && studyPlanEntry && depthProgressItems.length > 0 && (
-          <View style={styles.depthProgressContainer}>
-            <View style={styles.depthProgressHeader}>
-              <Ionicons name="layers-outline" size={14} color={palette.primary} />
-              <ThemedText style={styles.depthProgressTitle}>
-                {t("study.depthGateTitle")}
-              </ThemedText>
-            </View>
-            <View style={styles.depthProgressList}>
-              {depthProgressItems.map((item) => (
-                <View
-                  key={item.type}
-                  style={[
-                    styles.depthProgressPill,
-                    item.passed && styles.depthProgressPillPassed,
-                    item.current && styles.depthProgressPillCurrent,
-                  ]}
-                >
-                  <Ionicons
-                    name={item.passed ? "checkmark-circle" : item.current ? "radio-button-on" : "ellipse-outline"}
-                    size={13}
-                    color={item.passed ? palette.success : item.current ? palette.primary : palette.textMuted}
-                  />
-                  <ThemedText
-                    style={[
-                      styles.depthProgressPillText,
-                      item.passed && styles.depthProgressPillTextPassed,
-                      item.current && styles.depthProgressPillTextCurrent,
-                    ]}
-                  >
-                    {item.label}
-                  </ThemedText>
-                </View>
-              ))}
-            </View>
-          </View>
+        {studyPlanEntry && depthProgressItems.length > 0 && (
+          <StudyDepthProgress
+            styles={styles}
+            palette={palette}
+            t={t}
+            items={depthProgressItems}
+          />
         )}
 
         {!lockedAnswerMode && (

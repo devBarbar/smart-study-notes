@@ -6,8 +6,10 @@ import {
   buildDepthQuestion,
   canPassStudyPlanEntry,
   feedbackPassesDepthCheck,
+  findDepthProgressInText,
   getNextTutorCheckType,
   normalizeTutorCheckType,
+  stripDepthProgressFromText,
   REQUIRED_TUTOR_CHECK_TYPES,
 } from '../lib/depth-checks';
 import type { StudyDepthCheck, StudyPlanEntry } from '../types';
@@ -82,4 +84,32 @@ test('buildDepthQuestion targets the requested check type', () => {
 
   assert.match(buildDepthQuestion('transfer', entry), /new or edge-case/i);
   assert.match(buildDepthQuestion('teach_back', entry), /Teach "Limits"/);
+});
+
+test('findDepthProgressInText parses tutor progress lines', () => {
+  const parsed = findDepthProgressInText(
+    [
+      'Score: 0/100',
+      'Depth progress: Recall done | Why open | Apply open | Transfer open | Teach-back open',
+      'Source check:',
+    ].join('\n'),
+  );
+
+  assert.equal(parsed?.recall, 'done');
+  assert.equal(parsed?.why, 'open');
+  assert.equal(parsed?.teach_back, 'open');
+});
+
+test('stripDepthProgressFromText removes progress metadata from chat copy', () => {
+  const stripped = stripDepthProgressFromText(
+    [
+      'Score: 0/100',
+      '',
+      'Depth progress: Recall done | Why open | Apply open | Transfer open | Teach-back open',
+      '',
+      'Source check:',
+    ].join('\n'),
+  );
+
+  assert.equal(stripped, 'Score: 0/100\n\nSource check:');
 });

@@ -22,10 +22,13 @@ import {
   buildDepthCheckProgressLine,
   buildDepthQuestion,
   canPassStudyPlanEntry,
+  DepthProgressState,
   feedbackPassesDepthCheck,
+  findDepthProgressInText,
   getNextTutorCheckType,
   getPassedDepthCheckTypes,
   REQUIRED_TUTOR_CHECK_TYPES,
+  stripDepthProgressFromText,
   TUTOR_CHECK_DESCRIPTIONS,
   TUTOR_CHECK_LABELS,
   normalizeTutorCheckType,
@@ -108,6 +111,7 @@ import {
   StudyPlanEntry,
   StudyQuestion,
   StudySession,
+  TutorCheckType,
 } from "@/types";
 
 // Estimated height for chat messages for scrollToIndex
@@ -167,7 +171,13 @@ type CitationSourceMetadata = {
   sourceType: CitationSourceType;
 };
 
-type StudyPhase = "tutor" | "memorize" | "answer" | "grading" | "final_quiz";
+type StudyPhase =
+  | "diagnostic"
+  | "tutor"
+  | "memorize"
+  | "answer"
+  | "grading"
+  | "final_quiz";
 
 type FinalQuizAnswer = {
   questionId: string;
@@ -183,6 +193,11 @@ type FinalQuizState = {
   currentIndex: number;
   answers: FinalQuizAnswer[];
   averageScore?: number;
+};
+
+type FeynmanSendOptions = {
+  displayText?: string;
+  questionId?: string;
 };
 
 const stableStringify = (value: unknown): string => {
@@ -488,16 +503,6 @@ export default function StudySessionScreen() {
     [depthChecks],
   );
 
-  const depthProgressItems = useMemo(() => {
-    const passed = getPassedDepthCheckTypes(depthChecks);
-    return REQUIRED_TUTOR_CHECK_TYPES.map((type) => ({
-      type,
-      label: TUTOR_CHECK_LABELS[type],
-      passed: passed.has(type),
-      current: nextDepthCheckType === type,
-    }));
-  }, [depthChecks, nextDepthCheckType]);
-
   // Build comprehensive material context for the AI
   // This includes FULL extracted text from all PDFs for accurate tutoring
   const fullMaterialContext = useMemo(() => {
@@ -584,6 +589,9 @@ export default function StudySessionScreen() {
     null,
   );
   const [messages, setMessages] = useState<StudyChatMessage[]>([]);
+  const [responseDepthProgress, setResponseDepthProgress] = useState<Partial<
+    Record<TutorCheckType, DepthProgressState>
+  > | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [answerText, setAnswerText] = useState("");
   const [answerDraft, setAnswerDraft] = useState("");
@@ -674,6 +682,53 @@ export default function StudySessionScreen() {
   const finalQuizStartedRef = useRef(false);
   const finalQuizPassedRef = useRef(false);
 
+  const latestDepthProgressFromMessages = useMemo(() => {
+    if (responseDepthProgress) return responseDepthProgress;
+
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (message.role !== "ai") continue;
+      const parsed = findDepthProgressInText(message.text);
+      if (parsed) return parsed;
+    }
+
+    return null;
+  }, [messages, responseDepthProgress]);
+
+  const depthProgressItems = useMemo(() => {
+    const passed = getPassedDepthCheckTypes(depthChecks);
+    const passedTypes = new Set<TutorCheckType>(passed);
+
+    if (latestDepthProgressFromMessages) {
+      REQUIRED_TUTOR_CHECK_TYPES.forEach((type) => {
+        if (latestDepthProgressFromMessages[type] === "done") {
+          passedTypes.add(type);
+        }
+      });
+    }
+
+    const currentType =
+      REQUIRED_TUTOR_CHECK_TYPES.find((type) => !passedTypes.has(type)) ?? null;
+
+    return REQUIRED_TUTOR_CHECK_TYPES.map((type) => {
+      const checksForType = depthChecks.filter(
+        (check) => normalizeTutorCheckType(check.checkType) === type,
+      );
+      const scores = checksForType
+        .map((check) => check.score)
+        .filter((score): score is number => typeof score === "number");
+
+      return {
+        type,
+        label: TUTOR_CHECK_LABELS[type],
+        passed: passedTypes.has(type),
+        current: currentType === type,
+        attempts: checksForType.length,
+        bestScore: scores.length > 0 ? Math.max(...scores) : undefined,
+      };
+    });
+  }, [depthChecks, latestDepthProgressFromMessages]);
+
   // Flashcard added notification state
   const [flashcardAdded, setFlashcardAdded] = useState(false);
   const [lecturePassedToast, setLecturePassedToast] = useState(false);
@@ -710,6 +765,10 @@ export default function StudySessionScreen() {
   useEffect(() => {
     messageIdsRef.current = new Set(messages.map((message) => message.id));
   }, [messages]);
+
+  useEffect(() => {
+    setResponseDepthProgress(null);
+  }, [sessionId, studyPlanEntryId]);
 
   useEffect(() => {
     const nextKeys = new Set(insertedVisualBlockKeysRef.current);
@@ -1777,6 +1836,17 @@ export default function StudySessionScreen() {
       });
   }, [answeredQuestionIds, messages]);
 
+  const latestDiagnosticQuestionMessage = useMemo(() => {
+    if (
+      latestUnansweredTutorQuestionMessage?.tutorQuestion?.assessmentKind !==
+      "diagnostic"
+    ) {
+      return null;
+    }
+
+    return latestUnansweredTutorQuestionMessage;
+  }, [latestUnansweredTutorQuestionMessage]);
+
   useEffect(() => {
     if (
       loadingMessages ||
@@ -1786,6 +1856,17 @@ export default function StudySessionScreen() {
       !latestUnansweredTutorQuestionMessage ||
       latestUnansweredTutorQuestionMessage.id === memorizationMessageId
     ) {
+      return;
+    }
+
+    if (
+      latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
+      "diagnostic"
+    ) {
+      setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
+      setMemorizationSecondsRemaining(null);
+      setTutorCollapsed(false);
+      setStudyPhase("diagnostic");
       return;
     }
 
@@ -1954,6 +2035,7 @@ export default function StudySessionScreen() {
       userMessage: string,
       transcriptionCostUsd?: number,
       retrievalQuery?: string,
+      options: FeynmanSendOptions = {},
     ) => {
       if (!userMessage.trim()) return;
 
@@ -1961,13 +2043,15 @@ export default function StudySessionScreen() {
       const transcriptionCostSuffix = transcriptionCostUsd
         ? ` _${t("cost.label", { value: transcriptionCostUsd.toFixed(4) })}_`
         : "";
+      const visibleUserText = options.displayText ?? userMessage;
 
       const userMsgId = uuid();
       pushMessage(
         {
           id: userMsgId,
           role: "user",
-          text: userMessage + transcriptionCostSuffix,
+          text: visibleUserText + transcriptionCostSuffix,
+          questionId: options.questionId,
         },
         false,
       );
@@ -2025,8 +2109,16 @@ export default function StudySessionScreen() {
           {
             onChunk: (partialText) => {
               const learningParsed = parseLearningResponse(partialText);
+              const parsedDepthProgress = findDepthProgressInText(
+                learningParsed.text,
+              );
+              if (parsedDepthProgress) {
+                setResponseDepthProgress(parsedDepthProgress);
+              }
               const parsed = parseAIResponse(learningParsed.text);
-              const visibleTutorText = collapseRepeatedTutorText(parsed.text);
+              const visibleTutorText = stripDepthProgressFromText(
+                collapseRepeatedTutorText(parsed.text),
+              );
               // Update the AI message with the partial text
               updateMessage(aiMsgId, {
                 text: visibleTutorText,
@@ -2043,8 +2135,16 @@ export default function StudySessionScreen() {
               completedAiMessageIdsRef.current.add(aiMsgId);
 
               const learningParsed = parseLearningResponse(result.message);
+              const parsedDepthProgress = findDepthProgressInText(
+                learningParsed.text,
+              );
+              if (parsedDepthProgress) {
+                setResponseDepthProgress(parsedDepthProgress);
+              }
               const parsed = parseAIResponse(learningParsed.text);
-              const visibleTutorText = collapseRepeatedTutorText(parsed.text);
+              const visibleTutorText = stripDepthProgressFromText(
+                collapseRepeatedTutorText(parsed.text),
+              );
 
               // Add cost footer if available
               const costSuffix = result.costUsd
@@ -2144,11 +2244,14 @@ export default function StudySessionScreen() {
         // Add AI response to chat history (without cost suffix)
         const historyLearningParsed = parseLearningResponse(chatResult.message);
         const historyParsed = parseAIResponse(historyLearningParsed.text);
+        const historyText = stripDepthProgressFromText(
+          collapseRepeatedTutorText(historyParsed.text),
+        );
         setChatHistory((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: collapseRepeatedTutorText(historyParsed.text),
+            content: historyText,
           },
         ]);
       } catch (error) {
@@ -2458,6 +2561,121 @@ export default function StudySessionScreen() {
     studyPlanEntry,
     t,
   ]);
+
+  const buildDiagnosticQuestion = useCallback(() => {
+    const topic = studyPlanEntry?.title || studyTitle;
+    const conceptHint = studyPlanEntry?.keyConcepts?.length
+      ? t("study.coldStartConceptHint", {
+          concepts: studyPlanEntry.keyConcepts.slice(0, 4).join(", "),
+        })
+      : "";
+
+    return t("study.coldStartQuestion", {
+      topic,
+      conceptHint,
+    });
+  }, [studyPlanEntry, studyTitle, t]);
+
+  const startColdStartAttempt = useCallback(() => {
+    const question = buildDiagnosticQuestion();
+    const questionId = `diagnostic-${uuid()}`;
+    const diagnosticQuestion: StudyQuestion = {
+      id: questionId,
+      prompt: question,
+      targetConcepts: studyPlanEntry?.keyConcepts,
+      expectedAnswerPoints: [
+        "A low-stakes first guess, prior knowledge, confusion, or an explicit no-clue response.",
+      ],
+      checkType: "recall",
+      requiredForPass: false,
+      difficulty: "basic",
+      assessmentKind: "diagnostic",
+    };
+
+    setQuestions((prev) => [diagnosticQuestion, ...prev]);
+    setCurrentQuestion(diagnosticQuestion);
+    setStudyPhase("diagnostic");
+    setMemorizationSecondsRemaining(null);
+    setTutorCollapsed(false);
+
+    pushMessage({
+      id: uuid(),
+      role: "ai",
+      text: t("study.coldStartIntro", { question }),
+      questionId,
+      tutorQuestion: {
+        question,
+        targetConcepts: diagnosticQuestion.targetConcepts,
+        expectedAnswerPoints: diagnosticQuestion.expectedAnswerPoints,
+        checkType: "recall",
+        requiredForPass: false,
+        difficulty: "basic",
+        assessmentKind: "diagnostic",
+      },
+    });
+  }, [buildDiagnosticQuestion, pushMessage, studyPlanEntry?.keyConcepts, t]);
+
+  const submitDiagnosticAttempt = useCallback(
+    (attemptText: string, noClue = false) => {
+      const diagnosticMessage = latestDiagnosticQuestionMessage;
+      const question =
+        diagnosticMessage?.tutorQuestion?.question || buildDiagnosticQuestion();
+      const questionId = diagnosticMessage?.questionId || diagnosticMessage?.id;
+      const topic = studyPlanEntry?.title || studyTitle;
+      const concepts = studyPlanEntry?.keyConcepts?.join(", ") || "the key ideas";
+      const displayText =
+        noClue || !attemptText.trim()
+          ? t("study.noClueYet")
+          : attemptText.trim();
+      const learnerAttempt = noClue
+        ? "The student selected 'No clue yet'. Treat this as useful diagnostic information, not as failure."
+        : `Student's first attempt:\n${attemptText.trim()}`;
+      const nextCheckInstruction = nextDepthCheckType
+        ? `After the explanation, ask exactly one hidden learning_question for checkType "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}).`
+        : "After the explanation, ask exactly one focused retention or exam-style review question.";
+      const visualInstruction =
+        "Include a useful visual diagram using the ```visual block format when it would clarify relationships, steps, or a process.";
+      const retrievalFocus = [
+        topic,
+        studyPlanEntry?.description,
+        studyPlanEntry?.keyConcepts?.join(", "),
+        question,
+        attemptText,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      const prompt = [
+        "The student is beginning with an attempt-first, explanation-second flow.",
+        `Topic: ${topic}`,
+        `Key concepts: ${concepts}`,
+        `Cold-start prompt: ${question}`,
+        learnerAttempt,
+        "Now give the explanation-second response. Do not grade the first attempt and do not assign a score. Use the attempt only to decide where to start.",
+        "If the student had no clue, start from the simplest prerequisite and make the first explanation beginner-friendly. If the attempt was partly right or wrong, explicitly connect the explanation to that gap without making the student feel punished.",
+        "Teach one small idea clearly, using the source material. Do not dump the whole topic.",
+        `${nextCheckInstruction} The check-in question should be answerable after this explanation and should not assume advanced prior knowledge.`,
+        visualInstruction,
+      ].join("\n\n");
+
+      setStudyPhase("tutor");
+      setCurrentQuestion(null);
+      setMemorizationSecondsRemaining(null);
+      sendToFeynmanAI(prompt, undefined, retrievalFocus || prompt, {
+        displayText,
+        questionId,
+      });
+    },
+    [
+      buildDiagnosticQuestion,
+      latestDiagnosticQuestionMessage,
+      nextDepthCheckType,
+      sendToFeynmanAI,
+      studyPlanEntry,
+      studyTitle,
+      t,
+    ],
+  );
 
   const submitAnswer = async () => {
     // Get question context - either from formal quiz or last AI message
@@ -3005,9 +3223,6 @@ export default function StudySessionScreen() {
       const costText = feedback.costUsd
         ? `\n\n_${t("cost.label", { value: feedback.costUsd.toFixed(4) })}_`
         : "";
-      const depthProgressText = studyPlanEntryId
-        ? `\n\n${t("study.depthProgress")}: ${buildDepthCheckProgressLine(latestDepthChecks)}`
-        : "";
       const finalQuizText =
         isFinalQuizAnswer && finalQuizComplete && finalQuizAverage !== undefined
           ? `\n\n${
@@ -3022,7 +3237,7 @@ export default function StudySessionScreen() {
               })}`
             : "";
 
-      const feedbackText = `${correctnessText}\n\n${feedback.summary}${whatWentWrongText}${correctAnswerText}${rewriteExampleText}${improvementsText}${scoreText}${depthProgressText}${finalQuizText}${sourceNotesText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
+      const feedbackText = `${correctnessText}\n\n${feedback.summary}${whatWentWrongText}${correctAnswerText}${rewriteExampleText}${improvementsText}${scoreText}${finalQuizText}${sourceNotesText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
 
       pushMessage({
         id: uuid(),
@@ -3122,7 +3337,7 @@ export default function StudySessionScreen() {
     sendToFeynmanAI(topicFocus, undefined, retrievalFocus || topicFocus);
   }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyPlanEntry]);
 
-  // Auto-trigger explanation when starting a new session
+  // Auto-trigger a low-stakes first attempt when starting a new session
   useEffect(() => {
     if (
       shouldAutoExplainRef.current &&
@@ -3135,10 +3350,15 @@ export default function StudySessionScreen() {
     ) {
       hasTriggeredAutoExplainRef.current = true;
       shouldAutoExplainRef.current = false;
-      // Trigger the explanation automatically
-      requestExplanation();
+      startColdStartAttempt();
     }
-  }, [loadingMessages, loadingEntry, studyTitle, messages.length, requestExplanation]);
+  }, [
+    loadingMessages,
+    loadingEntry,
+    studyTitle,
+    messages.length,
+    startColdStartAttempt,
+  ]);
 
   // Scroll chat to specific question message (called from canvas markers)
   const scrollToQuestionMessage = useCallback(
@@ -3478,6 +3698,7 @@ export default function StudySessionScreen() {
       ) : (
         <StudyChatPanel
           styles={styles}
+          palette={palette}
           t={t}
           studyPlanEntry={studyPlanEntry}
           ttsEnabled={ttsEnabled}
@@ -3495,6 +3716,12 @@ export default function StudySessionScreen() {
           memorizationSecondsRemaining={memorizationSecondsRemaining}
           memorizationTotalSeconds={MEMORIZATION_SECONDS}
           finalQuizProgressLabel={finalQuizProgressLabel}
+          depthProgressItems={depthProgressItems}
+          diagnosticQuestion={
+            studyPhase === "diagnostic"
+              ? latestDiagnosticQuestionMessage?.tutorQuestion?.question ?? null
+              : null
+          }
           chatListRef={chatListRef}
           getItemLayout={getItemLayout}
           onToggleTutor={toggleTutor}
@@ -3517,6 +3744,10 @@ export default function StudySessionScreen() {
           onViewNotes={scrollToCanvasAnswer}
           onViewDiagram={handleViewDiagram}
           onSubmitAnswer={submitAnswer}
+          onSubmitDiagnosticAttempt={(text) =>
+            submitDiagnosticAttempt(text, false)
+          }
+          onDiagnosticNoClue={() => submitDiagnosticAttempt("", true)}
           answerDraft={answerDraft}
           onAnswerDraftChange={setAnswerDraft}
         />
