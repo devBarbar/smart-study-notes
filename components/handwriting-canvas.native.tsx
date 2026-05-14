@@ -19,7 +19,6 @@ import React, {
 } from "react";
 import { StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { useSharedValue } from "react-native-reanimated";
 
 import {
   appendPoint,
@@ -161,7 +160,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const strokesRef = useRef<RenderStroke[]>(initialRenderStrokes);
     const activeStrokeRef = useRef<CanvasStroke | null>(null);
     const activeMutablePathRef = useRef<SkPath>(makeEmptyPath());
-    const activePath = useSharedValue<SkPath>(makeEmptyPath());
     const lineCount = Math.floor(height / 28);
     const lineWidth = width ?? 4096;
     const isStylusActiveRef = useRef(false);
@@ -198,10 +196,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         commitRenderStrokes(normalized);
         activeStrokeRef.current = null;
         activeMutablePathRef.current = makeEmptyPath();
-        activePath.value = makeEmptyPath();
         setActiveStrokeStyle(null);
       },
-      [activePath, commitRenderStrokes, renderStroke],
+      [commitRenderStrokes, renderStroke],
     );
 
     useEffect(() => {
@@ -234,22 +231,19 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       const path = makePathFromPoints(stroke.points, false);
       activeStrokeRef.current = stroke;
       activeMutablePathRef.current = path;
-      activePath.value = path;
       setActiveStrokeStyle({ color: stroke.color, width: stroke.width });
-    }, [activePath]);
+      skiaCanvasRef.current?.redraw();
+    }, [skiaCanvasRef]);
 
     const appendPointToCurrentStroke = useCallback(
       (point: CanvasPoint) => {
         const current = activeStrokeRef.current;
         if (!current || !appendPoint(current.points, point)) return;
 
-        activePath.modify((path) => {
-          path.lineTo(point.x, point.y);
-          activeMutablePathRef.current = path;
-          return path;
-        }, true);
+        activeMutablePathRef.current.lineTo(point.x, point.y);
+        skiaCanvasRef.current?.redraw();
       },
-      [activePath],
+      [skiaCanvasRef],
     );
 
     const notifyDrawingEnd = useCallback(() => {
@@ -265,11 +259,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       }
 
       activeMutablePathRef.current = makeEmptyPath();
-      activePath.value = makeEmptyPath();
       setActiveStrokeStyle(null);
       onDrawingEndRef.current?.(lastDrawingPositionRef.current || undefined);
       onStrokesChangeRef.current?.(serializeStrokes(strokesRef.current));
-    }, [activePath, commitRenderStrokes, renderStroke]);
+    }, [commitRenderStrokes, renderStroke]);
 
     const hoverGesture = Gesture.Hover()
       .onBegin(() => {
@@ -395,7 +388,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         ))}
         {activeStrokeStyle && (
           <Path
-            path={activePath}
+            path={activeMutablePathRef.current}
             color={activeStrokeStyle.color}
             style="stroke"
             strokeWidth={activeStrokeStyle.width}
