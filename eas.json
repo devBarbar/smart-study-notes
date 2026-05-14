@@ -7,14 +7,17 @@
     "development": {
       "developmentClient": true,
       "channel": "development",
+      "environment": "development",
       "distribution": "internal"
     },
     "preview": {
       "channel": "preview",
+      "environment": "preview",
       "distribution": "internal"
     },
     "production": {
       "channel": "production",
+      "environment": "production",
       "autoIncrement": true,
 
       "android": {

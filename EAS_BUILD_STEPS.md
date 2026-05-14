@@ -10,14 +10,12 @@ Use these steps to produce EAS builds that include the JS bundle, so the app run
 
 ## One-time project setup
 1) Link the project: `eas init` (creates `eas.json` and registers the app)
-2) Add build-time env vars (used in `lib/openai.ts` and `lib/supabase.ts`):
+2) Add EAS environment variables for production builds and updates:
    - `EXPO_PUBLIC_SUPABASE_URL`
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-   - `EXPO_PUBLIC_OPENAI_API_KEY`
-   - `EXPO_PUBLIC_OPENAI_MODEL` (optional, defaults to `gpt-5.5`)
-   - `EXPO_PUBLIC_OPENAI_REASONING_EFFORT` (optional, defaults to `high`)
-   Example: `eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value <url>`
-3) Create/update `eas.json` with non-dev profiles (ensures the bundle is embedded):
+   Example: `eas env:create --environment production --visibility plaintext --name EXPO_PUBLIC_SUPABASE_URL --value <url>`
+   Use plaintext or sensitive visibility for `EXPO_PUBLIC_` values needed by app JavaScript. Secret visibility is not readable when bundling updates.
+3) Create/update `eas.json` with non-dev profiles (ensures the bundle is embedded and the matching EAS environment is used):
 ```json
 {
   "cli": { "version": ">= 14.0.0" },
@@ -30,6 +28,7 @@ Use these steps to produce EAS builds that include the JS bundle, so the app run
     },
     "production": {
       "channel": "production",
+      "environment": "production",
       "developmentClient": false,
       "autoIncrement": true
     }
@@ -54,5 +53,17 @@ Notes: keep `developmentClient: false` so the JS is bundled; adjust `enterpriseP
   - Android: `eas submit --platform android --profile production --latest`  
   - iOS: `eas submit --platform ios --profile production --latest`
 
-## OTA updates (optional)
-Once a production/preview build is installed, you can push JS-only changes without rebuilding native binaries: `eas update --branch production --message "Your message"`.
+## OTA updates
+Once a production/preview build is installed, push JS-only changes with the production EAS environment:
+
+```bash
+npm run update:production -- "Your message"
+```
+
+This wraps:
+
+```bash
+eas update --branch production --environment production --message "Your message"
+```
+
+Do not use OTA updates for native changes such as Expo SDK upgrades, added/removed native packages, config plugin changes, or `app.json` native configuration changes. Those require a new build and TestFlight/App Store submission. The app uses Expo Updates' `fingerprint` runtime policy so updates only reach binaries with a matching native runtime.

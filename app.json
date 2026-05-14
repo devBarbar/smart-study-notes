@@ -31,7 +31,7 @@
       "url": "https://u.expo.dev/d9b5b274-84a4-402b-becb-75c646cb6363"
     },
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "plugins": [
       "expo-router",

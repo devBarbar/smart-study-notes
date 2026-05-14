@@ -1,15 +1,18 @@
 const sentryOrg = process.env.SENTRY_ORG;
 const sentryProject = process.env.SENTRY_PROJECT;
 const isEasBuild = process.env.EAS_BUILD === 'true' || Boolean(process.env.EAS_BUILD_PROFILE);
+const shouldValidatePublicEnv =
+  isEasBuild || process.env.REQUIRE_EXPO_PUBLIC_ENV === 'true';
 const requiredBuildEnv = ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY'];
 
-if (isEasBuild) {
+if (shouldValidatePublicEnv) {
   const missing = requiredBuildEnv.filter((name) => !process.env[name]);
 
   if (missing.length > 0) {
     throw new Error(
-      `Missing required EAS build environment variables: ${missing.join(', ')}. ` +
-        'Load .env.local for local builds or configure them in EAS before creating a release.'
+      `Missing required Expo public environment variables: ${missing.join(', ')}. ` +
+        'Load .env.local for local builds, or configure them in the selected EAS environment ' +
+        'and run updates with --environment.'
     );
   }
 }
