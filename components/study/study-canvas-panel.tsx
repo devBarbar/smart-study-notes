@@ -299,6 +299,7 @@ export function StudyCanvasPanel({
                         height={20}
                         initialStrokes={page.titleStrokes}
                         mode="pen"
+                        readOnly
                       />
                     </View>
                   ) : (

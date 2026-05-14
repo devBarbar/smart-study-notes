@@ -51,6 +51,7 @@ type Props = {
   onDrawingEnd?: (lastPosition?: { x: number; y: number }) => void;
   onStrokesChange?: (strokes: CanvasStroke[]) => void;
   initialStrokes?: CanvasStroke[];
+  readOnly?: boolean;
 };
 
 const MIN_POINT_DISTANCE = 1.25;
@@ -176,6 +177,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       onDrawingEnd,
       onStrokesChange,
       initialStrokes,
+      readOnly = false,
     },
     ref,
   ) => {
@@ -513,13 +515,15 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         >
           <View
             style={styles.canvas}
-            {...({
-              onPointerDown: beginWebDrawing,
-              onPointerMove: moveWebDrawing,
-              onPointerUp: endWebDrawing,
-              onPointerCancel: endWebDrawing,
-              onPointerLeave: endWebDrawing,
-            } as Record<string, unknown>)}
+            {...(readOnly
+              ? {}
+              : ({
+                  onPointerDown: beginWebDrawing,
+                  onPointerMove: moveWebDrawing,
+                  onPointerUp: endWebDrawing,
+                  onPointerCancel: endWebDrawing,
+                  onPointerLeave: endWebDrawing,
+                } as Record<string, unknown>))}
           >
             {canvasContent}
           </View>
@@ -533,9 +537,13 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         options={{ format: "png", quality: 0.9 }}
         style={[styles.container, sizeStyle]}
       >
-        <GestureDetector gesture={combinedGesture}>
-          <Animated.View style={styles.canvas}>{canvasContent}</Animated.View>
-        </GestureDetector>
+        {readOnly ? (
+          <View style={styles.canvas}>{canvasContent}</View>
+        ) : (
+          <GestureDetector gesture={combinedGesture}>
+            <Animated.View style={styles.canvas}>{canvasContent}</Animated.View>
+          </GestureDetector>
+        )}
       </ViewShot>
     );
   },

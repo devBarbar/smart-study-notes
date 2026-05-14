@@ -20,6 +20,7 @@
     "@expo/ui": "^56.0.7",
     "@expo/vector-icons": "^15.1.1",
     "@sentry/react-native": "~7.11.0",
+    "@shopify/react-native-skia": "^2.6.2",
     "@supabase/supabase-js": "^2.105.4",
     "@tanstack/react-query": "^5.100.9",
     "@types/dagre": "^0.7.54",
