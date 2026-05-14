@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -64,15 +64,16 @@ function RootLayout() {
   const colorScheme = useColorScheme();
   const queryClient = useMemo(() => new QueryClient(), []);
   const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const RootView = Platform.OS === 'web' ? View : GestureHandlerRootView;
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <LanguageProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.background }}>
+            <RootView style={{ flex: 1, backgroundColor: palette.background }}>
               <RootLayoutNav />
-            </GestureHandlerRootView>
+            </RootView>
             <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           </ThemeProvider>
         </LanguageProvider>

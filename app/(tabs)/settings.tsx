@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { NativeButton, NativeTextInput } from '@/components/ui/native-primitives';
 import { useAuth } from '@/contexts/auth-context';
 import { availableLanguages, useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -290,17 +291,16 @@ export default function SettingsScreen() {
         <ThemedText type="defaultSemiBold" style={[styles.subheading, { color: settingsColors.text }]}>
           {t('settings.providerKeys')}
         </ThemedText>
-        <TextInput
+        <NativeTextInput
           testID="ai-key-openai-input"
-          accessibilityLabel={t('settings.openAIKeyPlaceholder')}
           style={[
             styles.input,
             {
-              color: settingsColors.text,
               backgroundColor: settingsColors.controlBackground,
               borderColor: settingsColors.controlBorder,
             },
           ]}
+          textStyle={{ color: settingsColors.text }}
           placeholder={
             aiSettings?.providerKeys.openai.configured
               ? t('settings.apiKeySaved', { last4: aiSettings.providerKeys.openai.last4 ?? '****' })
@@ -313,17 +313,16 @@ export default function SettingsScreen() {
           autoCorrect={false}
           secureTextEntry
         />
-        <TextInput
+        <NativeTextInput
           testID="ai-key-openrouter-input"
-          accessibilityLabel={t('settings.openRouterKeyPlaceholder')}
           style={[
             styles.input,
             {
-              color: settingsColors.text,
               backgroundColor: settingsColors.controlBackground,
               borderColor: settingsColors.controlBorder,
             },
           ]}
+          textStyle={{ color: settingsColors.text }}
           placeholder={
             aiSettings?.providerKeys.openrouter.configured
               ? t('settings.apiKeySaved', { last4: aiSettings.providerKeys.openrouter.last4 ?? '****' })
@@ -578,27 +577,17 @@ export default function SettingsScreen() {
           </ThemedText>
         )}
 
-        <Pressable
+        <NativeButton
           testID="ai-save-button"
+          label={savingAISettings ? t('settings.saving') : t('settings.saveAISettings')}
           style={[
             styles.saveAIButton,
             { backgroundColor: settingsColors.primaryButtonBackground },
           ]}
+          textStyle={[styles.signOutText, { color: settingsColors.primaryButtonText }]}
           onPress={handleSaveAISettings}
           disabled={!aiSettings || savingAISettings}
-          accessibilityRole="button"
-        >
-          {savingAISettings ? (
-            <ActivityIndicator color={settingsColors.primaryButtonText} />
-          ) : (
-            <ThemedText
-              type="defaultSemiBold"
-              style={[styles.signOutText, { color: settingsColors.primaryButtonText }]}
-            >
-              {t('settings.saveAISettings')}
-            </ThemedText>
-          )}
-        </Pressable>
+        />
       </ThemedView>
 
       <ThemedView style={styles.footerRow}>
@@ -608,26 +597,16 @@ export default function SettingsScreen() {
             <ThemedText style={{ color: settingsColors.text }}>{t('settings.saving')}</ThemedText>
           </View>
         )}
-        <Pressable
+        <NativeButton
+          label={authLoading ? t('settings.saving') : t('common.signOut')}
           style={[
             styles.signOutButton,
             { backgroundColor: settingsColors.primaryButtonBackground },
           ]}
+          textStyle={[styles.signOutText, { color: settingsColors.primaryButtonText }]}
           onPress={() => signOut()}
           disabled={authLoading}
-          accessibilityRole="button"
-        >
-          {authLoading ? (
-            <ActivityIndicator color={settingsColors.primaryButtonText} />
-          ) : (
-            <ThemedText
-              type="defaultSemiBold"
-              style={[styles.signOutText, { color: settingsColors.primaryButtonText }]}
-            >
-              {t('common.signOut')}
-            </ThemedText>
-          )}
-        </Pressable>
+        />
       </ThemedView>
     </ScrollView>
   );

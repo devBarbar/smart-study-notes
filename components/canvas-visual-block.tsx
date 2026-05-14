@@ -67,7 +67,7 @@ const BulletListRenderer: React.FC<{
         )}
 
         {/* Bullet items */}
-        <G translateY={titleHeight}>
+        <G transform={`translate(0 ${titleHeight})`}>
           {data.items.map((item, index) => {
             const indent = (item.indent ?? 0) * 20;
             const y = PADDING + index * BULLET_LINE_HEIGHT + 14;
@@ -187,7 +187,7 @@ const DefinitionRenderer: React.FC<{
         </SvgText>
 
         {/* Definition */}
-        <G translateY={termHeight}>
+        <G transform={`translate(0 ${termHeight})`}>
           {defTextLines.map((line, index) => (
             <SvgText
               key={`def-${index}`}
@@ -203,7 +203,7 @@ const DefinitionRenderer: React.FC<{
 
         {/* Example (if present) */}
         {data.example && (
-          <G translateY={termHeight + defLines * lineHeight + 10}>
+          <G transform={`translate(0 ${termHeight + defLines * lineHeight + 10})`}>
             <SvgText
               x={PADDING}
               y={PADDING}
@@ -272,7 +272,7 @@ const StepsRenderer: React.FC<{
         )}
 
         {/* Steps */}
-        <G translateY={titleHeight}>
+        <G transform={`translate(0 ${titleHeight})`}>
           {data.steps.map((step, index) => {
             const y = PADDING + index * STEP_HEIGHT;
             const circleY = y + 20;
@@ -345,7 +345,7 @@ const StepsRenderer: React.FC<{
  */
 export const CanvasVisualBlock: React.FC<Props> = ({ block, onPress, highlighted }) => {
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
   const handlePress = () => {
     onPress?.(block.id);

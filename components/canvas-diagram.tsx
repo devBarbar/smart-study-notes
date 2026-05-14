@@ -1,7 +1,7 @@
 import dagre from 'dagre';
 import React, { useMemo, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, G, Marker, Path, Polygon, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, Marker, Path, Polygon, Rect, Text as SvgText } from 'react-native-svg';
 
 import { DiagramData, DiagramEdge, DiagramNode, DiagramNodeShape } from '@/types';
 
@@ -159,15 +159,15 @@ const renderNodeShape = (
       );
     case 'ellipse':
       return (
-        <Circle
+        <Ellipse
           cx={node.x + node.width / 2}
           cy={node.y + node.height / 2}
-          r={node.width / 2 - 4}
+          rx={node.width / 2 - 4}
+          ry={node.height / 2 - 4}
           fill={fill}
           stroke={stroke}
           strokeWidth={2}
           strokeDasharray={strokeDash}
-          scaleY={0.6}
         />
       );
     case 'box':
@@ -294,7 +294,7 @@ export const CanvasDiagram: React.FC<Props> = ({ data, position, scale = 1, onNo
         )}
 
         {/* Edges (render before nodes so they appear behind) */}
-        <G translateY={titleOffset}>
+        <G transform={`translate(0 ${titleOffset})`}>
           {layoutResult.edges.map((edge, index) => {
             const style = EDGE_STYLES[edge.style ?? 'solid'];
             
@@ -344,7 +344,7 @@ export const CanvasDiagram: React.FC<Props> = ({ data, position, scale = 1, onNo
         </G>
 
         {/* Nodes */}
-        <G translateY={titleOffset}>
+        <G transform={`translate(0 ${titleOffset})`}>
           {layoutResult.nodes.map((node) => {
             const colorKey = node.color ?? 'default';
             const colors = NODE_COLORS[colorKey] ?? NODE_COLORS.default;

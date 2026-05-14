@@ -31,7 +31,7 @@ export const CircularReadinessGraph = ({
   showRefreshButton = true,
 }: CircularReadinessGraphProps) => {
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const grade = predictedGrade ?? percentageToGrade(percentage);
@@ -48,7 +48,7 @@ export const CircularReadinessGraph = ({
     <View style={styles.container}>
       <View style={styles.graphContainer}>
         <Svg width={size} height={size}>
-          <G rotation="-90" origin={`${center}, ${center}`}>
+          <G transform={`rotate(-90 ${center} ${center})`}>
             {/* Background circle */}
             <Circle
               cx={center}

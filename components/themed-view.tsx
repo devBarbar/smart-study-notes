@@ -1,5 +1,6 @@
 import { View, type ViewProps } from 'react-native';
 
+import { LiquidGlassSurface, isLiquidGlassSupported } from '@/components/ui/native-primitives';
 import { Colors, Radii, Shadows } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -20,8 +21,11 @@ export function ThemedView({
   ...otherProps
 }: ThemedViewProps) {
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const backgroundColor = useThemeColor({ light: lightColor, dark: darkColor }, 'background');
+  const glassEnabled =
+    isLiquidGlassSupported() &&
+    (variant === 'surface' || variant === 'card' || variant === 'tinted');
 
   const variantStyle = (() => {
     switch (variant) {
@@ -57,14 +61,22 @@ export function ThemedView({
     }
   })();
 
-  return (
-    <View
-      style={[
-        { backgroundColor, ...(padded ? { padding: 16 } : {}) },
-        variantStyle,
-        style,
-      ]}
-      {...otherProps}
-    />
-  );
+  const resolvedStyle = [
+    { backgroundColor: glassEnabled ? 'transparent' : backgroundColor, ...(padded ? { padding: 16 } : {}) },
+    variantStyle,
+    style,
+  ];
+
+  if (glassEnabled) {
+    return (
+      <LiquidGlassSurface
+        style={resolvedStyle}
+        tintColor={palette.surface}
+        isInteractive={variant === 'card'}
+        {...otherProps}
+      />
+    );
+  }
+
+  return <View style={resolvedStyle} {...otherProps} />;
 }

@@ -6,7 +6,6 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  TextInput,
   View,
   ViewStyle,
 } from "react-native";
@@ -26,6 +25,7 @@ import {
   StudyDepthProgressItem,
 } from "@/components/study/study-depth-progress";
 import { ThemedText } from "@/components/themed-text";
+import { NativeTextInput } from "@/components/ui/native-primitives";
 import { Colors } from "@/constants/theme";
 import {
   CanvasAnswerMarker,
@@ -512,7 +512,7 @@ export function StudyCanvasPanel({
         <ThemedText type="defaultSemiBold" style={{ marginTop: 16 }}>
           {t("study.typedNotes")}
         </ThemedText>
-        <TextInput
+        <NativeTextInput
           style={styles.input}
           placeholder={t("study.notesPlaceholder")}
           placeholderTextColor="#94a3b8"

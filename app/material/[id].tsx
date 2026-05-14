@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { v4 as uuid } from 'uuid';
 
 import { PdfWebView } from '@/components/pdf-webview';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { NativeButton } from '@/components/ui/native-primitives';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useMaterials } from '@/hooks/use-materials';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -19,7 +20,7 @@ export default function MaterialDetailScreen() {
   const router = useRouter();
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const material = useMemo(() => materials.find((m) => m.id === id), [materials, id]);
@@ -64,11 +65,12 @@ export default function MaterialDetailScreen() {
       <ThemedView style={styles.header}>
         <ThemedText type="title">{material.title}</ThemedText>
         <ThemedText>{material.description || t('materialDetail.noDescription')}</ThemedText>
-        <Pressable style={styles.button} onPress={startSession}>
-          <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-            {t('materialDetail.startSession')}
-          </ThemedText>
-        </Pressable>
+        <NativeButton
+          label={t('materialDetail.startSession')}
+          style={styles.button}
+          textStyle={styles.buttonText}
+          onPress={startSession}
+        />
       </ThemedView>
 
       {material.type === 'pdf' ? (

@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, ImageBackground, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { LectureCard } from '@/components/lecture-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { NativeButton } from '@/components/ui/native-primitives';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLectures } from '@/hooks/use-lectures';
@@ -17,7 +18,7 @@ export default function LibraryScreen() {
   const router = useRouter();
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   return (
@@ -34,16 +35,19 @@ export default function LibraryScreen() {
               </ThemedText>
             </View>
             <View style={styles.ctaRow}>
-              <Pressable style={styles.primaryButton} onPress={() => router.push('/lecture/new')}>
-                <ThemedText type="defaultSemiBold" tone="inverse">
-                  {t('library.addLecture')}
-                </ThemedText>
-              </Pressable>
-              <Pressable style={styles.secondaryButton} onPress={() => router.push('/(tabs)/sessions')}>
-                <ThemedText type="defaultSemiBold" tone="primary">
-                  {t('library.viewSessions', {}, 'View sessions')}
-                </ThemedText>
-              </Pressable>
+              <NativeButton
+                label={t('library.addLecture')}
+                style={styles.primaryButton}
+                textStyle={styles.primaryButtonText}
+                onPress={() => router.push('/lecture/new')}
+              />
+              <NativeButton
+                label={t('library.viewSessions', {}, 'View sessions')}
+                variant="outlined"
+                style={styles.secondaryButton}
+                textStyle={styles.secondaryButtonText}
+                onPress={() => router.push('/(tabs)/sessions')}
+              />
             </View>
             <View style={styles.statsRow}>
               <View style={styles.statCard}>
@@ -126,6 +130,10 @@ const createStyles = (palette: typeof Colors.light) =>
       borderWidth: 1,
       borderColor: `${palette.textOnPrimary}26`,
     },
+    primaryButtonText: {
+      color: palette.textOnPrimary,
+      fontWeight: '600',
+    },
     secondaryButton: {
       backgroundColor: `${palette.textOnPrimary}12`,
       borderRadius: Radii.pill,
@@ -133,6 +141,10 @@ const createStyles = (palette: typeof Colors.light) =>
       paddingHorizontal: 18,
       borderWidth: 1,
       borderColor: `${palette.textOnPrimary}26`,
+    },
+    secondaryButtonText: {
+      color: palette.textOnPrimary,
+      fontWeight: '600',
     },
     statsRow: {
       flexDirection: 'row',

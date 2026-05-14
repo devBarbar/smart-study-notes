@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
-  ActivityIndicator,
   Platform,
-  TextInput,
-  Pressable,
   KeyboardAvoidingView,
   ScrollView,
   Alert,
@@ -13,6 +10,7 @@ import {
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { NativeButton, NativeTextInput } from '@/components/ui/native-primitives';
 import { useAuth } from '@/contexts/auth-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
@@ -123,10 +121,16 @@ export default function SignInScreen() {
     styles.input,
     {
       backgroundColor: isDark ? '#1f2937' : '#f3f4f6',
-      color: colors.text,
       borderColor: isDark ? '#374151' : '#d1d5db',
     },
   ];
+  const primaryButtonLabel = isLoading
+    ? t('common.loading', {}, 'Loading...')
+    : mode === 'sign-in'
+      ? t('auth.button.signIn')
+      : mode === 'sign-up'
+        ? t('auth.button.createAccount')
+        : t('auth.button.reset');
 
   return (
     <ThemedView style={styles.container}>
@@ -162,9 +166,10 @@ export default function SignInScreen() {
 
           {/* Email Form */}
           <View style={styles.form}>
-            <TextInput
+            <NativeTextInput
               testID="sign-in-email-input"
               style={inputStyle}
+              textStyle={[styles.inputText, { color: colors.text }]}
               placeholder={t('auth.placeholder.email')}
               placeholderTextColor={colors.icon}
               value={email}
@@ -176,9 +181,10 @@ export default function SignInScreen() {
             />
             
             {mode !== 'forgot-password' && (
-              <TextInput
+              <NativeTextInput
                 testID="sign-in-password-input"
                 style={inputStyle}
+                textStyle={[styles.inputText, { color: colors.text }]}
                 placeholder={t('auth.placeholder.password')}
                 placeholderTextColor={colors.icon}
                 value={password}
@@ -190,9 +196,10 @@ export default function SignInScreen() {
             )}
             
             {mode === 'sign-up' && (
-              <TextInput
+              <NativeTextInput
                 testID="sign-up-confirm-password-input"
                 style={inputStyle}
+                textStyle={[styles.inputText, { color: colors.text }]}
                 placeholder={t('auth.placeholder.confirmPassword')}
                 placeholderTextColor={colors.icon}
                 value={confirmPassword}
@@ -204,7 +211,7 @@ export default function SignInScreen() {
             )}
 
             {/* Primary Action Button */}
-            <Pressable
+            <NativeButton
               testID="auth-primary-button"
               style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
               onPress={() => {
@@ -213,48 +220,48 @@ export default function SignInScreen() {
                 else handleForgotPassword();
               }}
               disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <ThemedText style={styles.primaryButtonText}>
-                  {mode === 'sign-in' && t('auth.button.signIn')}
-                  {mode === 'sign-up' && t('auth.button.createAccount')}
-                  {mode === 'forgot-password' && t('auth.button.reset')}
-                </ThemedText>
-              )}
-            </Pressable>
+              label={primaryButtonLabel}
+              textStyle={styles.primaryButtonText}
+            />
 
             {/* Secondary Links */}
             {mode === 'sign-in' && (
               <>
-                <Pressable onPress={() => { setMode('forgot-password'); setError(null); }}>
-                  <ThemedText style={[styles.linkText, { color: colors.tint }]}>
-                    {t('auth.link.forgot')}
-                  </ThemedText>
-                </Pressable>
-                <Pressable onPress={() => { setMode('sign-up'); setError(null); }}>
-                  <ThemedText style={[styles.linkText, { color: colors.tint }]}>
-                    {t('auth.link.signup')}
-                  </ThemedText>
-                </Pressable>
+                <NativeButton
+                  variant="text"
+                  label={t('auth.link.forgot')}
+                  onPress={() => { setMode('forgot-password'); setError(null); }}
+                  style={styles.linkButton}
+                  textStyle={[styles.linkText, { color: colors.tint }]}
+                />
+                <NativeButton
+                  variant="text"
+                  label={t('auth.link.signup')}
+                  onPress={() => { setMode('sign-up'); setError(null); }}
+                  style={styles.linkButton}
+                  textStyle={[styles.linkText, { color: colors.tint }]}
+                />
               </>
             )}
             
             {mode === 'sign-up' && (
-              <Pressable onPress={() => { setMode('sign-in'); setError(null); }}>
-                <ThemedText style={[styles.linkText, { color: colors.tint }]}>
-                  {t('auth.link.signin')}
-                </ThemedText>
-              </Pressable>
+              <NativeButton
+                variant="text"
+                label={t('auth.link.signin')}
+                onPress={() => { setMode('sign-in'); setError(null); }}
+                style={styles.linkButton}
+                textStyle={[styles.linkText, { color: colors.tint }]}
+              />
             )}
             
             {mode === 'forgot-password' && (
-              <Pressable onPress={() => { setMode('sign-in'); setError(null); }}>
-                <ThemedText style={[styles.linkText, { color: colors.tint }]}>
-                  {t('auth.link.backToSignIn')}
-                </ThemedText>
-              </Pressable>
+              <NativeButton
+                variant="text"
+                label={t('auth.link.backToSignIn')}
+                onPress={() => { setMode('sign-in'); setError(null); }}
+                style={styles.linkButton}
+                textStyle={[styles.linkText, { color: colors.tint }]}
+              />
             )}
           </View>
 
@@ -346,8 +353,10 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
     borderWidth: 1,
+  },
+  inputText: {
+    fontSize: 16,
   },
   primaryButton: {
     backgroundColor: '#0f172a',
@@ -368,6 +377,8 @@ const styles = StyleSheet.create({
   linkText: {
     textAlign: 'center',
     fontSize: 14,
+  },
+  linkButton: {
     paddingVertical: 8,
   },
   divider: {

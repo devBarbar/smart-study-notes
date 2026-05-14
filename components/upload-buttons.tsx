@@ -1,13 +1,13 @@
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { NativeButton } from '@/components/ui/native-primitives';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLanguage } from '@/contexts/language-context';
 
-import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 type Props = {
@@ -17,7 +17,7 @@ type Props = {
 export const UploadButtons = ({ onFileSelected }: Props) => {
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const pickDocument = async () => {
@@ -46,7 +46,7 @@ export const UploadButtons = ({ onFileSelected }: Props) => {
       onFileSelected({
         uri: asset.uri,
         type: 'image',
-        name: asset.fileName,
+        name: asset.fileName ?? undefined,
         mimeType: asset.mimeType ?? 'image/png',
       });
     }
@@ -54,16 +54,17 @@ export const UploadButtons = ({ onFileSelected }: Props) => {
 
   return (
     <ThemedView variant="tinted" style={styles.container}>
-      <Pressable style={[styles.button, styles.primary]} onPress={pickDocument}>
-        <ThemedText type="defaultSemiBold" tone="inverse">
-          {t('upload.pdf')}
-        </ThemedText>
-      </Pressable>
-      <Pressable style={[styles.button, styles.secondary]} onPress={pickImage}>
-        <ThemedText type="defaultSemiBold" tone="primary">
-          {t('upload.image')}
-        </ThemedText>
-      </Pressable>
+      <View style={styles.buttonSlot}>
+        <NativeButton label={t('upload.pdf')} style={[styles.button, styles.primary]} onPress={pickDocument} />
+      </View>
+      <View style={styles.buttonSlot}>
+        <NativeButton
+          label={t('upload.image')}
+          variant="outlined"
+          style={[styles.button, styles.secondary]}
+          onPress={pickImage}
+        />
+      </View>
     </ThemedView>
   );
 };
@@ -76,8 +77,11 @@ const createStyles = (palette: typeof Colors.light) =>
       marginBottom: Spacing.md,
       borderColor: palette.border,
     },
-    button: {
+    buttonSlot: {
       flex: 1,
+    },
+    button: {
+      width: '100%',
       paddingVertical: 12,
       paddingHorizontal: Spacing.md,
       borderRadius: Radii.md,
@@ -94,4 +98,3 @@ const createStyles = (palette: typeof Colors.light) =>
       borderColor: `${palette.primary}33`,
     },
   });
-

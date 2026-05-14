@@ -1,11 +1,12 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { v4 as uuid } from 'uuid';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { NativeButton, NativeTextInput } from '@/components/ui/native-primitives';
 import { Colors, Radii, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -202,11 +203,13 @@ export default function NewLectureScreen() {
         {t('lectureNew.subtitle')}
       </ThemedText>
 
-      <Pressable style={styles.primaryButton} onPress={pickDocuments} disabled={isProcessing}>
-        <ThemedText type="defaultSemiBold" style={styles.primaryButtonText}>
-          {t('lectureNew.pickPdfs')}
-        </ThemedText>
-      </Pressable>
+      <NativeButton
+        label={t('lectureNew.pickPdfs')}
+        style={styles.primaryButton}
+        textStyle={styles.primaryButtonText}
+        onPress={pickDocuments}
+        disabled={isProcessing}
+      />
 
       <FlatList
         data={files}
@@ -215,18 +218,14 @@ export default function NewLectureScreen() {
           <ThemedView style={styles.fileRow}>
             <View style={styles.fileRowHeader}>
               <ThemedText>{item.name}</ThemedText>
-              <Pressable
+              <NativeButton
+                label={item.isExam ? 'Past Exam' : 'Mark as Exam'}
+                variant={item.isExam ? 'filled' : 'outlined'}
                 style={[styles.examBadge, item.isExam && styles.examBadgeActive]}
+                textStyle={[styles.examBadgeText, item.isExam && styles.examBadgeTextActive]}
                 onPress={() => toggleExamFlag(item.uri)}
                 disabled={isProcessing}
-              >
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={[styles.examBadgeText, item.isExam && styles.examBadgeTextActive]}
-                >
-                  {item.isExam ? 'Past Exam' : 'Mark as Exam'}
-                </ThemedText>
-              </Pressable>
+              />
             </View>
             <ThemedText type="defaultSemiBold" tone="muted" style={{ fontSize: 12 }}>
               {item.mimeType}
@@ -241,75 +240,9 @@ export default function NewLectureScreen() {
       <ThemedText tone="muted" style={{ marginBottom: 6 }}>
         {t('lectureNew.additionalNotesHint')}
       </ThemedText>
-      <ThemedView style={styles.setupPanel}>
-        <ThemedText type="defaultSemiBold">Learning path setup</ThemedText>
-        <View style={styles.setupGrid}>
-          <TextInput
-            style={styles.setupInput}
-            placeholder="Exam date (YYYY-MM-DD)"
-            placeholderTextColor={palette.textMuted}
-            value={examDate}
-            onChangeText={setExamDate}
-            editable={!isProcessing}
-          />
-          <TextInput
-            style={styles.setupInput}
-            placeholder="Weekly minutes"
-            placeholderTextColor={palette.textMuted}
-            keyboardType="number-pad"
-            value={weeklyStudyMinutes}
-            onChangeText={setWeeklyStudyMinutes}
-            editable={!isProcessing}
-          />
-          <TextInput
-            style={styles.setupInput}
-            placeholder="Session minutes"
-            placeholderTextColor={palette.textMuted}
-            keyboardType="number-pad"
-            value={preferredSessionMinutes}
-            onChangeText={setPreferredSessionMinutes}
-            editable={!isProcessing}
-          />
-          <TextInput
-            style={styles.setupInput}
-            placeholder="Weak areas, comma separated"
-            placeholderTextColor={palette.textMuted}
-            value={weakAreas}
-            onChangeText={setWeakAreas}
-            editable={!isProcessing}
-          />
-        </View>
-        <View style={styles.segmentRow}>
-          {(['pass', '2.0', '1.3'] as const).map((grade) => (
-            <Pressable
-              key={grade}
-              style={[styles.segmentButton, targetGrade === grade && styles.segmentButtonActive]}
-              onPress={() => setTargetGrade(grade)}
-              disabled={isProcessing}
-            >
-              <ThemedText style={[styles.segmentText, targetGrade === grade && styles.segmentTextActive]}>
-                {grade === 'pass' ? 'Pass' : grade}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </View>
-        <View style={styles.segmentRow}>
-          {(['beginner', 'some-background', 'advanced'] as const).map((level) => (
-            <Pressable
-              key={level}
-              style={[styles.segmentButton, currentLevel === level && styles.segmentButtonActive]}
-              onPress={() => setCurrentLevel(level)}
-              disabled={isProcessing}
-            >
-              <ThemedText style={[styles.segmentText, currentLevel === level && styles.segmentTextActive]}>
-                {level === 'some-background' ? 'Some background' : level}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </View>
-      </ThemedView>
-      <TextInput
+      <NativeTextInput
         style={styles.notesInput}
+        textStyle={styles.notesInputText}
         placeholder={t('lectureNew.additionalNotesPlaceholder')}
         placeholderTextColor={palette.textMuted}
         multiline
@@ -319,24 +252,83 @@ export default function NewLectureScreen() {
         editable={!isProcessing}
       />
 
-      <Pressable
+      <ThemedView style={styles.setupPanel}>
+        <ThemedText type="defaultSemiBold">Learning path setup</ThemedText>
+        <View style={styles.setupGrid}>
+          <NativeTextInput
+            style={styles.setupInput}
+            textStyle={styles.setupInputText}
+            placeholder="Exam date (YYYY-MM-DD)"
+            placeholderTextColor={palette.textMuted}
+            value={examDate}
+            onChangeText={setExamDate}
+            editable={!isProcessing}
+          />
+          <NativeTextInput
+            style={styles.setupInput}
+            textStyle={styles.setupInputText}
+            placeholder="Weekly minutes"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="number-pad"
+            value={weeklyStudyMinutes}
+            onChangeText={setWeeklyStudyMinutes}
+            editable={!isProcessing}
+          />
+          <NativeTextInput
+            style={styles.setupInput}
+            textStyle={styles.setupInputText}
+            placeholder="Session minutes"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="number-pad"
+            value={preferredSessionMinutes}
+            onChangeText={setPreferredSessionMinutes}
+            editable={!isProcessing}
+          />
+          <NativeTextInput
+            style={styles.setupInput}
+            textStyle={styles.setupInputText}
+            placeholder="Weak areas, comma separated"
+            placeholderTextColor={palette.textMuted}
+            value={weakAreas}
+            onChangeText={setWeakAreas}
+            editable={!isProcessing}
+          />
+        </View>
+        <View style={styles.segmentRow}>
+          {(['pass', '2.0', '1.3'] as const).map((grade) => (
+            <NativeButton
+              key={grade}
+              label={grade === 'pass' ? 'Pass' : grade}
+              variant={targetGrade === grade ? 'filled' : 'outlined'}
+              style={[styles.segmentButton, targetGrade === grade && styles.segmentButtonActive]}
+              textStyle={[styles.segmentText, targetGrade === grade && styles.segmentTextActive]}
+              onPress={() => setTargetGrade(grade)}
+              disabled={isProcessing}
+            />
+          ))}
+        </View>
+        <View style={styles.segmentRow}>
+          {(['beginner', 'some-background', 'advanced'] as const).map((level) => (
+            <NativeButton
+              key={level}
+              label={level === 'some-background' ? 'Some background' : level}
+              variant={currentLevel === level ? 'filled' : 'outlined'}
+              style={[styles.segmentButton, currentLevel === level && styles.segmentButtonActive]}
+              textStyle={[styles.segmentText, currentLevel === level && styles.segmentTextActive]}
+              onPress={() => setCurrentLevel(level)}
+              disabled={isProcessing}
+            />
+          ))}
+        </View>
+      </ThemedView>
+
+      <NativeButton
+        label={isProcessing ? getStatusMessage() : t('lectureNew.uploadCreate')}
         style={[styles.primaryButton, styles.accentButton, (isProcessing || files.length === 0) && styles.buttonDisabled]}
+        textStyle={styles.primaryButtonText}
         onPress={startUpload}
         disabled={isProcessing || files.length === 0}
-      >
-        {isProcessing ? (
-          <View style={styles.loadingRow}>
-            <ActivityIndicator color={palette.textOnPrimary} />
-            <ThemedText type="defaultSemiBold" style={styles.primaryButtonText}>
-              {getStatusMessage()}
-            </ThemedText>
-          </View>
-        ) : (
-          <ThemedText type="defaultSemiBold" style={styles.primaryButtonText}>
-            {t('lectureNew.uploadCreate')}
-          </ThemedText>
-        )}
-      </Pressable>
+      />
 
       {isProcessing && currentStep && (
         <View style={styles.progressContainer}>
@@ -417,8 +409,10 @@ const createStyles = (palette: typeof Colors.light) =>
       borderColor: palette.border,
       paddingHorizontal: 10,
       paddingVertical: 8,
-      color: palette.text,
       backgroundColor: palette.surfaceAlt,
+    },
+    setupInputText: {
+      color: palette.text,
     },
     segmentRow: {
       flexDirection: 'row',
@@ -465,11 +459,6 @@ const createStyles = (palette: typeof Colors.light) =>
     examBadgeTextActive: {
       color: palette.success,
     },
-    loadingRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
     progressContainer: {
       marginTop: Spacing.md,
       gap: Spacing.xs,
@@ -495,8 +484,10 @@ const createStyles = (palette: typeof Colors.light) =>
       borderWidth: 1,
       borderColor: palette.border,
       padding: 12,
+      backgroundColor: palette.surface,
+    },
+    notesInputText: {
       color: palette.text,
       textAlignVertical: 'top',
-      backgroundColor: palette.surface,
     },
   });

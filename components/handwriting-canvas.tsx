@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
 import Svg, { Polyline } from 'react-native-svg';
@@ -76,9 +76,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const [currentMode, setCurrentMode] = useState<CanvasMode>(initialMode);
     const [currentColor, setCurrentColor] = useState(strokeColor);
     const [currentStrokeWidth, setCurrentStrokeWidth] = useState(strokeWidth);
-    const viewShotRef = useRef<ViewShot>(null);
+    const viewShotRef = useRef<any>(null);
     const lineCount = Math.floor(height / 28);
     const isStylusActiveRef = useRef(false);
+    const isWebDrawingRef = useRef(false);
     const lastDrawingPositionRef = useRef<{ x: number; y: number } | null>(null);
     const hasLoadedInitialRef = useRef(false);
     
@@ -115,6 +116,71 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           setTimeout(() => onStrokesChangeRef.current?.(newStrokes), 0);
         }
         return newStrokes;
+      });
+    }, []);
+
+    const getWebPoint = useCallback((event: any): Point => {
+      const nativeEvent = event.nativeEvent ?? event;
+      if (typeof nativeEvent.locationX === 'number' && typeof nativeEvent.locationY === 'number') {
+        return { x: nativeEvent.locationX, y: nativeEvent.locationY };
+      }
+
+      const target = nativeEvent.currentTarget ?? event.currentTarget;
+      const bounds = target?.getBoundingClientRect?.();
+      if (bounds && typeof nativeEvent.clientX === 'number' && typeof nativeEvent.clientY === 'number') {
+        return { x: nativeEvent.clientX - bounds.left, y: nativeEvent.clientY - bounds.top };
+      }
+
+      return { x: 0, y: 0 };
+    }, []);
+
+    const beginWebDrawing = useCallback((event: any) => {
+      event.preventDefault?.();
+      event.currentTarget?.setPointerCapture?.(event.nativeEvent?.pointerId ?? event.pointerId);
+      const point = getWebPoint(event);
+      isWebDrawingRef.current = true;
+      lastDrawingPositionRef.current = point;
+      onDrawingStartRef.current?.();
+
+      if (modeRef.current === 'eraser') {
+        eraseAtPoint(point);
+      } else {
+        setStrokes((prev) => [
+          ...prev,
+          { points: [point], color: colorRef.current, width: strokeWidthRef.current },
+        ]);
+      }
+    }, [eraseAtPoint, getWebPoint]);
+
+    const moveWebDrawing = useCallback((event: any) => {
+      if (!isWebDrawingRef.current) return;
+      event.preventDefault?.();
+      const point = getWebPoint(event);
+      lastDrawingPositionRef.current = point;
+
+      if (modeRef.current === 'eraser') {
+        eraseAtPoint(point);
+      } else {
+        setStrokes((prev) => {
+          if (prev.length === 0) return prev;
+          const next = [...prev];
+          const current = next[next.length - 1];
+          if (current) {
+            current.points = [...current.points, point];
+          }
+          return next;
+        });
+      }
+    }, [eraseAtPoint, getWebPoint]);
+
+    const endWebDrawing = useCallback((event?: any) => {
+      if (!isWebDrawingRef.current) return;
+      event?.preventDefault?.();
+      isWebDrawingRef.current = false;
+      onDrawingEndRef.current?.(lastDrawingPositionRef.current || undefined);
+      setStrokes((current) => {
+        onStrokesChangeRef.current?.(current);
+        return current;
       });
     }, []);
 
@@ -227,27 +293,55 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     // Build dynamic size styles
     const sizeStyle = { height, ...(width ? { width } : {}) };
+    const svgSizeProps = width
+      ? { width, height, viewBox: `0 0 ${width} ${height}` }
+      : { width: '100%', height };
+
+    const canvasContent = (
+      <>
+        {Array.from({ length: lineCount }).map((_, idx) => (
+          <View key={idx} style={[styles.line, { top: idx * 28 }]} />
+        ))}
+        <Svg {...svgSizeProps} style={StyleSheet.absoluteFill} pointerEvents="none">
+          {strokes.map((stroke, idx) => (
+            <Polyline
+              key={idx}
+              points={stroke.points.map((p) => `${p.x},${p.y}`).join(' ')}
+              fill="none"
+              stroke={stroke.color}
+              strokeWidth={stroke.width}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+        </Svg>
+      </>
+    );
+
+    if (Platform.OS === 'web') {
+      return (
+        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={[styles.container, sizeStyle]}>
+          <View
+            style={styles.canvas}
+            {...({
+              onPointerDown: beginWebDrawing,
+              onPointerMove: moveWebDrawing,
+              onPointerUp: endWebDrawing,
+              onPointerCancel: endWebDrawing,
+              onPointerLeave: endWebDrawing,
+            } as Record<string, unknown>)}
+          >
+            {canvasContent}
+          </View>
+        </ViewShot>
+      );
+    }
 
     return (
       <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 0.9 }} style={[styles.container, sizeStyle]}>
         <GestureDetector gesture={combinedGesture}>
           <Animated.View style={styles.canvas}>
-            {Array.from({ length: lineCount }).map((_, idx) => (
-              <View key={idx} style={[styles.line, { top: idx * 28 }]} />
-            ))}
-            <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-              {strokes.map((stroke, idx) => (
-                <Polyline
-                  key={idx}
-                  points={stroke.points.map((p) => `${p.x},${p.y}`).join(' ')}
-                  fill="none"
-                  stroke={stroke.color}
-                  strokeWidth={stroke.width}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ))}
-            </Svg>
+            {canvasContent}
           </Animated.View>
         </GestureDetector>
       </ViewShot>

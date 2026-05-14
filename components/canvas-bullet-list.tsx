@@ -138,7 +138,7 @@ export const CanvasBulletList: React.FC<Props> = ({
         )}
 
         {/* Bullet items */}
-        <G translateY={titleHeight}>
+        <G transform={`translate(0 ${titleHeight})`}>
           {data.items.map((item, index) => {
             const indent = (item.indent ?? 0) * 20;
             const y = PADDING + index * LINE_HEIGHT + 14;
@@ -229,7 +229,7 @@ export const ThemedBulletList: React.FC<Props & { theme?: BulletListTheme }> = (
         )}
 
         {/* Bullet items */}
-        <G translateY={titleHeight}>
+        <G transform={`translate(0 ${titleHeight})`}>
           {data.items.map((item, index) => {
             const indent = (item.indent ?? 0) * 20;
             const y = PADDING + index * LINE_HEIGHT + 14;

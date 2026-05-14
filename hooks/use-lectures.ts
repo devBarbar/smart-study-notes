@@ -13,30 +13,26 @@ export const useLectures = () => {
 
     try {
       const client = getSupabase();
-      const channel = client
-        .channel('lectures-status')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'lectures' },
-          () => queryClient.invalidateQueries({ queryKey: ['lectures'] })
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'study_plan_entries' },
-          () => queryClient.invalidateQueries({ queryKey: ['lectures'] })
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'study_plan_modules' },
-          () => queryClient.invalidateQueries({ queryKey: ['lectures'] })
-        )
-        .subscribe();
+      if (!client) return;
+
+      const channelSuffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const tables = ['lectures', 'study_plan_entries', 'study_plan_modules'];
+      const channels = tables.map((table) =>
+        client
+          .channel(`lectures-status-${table}-${channelSuffix}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table },
+            () => queryClient.invalidateQueries({ queryKey: ['lectures'] })
+          )
+          .subscribe()
+      );
 
       subscribedRef.current = true;
 
       return () => {
         subscribedRef.current = false;
-        channel.unsubscribe();
+        channels.forEach((channel) => channel.unsubscribe());
       };
     } catch (err) {
       console.warn('[useLectures] realtime subscription skipped', err);

@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 
 import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
+import { NativeTextInput } from "@/components/ui/native-primitives";
 import { VoiceInput } from "@/components/voice-input";
 import { StudyQuestion } from "@/types";
 
@@ -50,7 +51,7 @@ export function StudyChatInputArea({
   return (
     <View style={styles.inputArea}>
       <View style={styles.chatTextInputRow}>
-        <TextInput
+        <NativeTextInput
           style={styles.chatTextInput}
           placeholder={t("study.askTutorPlaceholder")}
           placeholderTextColor="#64748b"
@@ -93,7 +94,7 @@ export function StudyChatInputArea({
 
       {currentQuestion && (
         <View style={styles.submitArea}>
-          <TextInput
+          <NativeTextInput
             style={styles.answerTextInput}
             placeholder={t("study.answerPlaceholder")}
             placeholderTextColor="#64748b"

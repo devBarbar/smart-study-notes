@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  TextInput,
   View,
 } from "react-native";
 
@@ -18,6 +17,7 @@ import {
 } from "@/components/study/study-depth-progress";
 import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
+import { NativeTextInput } from "@/components/ui/native-primitives";
 import { Colors } from "@/constants/theme";
 import {
     CanvasAnswerMarker,
@@ -321,7 +321,7 @@ function DiagnosticAttemptCard({
       <ThemedText style={styles.diagnosticAttemptQuestion}>
         {question}
       </ThemedText>
-      <TextInput
+      <NativeTextInput
         style={styles.diagnosticAttemptInput}
         placeholder={t("study.coldStartPlaceholder")}
         placeholderTextColor="#64748b"

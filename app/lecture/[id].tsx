@@ -3,7 +3,7 @@ import { useFocusEffect } from 'expo-router/react-navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, LayoutChangeEvent, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, LayoutChangeEvent, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { v4 as uuid } from 'uuid';
 
 import { CircularReadinessGraph } from '@/components/circular-readiness-graph';
@@ -14,6 +14,7 @@ import { PdfWebView } from '@/components/pdf-webview';
 import { SkeletonCard, SkeletonEntryCard, SkeletonHeader } from '@/components/skeleton-loader';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { NativeTextInput } from '@/components/ui/native-primitives';
 import { Colors, Radii, Shadows, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/contexts/language-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -904,7 +905,7 @@ export default function LectureDetailScreen() {
             )}
           </Pressable>
         </View>
-        <TextInput
+        <NativeTextInput
           style={styles.notesInput}
           placeholder={t('lectureDetail.additionalNotesPlaceholder')}
           placeholderTextColor={palette.textMuted}
@@ -915,7 +916,7 @@ export default function LectureDetailScreen() {
           editable={!savingNotes}
         />
         <View style={styles.planSettingsGrid}>
-          <TextInput
+          <NativeTextInput
             style={styles.planSettingsInput}
             placeholder="Exam date (YYYY-MM-DD)"
             placeholderTextColor={palette.textMuted}
@@ -923,7 +924,7 @@ export default function LectureDetailScreen() {
             onChangeText={setExamDateDraft}
             editable={!savingNotes}
           />
-          <TextInput
+          <NativeTextInput
             style={styles.planSettingsInput}
             placeholder="Weekly minutes"
             placeholderTextColor={palette.textMuted}
@@ -932,7 +933,7 @@ export default function LectureDetailScreen() {
             onChangeText={setWeeklyMinutesDraft}
             editable={!savingNotes}
           />
-          <TextInput
+          <NativeTextInput
             style={styles.planSettingsInput}
             placeholder="Session minutes"
             placeholderTextColor={palette.textMuted}
@@ -941,7 +942,7 @@ export default function LectureDetailScreen() {
             onChangeText={setSessionMinutesDraft}
             editable={!savingNotes}
           />
-          <TextInput
+          <NativeTextInput
             style={styles.planSettingsInput}
             placeholder="Weak areas, comma separated"
             placeholderTextColor={palette.textMuted}
@@ -1289,7 +1290,7 @@ export default function LectureDetailScreen() {
         <View style={styles.practiceExamControls}>
           <View style={styles.practiceExamInputGroup}>
             <ThemedText style={styles.practiceExamLabel}>{t('practiceExam.questionCount')}</ThemedText>
-            <TextInput
+            <NativeTextInput
               style={styles.practiceExamInput}
               keyboardType="number-pad"
               value={questionCount}
