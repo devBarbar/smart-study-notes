@@ -60,7 +60,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.0",
     "react-native-svg": "15.15.4",
-    "react-native-view-shot": "4.0.3",
+    "react-native-view-shot": "5.1.0",
     "react-native-web": "~0.21.0",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.8.3",
@@ -74,6 +74,13 @@
     "eslint-config-expo": "~56.0.3",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "react-native-view-shot"
+      ]
+    }
   },
   "private": true
 }
