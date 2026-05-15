@@ -126,9 +126,11 @@ export default function PracticeExamScreen() {
 
   const canvasRef = useRef<HandwritingCanvasHandle>(null);
 
-  const loadExam = useCallback(async () => {
+  const loadExam = useCallback(async (options: { showLoading?: boolean; showError?: boolean } = {}) => {
     if (!examId) return;
-    setLoading(true);
+    const showLoading = options.showLoading ?? true;
+    const showError = options.showError ?? true;
+    if (showLoading) setLoading(true);
     try {
       const [examData, examQuestions, existingResponses] = await Promise.all([
         getPracticeExam(examId),
@@ -154,7 +156,9 @@ export default function PracticeExamScreen() {
       }
     } catch (err) {
       console.warn('[practice] failed to load exam', err);
-      Alert.alert(t('common.errorGeneric'), t('practiceExam.loadError'));
+      if (showError) {
+        Alert.alert(t('common.errorGeneric'), t('practiceExam.loadError'));
+      }
     } finally {
       setLoading(false);
     }
@@ -163,6 +167,23 @@ export default function PracticeExamScreen() {
   useEffect(() => {
     loadExam();
   }, [loadExam]);
+
+  const examIsGenerating = Boolean(
+    exam &&
+      exam.status !== 'completed' &&
+      exam.status !== 'failed' &&
+      (exam.status === 'pending' || questions.length === 0)
+  );
+
+  useEffect(() => {
+    if (!examId || !examIsGenerating) return;
+
+    const timer = setInterval(() => {
+      loadExam({ showLoading: false, showError: false });
+    }, 2500);
+
+    return () => clearInterval(timer);
+  }, [examId, examIsGenerating, loadExam]);
 
   const openCanvasForQuestion = useCallback(
     (questionId: string) => {

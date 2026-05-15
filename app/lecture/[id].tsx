@@ -150,10 +150,11 @@ export default function LectureDetailScreen() {
     );
   }, [queryClient]);
   
-  // Refetch sessions whenever returning from the study screen.
+  // Refetch related data whenever returning from a child screen.
   useFocusEffect(useCallback(() => {
     refetchSessions();
-  }, [refetchSessions]));
+    refetchPracticeExams();
+  }, [refetchSessions, refetchPracticeExams]));
 
   // Fetch lecture total cost
   useEffect(() => {
@@ -310,15 +311,17 @@ export default function LectureDetailScreen() {
       });
       if (result.practiceExamId) {
         await refetchPracticeExams();
+        goToPracticeExam(result.practiceExamId);
+      } else {
+        Alert.alert(t('practiceExam.createdTitle'), t('practiceExam.createdBody'));
       }
-      Alert.alert(t('practiceExam.createdTitle'), t('practiceExam.createdBody'));
     } catch (err) {
       console.warn('[lecture] practice exam generation failed', err);
       Alert.alert(t('common.errorGeneric'), t('practiceExam.errorCreating'));
     } finally {
       setCreatingPracticeExam(false);
     }
-  }, [agentLanguage, lecture, questionCount, refetchPracticeExams, t]);
+  }, [agentLanguage, goToPracticeExam, lecture, questionCount, refetchPracticeExams, t]);
 
   const handleGenerateClusterQuiz = useCallback(async (category: string, topicCount: number) => {
     if (!lecture) return;
@@ -1400,9 +1403,8 @@ export default function LectureDetailScreen() {
           {practiceExams.map((exam) => (
             <Pressable
               key={exam.id}
-              style={styles.practiceExamItem}
+              style={[styles.practiceExamItem, exam.status === 'pending' && styles.practiceExamItemPending]}
               onPress={() => goToPracticeExam(exam.id)}
-              disabled={exam.status === 'failed' || exam.status === 'pending'}
             >
               <View style={styles.practiceExamItemHeader}>
                 <ThemedText type="defaultSemiBold" style={styles.practiceExamTitle}>
@@ -2478,6 +2480,10 @@ const createStyles = (palette: typeof Colors.light) =>
       borderWidth: 1,
       borderColor: palette.border,
       gap: Spacing.xs,
+    },
+    practiceExamItemPending: {
+      borderColor: `${palette.primary}33`,
+      backgroundColor: `${palette.primary}08`,
     },
     practiceExamItemHeader: {
       flexDirection: 'row',
