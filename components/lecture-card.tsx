@@ -80,7 +80,7 @@ export const LectureCard = ({ lecture }: Props) => {
           </View>
           <View style={styles.meta}>
             <View style={styles.titleRow}>
-              <ThemedText type="title" numberOfLines={1}>
+              <ThemedText type="title" numberOfLines={1} style={styles.titleText}>
                 {lecture.title}
               </ThemedText>
               <View style={styles.badge}>
@@ -164,8 +164,14 @@ const createStyles = (palette: typeof Colors.light) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: Spacing.sm,
+      minWidth: 0,
+    },
+    titleText: {
+      flex: 1,
+      minWidth: 0,
     },
     badge: {
+      flexShrink: 0,
       paddingVertical: 6,
       paddingHorizontal: 10,
       borderRadius: Radii.pill,
@@ -191,6 +197,7 @@ const createStyles = (palette: typeof Colors.light) =>
     sectionStatusBadge: {
       marginTop: 4,
       alignSelf: 'flex-start',
+      maxWidth: '100%',
       paddingVertical: 6,
       paddingHorizontal: 10,
       borderRadius: Radii.pill,
@@ -204,4 +211,3 @@ const createStyles = (palette: typeof Colors.light) =>
       fontSize: 12,
     },
   });
-

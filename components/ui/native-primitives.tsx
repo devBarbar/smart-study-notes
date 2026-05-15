@@ -1,5 +1,4 @@
 import {
-  Button as ExpoButton,
   Host,
   TextInput as ExpoTextInput,
   useNativeState,
@@ -13,7 +12,9 @@ import {
 import { PropsWithChildren, useEffect } from 'react';
 import {
   Platform,
+  Pressable,
   StyleSheet,
+  Text,
   View,
   type ColorValue,
   type KeyboardTypeOptions,
@@ -111,19 +112,37 @@ export function NativeButton({
   testID,
   variant = 'filled',
   style,
-  textStyle: _textStyle,
+  textStyle,
 }: NativeButtonProps) {
+  const flattenedTextStyle = StyleSheet.flatten(textStyle);
+  const defaultTextColor = variant === 'filled' ? '#ffffff' : '#111827';
+
   return (
-    <Host matchContents={{ vertical: true }} style={style as StyleProp<ViewStyle>}>
-      <ExpoButton
-        label={label}
-        onPress={onPress}
-        disabled={disabled}
-        testID={testID}
-        variant={variant}
-        style={StyleSheet.flatten(style) as React.ComponentProps<typeof ExpoButton>['style']}
-      />
-    </Host>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      testID={testID}
+      style={({ pressed }) => [
+        styles.button,
+        variant === 'text' && styles.textButton,
+        style as StyleProp<ViewStyle>,
+        disabled && styles.buttonDisabled,
+        pressed && !disabled && styles.buttonPressed,
+      ]}
+    >
+      <Text
+        numberOfLines={2}
+        style={[
+          styles.buttonLabel,
+          { color: flattenedTextStyle?.color ?? defaultTextColor },
+          textStyle,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -184,6 +203,26 @@ export function NativeTextInput({
 }
 
 const styles = StyleSheet.create({
+  button: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textButton: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
+  },
+  buttonPressed: {
+    opacity: 0.82,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonLabel: {
+    fontSize: 16,
+    lineHeight: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   glassContainer: {
     width: '100%',
   },
