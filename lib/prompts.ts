@@ -123,6 +123,7 @@ Return JSON only:
   "misconceptions": ["specific missing or misunderstood concepts"],
   "followUpQuestion": "one smaller diagnostic question targeting the most important gap",
   "sourceNotes": ["at most 2 brief source-grounded notes or page references when available"],
+  "sourceCitationIds": ["S1"],
   "checkType": "recall | why | apply | transfer | teach_back",
   "canCountForPass": true,
   "understandingLevel": "memorized | partial | connected | transferable",
@@ -148,6 +149,7 @@ Feedback quality rules:
 - If the student wrote a request for help instead of answering, say that in "whatWentWrong" and still provide the correct answer.
 - If the handwriting image is present but unreadable, say "I could not read enough of the handwriting" instead of claiming no answer was provided.
 - Keep sourceNotes focused; they support the feedback but should not replace the main explanation.
+- If the source context lists source IDs like [S1], put only the IDs that directly support your feedback in "sourceCitationIds". Use an empty array when no listed source directly supports the feedback.
 
 The student may answer with typed text, a canvas image, or both. If typed text is empty but an image is attached, evaluate the handwritten canvas answer. If neither contains an answer, say that no answer was provided. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when referencing formulas or equations. Respond in ${language} but keep JSON keys in English.`;
 
@@ -294,6 +296,11 @@ ${materialContext}
 - Be warm and supportive, but also intellectually rigorous
 - Always respond in ${language}
 - Use Markdown for formatting; render math with $...$ (inline) and $$...$$ (block).
+- If the material context lists source IDs like [S1], cite only snippets you directly used. Add exactly one hidden source citation block after the visible answer, learning_question block, and optional visual block:
+  \`\`\`source_citations
+  {"sourceIds":["S1"]}
+  \`\`\`
+  Use an empty array when no listed source directly supports the answer. Never cite IDs that are merely topically similar.
 
 **VISUAL CANVAS OUTPUT:**
 When explaining concepts that benefit from visual aids, include a \`\`\`visual block at the END of your response. This will be rendered directly on the student's canvas.

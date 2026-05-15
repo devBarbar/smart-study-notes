@@ -333,6 +333,7 @@ export type StudyFeedback = {
   misconceptions?: string[];
   followUpQuestion?: string;
   sourceNotes?: string[];
+  sourceCitationIds?: string[];
   checkType?: TutorCheckType;
   canCountForPass?: boolean;
   missingPrerequisites?: string[];

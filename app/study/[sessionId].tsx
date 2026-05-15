@@ -70,6 +70,7 @@ import {
 } from "@/lib/parse-visual-response";
 import { parseLearningResponse } from "@/lib/parse-learning-response";
 import { buildCitationSnippet } from "@/lib/pdf-source";
+import { parseSourceCitations } from "@/lib/source-citations";
 import { uploadCanvasImage } from "@/lib/storage";
 import {
   LectureFileChunk,
@@ -228,6 +229,10 @@ type WarmupState = {
 type FeynmanSendOptions = {
   displayText?: string;
   questionId?: string;
+};
+
+type CitationSourceChunk = LectureFileChunk & {
+  sourceId: string;
 };
 
 const shuffleStudyWarmupOptions = (
@@ -2305,22 +2310,46 @@ export default function StudySessionScreen() {
     [buildRetrievalQuery, citationFileMetadata, lecture, lectureId],
   );
 
+  const chunksToCitationSourceChunks = useCallback(
+    (chunks: LectureFileChunk[]): CitationSourceChunk[] =>
+      chunks.map((chunk, index) => ({
+        ...chunk,
+        sourceId: `S${index + 1}`,
+      })),
+    [],
+  );
+
   const chunksToContextBlock = useCallback(
-    (chunks: LectureFileChunk[]) =>
-      `Use the following source snippets. Prefer lecture material for explanations, and use exercises or past exams as supporting high-yield examples. Cite only snippets that directly support the answer and keep answers concise.\n\n${chunks
+    (chunks: CitationSourceChunk[] | LectureFileChunk[]) =>
+      `Use the following source snippets. Prefer lecture material for explanations, and use exercises or past exams as supporting high-yield examples. Cite only snippets that directly support the answer and keep answers concise.\n\nWhen your answer uses one or more snippets, include a hidden source citation block at the end of the response using exactly this format:\n\`\`\`source_citations\n{"sourceIds":["S1"]}\n\`\`\`\nUse only source IDs listed below. If none of the snippets directly support the answer, use {"sourceIds":[]}.\n\n${chunks
         .map((chunk, idx) => {
+          const sourceId = "sourceId" in chunk ? chunk.sourceId : `S${idx + 1}`;
           const source = citationFileMetadata.get(chunk.lectureFileId);
           const sourceName = source?.name ?? "Source";
           const sourceType = source?.sourceType ?? chunk.sourceType ?? "lecture";
-          return `[${idx + 1}] ${sourceType.replace("_", " ")}: ${sourceName} (p${chunk.pageNumber}) ${chunk.content}`;
+          const lineRange = chunk.startLine
+            ? chunk.endLine && chunk.endLine !== chunk.startLine
+              ? `, lines ${chunk.startLine}-${chunk.endLine}`
+              : `, line ${chunk.startLine}`
+            : "";
+          return `[${sourceId}] ${sourceType.replace("_", " ")}: ${sourceName} (p${chunk.pageNumber}${lineRange})\n${chunk.content}`;
         })
         .join("\n\n")}`,
     [citationFileMetadata],
   );
 
-  const chunksToCitations = useCallback(
-    (chunks: LectureFileChunk[], answerText?: string): StudyCitation[] =>
-      balanceCitationChunks(chunks, 6, answerText).map((chunk) => ({
+  const selectCitedChunks = useCallback(
+    (chunks: CitationSourceChunk[], sourceIds: string[]) => {
+      if (sourceIds.length === 0) return [];
+      const requestedIds = new Set(sourceIds.map((id) => id.toUpperCase()));
+      return chunks.filter((chunk) => requestedIds.has(chunk.sourceId));
+    },
+    [],
+  );
+
+  const citedChunksToCitations = useCallback(
+    (chunks: CitationSourceChunk[]): StudyCitation[] =>
+      chunks.map((chunk) => ({
         chunkId: chunk.id,
         lectureId: chunk.lectureId,
         lectureFileId: chunk.lectureFileId,
@@ -2402,10 +2431,11 @@ export default function StudySessionScreen() {
           retrievalQuery ?? userMessage,
           6,
         );
+        const citationSourceChunks = chunksToCitationSourceChunks(retrievedChunks);
 
         const contextBlock =
-          retrievedChunks.length > 0
-            ? chunksToContextBlock(retrievedChunks)
+          citationSourceChunks.length > 0
+            ? chunksToContextBlock(citationSourceChunks)
             : fullMaterialContext;
 
         // Use streaming chat - update message as chunks arrive
@@ -2423,7 +2453,8 @@ export default function StudySessionScreen() {
               if (parsedDepthProgress) {
                 setResponseDepthProgress(parsedDepthProgress);
               }
-              const parsed = parseAIResponse(learningParsed.text);
+              const sourceCitationParsed = parseSourceCitations(learningParsed.text);
+              const parsed = parseAIResponse(sourceCitationParsed.text);
               const visibleTutorText = stripDepthProgressFromText(
                 collapseRepeatedTutorText(parsed.text),
               );
@@ -2449,7 +2480,8 @@ export default function StudySessionScreen() {
               if (parsedDepthProgress) {
                 setResponseDepthProgress(parsedDepthProgress);
               }
-              const parsed = parseAIResponse(learningParsed.text);
+              const sourceCitationParsed = parseSourceCitations(learningParsed.text);
+              const parsed = parseAIResponse(sourceCitationParsed.text);
               const visibleTutorText = stripDepthProgressFromText(
                 collapseRepeatedTutorText(parsed.text),
               );
@@ -2513,9 +2545,13 @@ export default function StudySessionScreen() {
               }
 
               // Final update with citations, cost, and visual block references
+              const citedChunks = selectCitedChunks(
+                citationSourceChunks,
+                sourceCitationParsed.sourceIds,
+              );
               const citations: StudyCitation[] | undefined =
-                retrievedChunks.length > 0
-                  ? chunksToCitations(retrievedChunks, visibleTutorText)
+                citedChunks.length > 0
+                  ? citedChunksToCitations(citedChunks)
                   : undefined;
 
               const finalMessage: StudyChatMessage = {
@@ -2551,7 +2587,10 @@ export default function StudySessionScreen() {
 
         // Add AI response to chat history (without cost suffix)
         const historyLearningParsed = parseLearningResponse(chatResult.message);
-        const historyParsed = parseAIResponse(historyLearningParsed.text);
+        const historySourceCitationParsed = parseSourceCitations(
+          historyLearningParsed.text,
+        );
+        const historyParsed = parseAIResponse(historySourceCitationParsed.text);
         const historyText = stripDepthProgressFromText(
           collapseRepeatedTutorText(historyParsed.text),
         );
@@ -2576,14 +2615,16 @@ export default function StudySessionScreen() {
       activeVisualBlocks,
       canvasStrokes,
       chatHistory,
-      chunksToCitations,
+      chunksToCitationSourceChunks,
       chunksToContextBlock,
+      citedChunksToCitations,
       fetchRelevantChunks,
       fullMaterialContext,
       getMaxYWithVisualBlocks,
       getQuestionTextForMessage,
       lectureId,
       pushMessage,
+      selectCitedChunks,
       updateMessage,
       speakMessage,
       t,
@@ -3287,12 +3328,11 @@ export default function StudySessionScreen() {
         `${questionToEvaluate.prompt}\n${answerDraft || answerText}`,
         6,
       );
+      const gradingSourceChunks = chunksToCitationSourceChunks(gradingChunks);
       const gradingContext =
-        gradingChunks.length > 0
-          ? chunksToContextBlock(gradingChunks)
+        gradingSourceChunks.length > 0
+          ? chunksToContextBlock(gradingSourceChunks)
           : fullMaterialContext;
-      const gradingCitations =
-        gradingChunks.length > 0 ? chunksToCitations(gradingChunks) : undefined;
 
       const feedback = await evaluateAnswer(
         {
@@ -3304,6 +3344,14 @@ export default function StudySessionScreen() {
         },
         agentLanguage,
       );
+      const gradingCitedChunks = selectCitedChunks(
+        gradingSourceChunks,
+        feedback.sourceCitationIds ?? [],
+      );
+      const gradingCitations =
+        gradingCitedChunks.length > 0
+          ? citedChunksToCitations(gradingCitedChunks)
+          : undefined;
 
       const normalizedScore =
         typeof feedback.score === "number"

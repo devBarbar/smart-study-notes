@@ -2159,6 +2159,11 @@ const handleGrade = async (
           misconceptions: Array.isArray(feedback.misconceptions) ? feedback.misconceptions : [],
           followUpQuestion: typeof feedback.followUpQuestion === "string" ? feedback.followUpQuestion : undefined,
           sourceNotes: Array.isArray(feedback.sourceNotes) ? feedback.sourceNotes : [],
+          sourceCitationIds: Array.isArray(feedback.sourceCitationIds)
+            ? feedback.sourceCitationIds
+                .map((id: unknown) => String(id ?? "").trim().toUpperCase())
+                .filter((id: string) => /^S\d+$/.test(id))
+            : [],
           checkType: typeof feedback.checkType === "string" ? feedback.checkType : undefined,
           canCountForPass: typeof feedback.canCountForPass === "boolean" ? feedback.canCountForPass : undefined,
           missingPrerequisites: Array.isArray(feedback.missingPrerequisites) ? feedback.missingPrerequisites : [],

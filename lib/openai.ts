@@ -170,6 +170,7 @@ export const evaluateAnswer = async (
       misconceptions: data.feedback.misconceptions ?? [],
       followUpQuestion: data.feedback.followUpQuestion ?? undefined,
       sourceNotes: data.feedback.sourceNotes ?? [],
+      sourceCitationIds: data.feedback.sourceCitationIds ?? [],
       checkType: data.feedback.checkType ?? undefined,
       canCountForPass: data.feedback.canCountForPass ?? undefined,
       missingPrerequisites: data.feedback.missingPrerequisites ?? [],

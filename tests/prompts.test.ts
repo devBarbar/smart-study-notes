@@ -27,6 +27,7 @@ test('gradingPrompt mentions question text', () => {
   assert.match(prompt, /whatWentWrong/);
   assert.match(prompt, /correctAnswer/);
   assert.match(prompt, /rewriteExample/);
+  assert.match(prompt, /sourceCitationIds/);
   assert.match(prompt, /be a tutor first and a grader second/i);
   assert.match(prompt, /enough detail to teach the gap/i);
   assert.doesNotMatch(prompt, /2-4 clear sentences/i);
@@ -38,6 +39,7 @@ test('feynmanSystemPrompt covers the full study session and hidden metadata', ()
   assert.match(prompt, /every listed key concept/i);
   assert.match(prompt, /not artificially short/i);
   assert.match(prompt, /```learning_question followed by a newline/i);
+  assert.match(prompt, /source_citations/);
   assert.match(prompt, /"assessmentKind":"depth"/);
 });
 
