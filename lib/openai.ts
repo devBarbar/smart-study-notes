@@ -1,4 +1,4 @@
-import { CheatSheetContent, LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness } from '@/types';
+import { CheatSheetContent, LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness, StudyWarmupQuestion } from '@/types';
 import type { AIPlatform } from './ai-model-options';
 import { captureTelemetryError, traceAsyncOperation } from './sentry';
 import { getSupabase } from './supabase';
@@ -67,6 +67,60 @@ export const generateQuestions = async (
   });
   const data = await waitForJobResult<{ questions?: StudyQuestion[] }>(jobId);
   return Array.isArray(data?.questions) ? data.questions : [];
+};
+
+const normalizeWarmupQuestion = (
+  question: Partial<StudyWarmupQuestion>,
+  index: number,
+): StudyWarmupQuestion | null => {
+  const prompt = String(question.prompt ?? '').trim();
+  const options = Array.isArray(question.options)
+    ? question.options.map((option) => String(option ?? '').trim()).filter(Boolean)
+    : [];
+  const correctOptionIndex = Number(question.correctOptionIndex);
+
+  if (
+    !prompt ||
+    options.length !== 4 ||
+    !Number.isInteger(correctOptionIndex) ||
+    correctOptionIndex < 0 ||
+    correctOptionIndex >= options.length
+  ) {
+    return null;
+  }
+
+  return {
+    id: question.id || `warmup-${index}`,
+    prompt,
+    options,
+    correctOptionIndex,
+    explanation: String(question.explanation ?? '').trim() || options[correctOptionIndex],
+    targetConcepts: Array.isArray(question.targetConcepts)
+      ? question.targetConcepts.map((concept) => String(concept ?? '').trim()).filter(Boolean)
+      : undefined,
+  };
+};
+
+export const generateWarmupQuestions = async (
+  materialTitle: string,
+  outline: string,
+  count = 10,
+  language: LanguageCode = 'en'
+): Promise<StudyWarmupQuestion[]> => {
+  const truncatedOutline = truncateToTokenLimit(outline, 500000);
+  const jobId = await enqueueJob('question_generation', {
+    materialTitle,
+    outline: truncatedOutline,
+    count,
+    language,
+    format: 'multiple_choice',
+  });
+  const data = await waitForJobResult<{ questions?: StudyWarmupQuestion[] }>(jobId);
+  return Array.isArray(data?.questions)
+    ? data.questions
+        .map((question, index) => normalizeWarmupQuestion(question, index))
+        .filter((question): question is StudyWarmupQuestion => Boolean(question))
+    : [];
 };
 
 type EvaluateAnswerParams = {

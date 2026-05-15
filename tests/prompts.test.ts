@@ -1,12 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { cheatSheetPrompt, feynmanSystemPrompt, gradingPrompt, lectureMetadataPrompt, practiceExamPrompt, questionPrompt } from '../lib/prompts';
+import { cheatSheetPrompt, feynmanSystemPrompt, gradingPrompt, lectureMetadataPrompt, practiceExamPrompt, questionPrompt, warmupQuestionPrompt } from '../lib/prompts';
 
 test('questionPrompt includes title and count', () => {
   const prompt = questionPrompt('Biology', 'Cells and DNA', 3);
   assert.match(prompt, /Biology/);
   assert.match(prompt, /3 short, concrete questions/i);
+});
+
+test('warmupQuestionPrompt asks for beginner multiple-choice JSON', () => {
+  const prompt = warmupQuestionPrompt('Biology', 'Cells and DNA', 10);
+  assert.match(prompt, /10 multiple-choice questions/i);
+  assert.match(prompt, /recognition warm-up/i);
+  assert.match(prompt, /"options"/);
+  assert.match(prompt, /"correctOptionIndex"/);
+  assert.match(prompt, /exactly 4 options/i);
 });
 
 test('gradingPrompt mentions question text', () => {

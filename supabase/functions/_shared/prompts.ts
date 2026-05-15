@@ -64,6 +64,42 @@ export const questionPrompt = (
 ) =>
   `You are a tutor using the Feynman technique. Generate ${count} short, concrete questions to test understanding of the material titled "${materialTitle}". Use the following outline or text:\n${outline}\nReturn each question as a numbered item with no explanations. Keep them concise. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when questions involve formulas or equations. Respond in ${language}.`;
 
+export const warmupQuestionPrompt = (
+  materialTitle: string,
+  outline: string,
+  count: number,
+  language = "en",
+) =>
+  `You are creating a beginner-friendly recognition warm-up before a Feynman recall session.
+
+Material title: "${materialTitle}"
+
+Source outline/context:
+${outline}
+
+Create exactly ${count} multiple-choice questions that help a learner orient themselves before recall.
+
+Return JSON only with this exact shape:
+[
+  {
+    "prompt": "Short question",
+    "options": ["A plausible answer", "A common misconception", "Another plausible answer", "Another distractor"],
+    "correctOptionIndex": 0,
+    "explanation": "One or two short sentences explaining why the correct option is right and why a tempting wrong idea is wrong.",
+    "targetConcepts": ["concept"]
+  }
+]
+
+Rules:
+- Use exactly 4 options per question.
+- Make questions answerable from recognition, not free recall.
+- Cover prerequisites, vocabulary, key relationships, common misconceptions, and high-yield ideas.
+- Start easier, then add 2-3 application-oriented questions near the end.
+- Keep explanations concise but useful for a beginner.
+- Use source-consistent wording; do not invent unsupported facts.
+- Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when needed.
+- Respond in ${language} but keep JSON keys in English.`;
+
 export const gradingPrompt = (
   question: StudyQuestion,
   answerText?: string,

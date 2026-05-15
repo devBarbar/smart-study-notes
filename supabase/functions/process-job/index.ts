@@ -23,6 +23,7 @@ import {
   practiceExamPrompt,
   questionPrompt,
   studyPlanPrompt,
+  warmupQuestionPrompt,
 } from "../_shared/prompts.ts";
 import {
   buildConceptInventoryPrompt,
@@ -1244,6 +1245,66 @@ const handleQuestionGeneration = async (
     ? Math.max(1, Math.min(20, Math.round(Number(count))))
     : 3;
   const truncatedOutline = truncateToTokenLimit(String(outline ?? ""), 500000);
+  if (payload?.format === "multiple_choice") {
+    const prompt = warmupQuestionPrompt(String(materialTitle), truncatedOutline, questionCount, language);
+    const chat = await callChat([{ type: "text", text: prompt }], {
+      aiSettings,
+      useCase: "question_generation",
+    });
+
+    let parsed: any[] = [];
+    try {
+      const value = JSON.parse(stripCodeFences(chat.message));
+      parsed = Array.isArray(value) ? value : [];
+    } catch (error) {
+      console.warn("[question_generation] failed to parse warm-up JSON", error);
+    }
+
+    const questions = parsed
+      .map((item: any, idx: number) => {
+        const options = Array.isArray(item?.options)
+          ? item.options.map((option: unknown) => String(option ?? "").trim()).filter(Boolean)
+          : [];
+        const correctOptionIndex = Number(item?.correctOptionIndex);
+        if (
+          !String(item?.prompt ?? "").trim() ||
+          options.length !== 4 ||
+          !Number.isInteger(correctOptionIndex) ||
+          correctOptionIndex < 0 ||
+          correctOptionIndex >= options.length
+        ) {
+          return null;
+        }
+
+        return {
+          id: `warmup-${idx}`,
+          prompt: String(item.prompt).trim(),
+          options,
+          correctOptionIndex,
+          explanation: String(item?.explanation ?? "").trim() || options[correctOptionIndex],
+          targetConcepts: Array.isArray(item?.targetConcepts)
+            ? item.targetConcepts.map((concept: unknown) => String(concept ?? "").trim()).filter(Boolean)
+            : undefined,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, questionCount);
+
+    return {
+      result: { questions },
+      usage: {
+        feature: "question_generation",
+        model: chat.model ?? null,
+        usage: chat.usage,
+        costUsd: chat.costUsd,
+        inputCostUsd: chat.inputCostUsd,
+        outputCostUsd: chat.outputCostUsd,
+        lectureId: payload?.lectureId ?? payload?.lecture_id ?? null,
+        metadata: { questions: questions.length, format: "multiple_choice" },
+      },
+    };
+  }
+
   const prompt = questionPrompt(String(materialTitle), truncatedOutline, questionCount, language);
   const chat = await callChat([{ type: "text", text: prompt }], {
     aiSettings,

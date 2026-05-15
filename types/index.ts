@@ -290,6 +290,15 @@ export type StudyQuestion = {
   assessmentKind?: AssessmentKind;
 };
 
+export type StudyWarmupQuestion = {
+  id: string;
+  prompt: string;
+  options: string[];
+  correctOptionIndex: number;
+  explanation: string;
+  targetConcepts?: string[];
+};
+
 export type StudyFeedback = {
   summary: string;
   correctness: string;

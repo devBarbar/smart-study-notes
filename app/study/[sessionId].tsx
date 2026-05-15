@@ -60,6 +60,7 @@ import {
   enqueueCheatSheetRefresh,
   evaluateAnswer,
   generateQuestions,
+  generateWarmupQuestions,
   streamFeynmanChat,
 } from "@/lib/openai";
 import {
@@ -114,12 +115,14 @@ import {
   StudyPlanEntry,
   StudyQuestion,
   StudySession,
+  StudyWarmupQuestion,
   TutorCheckType,
 } from "@/types";
 
 // Estimated height for chat messages for scrollToIndex
 const CHAT_ITEM_HEIGHT = 100;
 const MEMORIZATION_SECONDS = 120;
+const WARMUP_QUESTION_COUNT = 10;
 const FINAL_QUIZ_QUESTION_COUNT = 5;
 const FINAL_QUIZ_PASS_SCORE = DEPTH_PASS_SCORE;
 
@@ -175,6 +178,7 @@ type CitationSourceMetadata = {
 };
 
 type StudyPhase =
+  | "warmup"
   | "diagnostic"
   | "tutor"
   | "memorize"
@@ -196,6 +200,24 @@ type FinalQuizState = {
   currentIndex: number;
   answers: FinalQuizAnswer[];
   averageScore?: number;
+};
+
+type WarmupAnswer = {
+  questionId: string;
+  prompt: string;
+  selectedOptionIndex: number;
+  correctOptionIndex: number;
+  correct: boolean;
+  targetConcepts?: string[];
+  explanation: string;
+};
+
+type WarmupState = {
+  status: "idle" | "generating" | "active" | "complete" | "failed";
+  questions: StudyWarmupQuestion[];
+  currentIndex: number;
+  answers: WarmupAnswer[];
+  selectedOptionIndex: number | null;
 };
 
 type FeynmanSendOptions = {
@@ -676,6 +698,13 @@ export default function StudySessionScreen() {
   const [memorizationMessageId, setMemorizationMessageId] = useState<
     string | null
   >(null);
+  const [warmupState, setWarmupState] = useState<WarmupState>({
+    status: "idle",
+    questions: [],
+    currentIndex: 0,
+    answers: [],
+    selectedOptionIndex: null,
+  });
   const [finalQuizState, setFinalQuizState] = useState<FinalQuizState>({
     status: "idle",
     questions: [],
@@ -2565,6 +2594,223 @@ export default function StudySessionScreen() {
     t,
   ]);
 
+  const buildFallbackWarmupQuestions = useCallback((): StudyWarmupQuestion[] => {
+    const concepts = studyPlanEntry?.keyConcepts?.length
+      ? studyPlanEntry.keyConcepts
+      : [studyPlanEntry?.title || studyTitle].filter(Boolean);
+    const sourceConcepts = concepts.length > 0 ? concepts : [studyTitle];
+
+    return Array.from({ length: WARMUP_QUESTION_COUNT }, (_, index) => {
+      const concept = sourceConcepts[index % sourceConcepts.length] || studyTitle;
+      return {
+        id: `warmup-fallback-${index}`,
+        prompt: t("study.warmupFallbackPrompt", { concept }),
+        options: [
+          t("study.warmupFallbackCorrect", { concept }),
+          t("study.warmupFallbackDistractorDetail"),
+          t("study.warmupFallbackDistractorUnrelated"),
+          t("study.warmupFallbackDistractorMemorize"),
+        ],
+        correctOptionIndex: 0,
+        explanation: t("study.warmupFallbackExplanation", { concept }),
+        targetConcepts: [concept],
+      };
+    });
+  }, [studyPlanEntry, studyTitle, t]);
+
+  const finishWarmup = useCallback(
+    (answers: WarmupAnswer[], questions: StudyWarmupQuestion[]) => {
+      const correctCount = answers.filter((answer) => answer.correct).length;
+      const missed = answers.filter((answer) => !answer.correct);
+      const missedConcepts = Array.from(
+        new Set(
+          missed.flatMap((answer) => answer.targetConcepts ?? []).filter(Boolean),
+        ),
+      );
+      const selectedSummary = answers
+        .map((answer, index) => {
+          const question = questions.find((item) => item.id === answer.questionId);
+          const selected = question?.options[answer.selectedOptionIndex] ?? "";
+          const correct = question?.options[answer.correctOptionIndex] ?? "";
+          return `${index + 1}. ${answer.correct ? "Correct" : "Missed"}: ${answer.prompt}\nSelected: ${selected}\nCorrect: ${correct}\nFeedback: ${answer.explanation}`;
+        })
+        .join("\n\n");
+      const topic = studyPlanEntry?.title || studyTitle;
+      const nextCheckInstruction = nextDepthCheckType
+        ? `After the explanation, ask exactly one hidden learning_question for checkType "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}).`
+        : "After the explanation, ask exactly one focused retention or exam-style review question.";
+      const retrievalFocus = [
+        topic,
+        studyPlanEntry?.description,
+        studyPlanEntry?.keyConcepts?.join(", "),
+        missedConcepts.join(", "),
+      ]
+        .filter(Boolean)
+        .join("\n");
+      const prompt = [
+        "The student has just completed a 10-question multiple-choice warm-up before recall.",
+        `Topic: ${topic}`,
+        `Warm-up score: ${correctCount}/${questions.length}`,
+        missedConcepts.length
+          ? `Missed or shaky concepts: ${missedConcepts.join(", ")}`
+          : "The student did not miss any warm-up concepts.",
+        "Use the warm-up as orientation data, not as a pass/fail grade.",
+        "Start with a concise beginner primer that gives the prerequisite mental model before recall. If the score was low, slow down and explain the basics first. If the score was high, briefly connect the key ideas and move toward recall.",
+        "Explicitly address the most important missed concept before asking the next recall/depth question.",
+        "Teach one small idea clearly, using the source material. Do not dump the whole topic.",
+        `${nextCheckInstruction} The check-in question should be answerable after this explanation and should not assume advanced prior knowledge.`,
+        "Include a useful visual diagram using the ```visual block format when it would clarify relationships, steps, or a process.",
+        `Warm-up details:\n${selectedSummary}`,
+      ].join("\n\n");
+
+      setStudyPhase("tutor");
+      setCurrentQuestion(null);
+      setMemorizationSecondsRemaining(null);
+      sendToFeynmanAI(prompt, undefined, retrievalFocus || prompt, {
+        displayText: t("study.warmupCompleteUserMessage", {
+          correct: correctCount,
+          total: questions.length,
+        }),
+      });
+    },
+    [
+      nextDepthCheckType,
+      sendToFeynmanAI,
+      studyPlanEntry,
+      studyTitle,
+      t,
+    ],
+  );
+
+  const startWarmupQuiz = useCallback(async () => {
+    if (!studyTitle || warmupState.status !== "idle") return;
+
+    setStudyPhase("warmup");
+    setTutorCollapsed(false);
+    setMemorizationSecondsRemaining(null);
+    setWarmupState({
+      status: "generating",
+      questions: [],
+      currentIndex: 0,
+      answers: [],
+      selectedOptionIndex: null,
+    });
+
+    pushMessage({
+      id: uuid(),
+      role: "ai",
+      text: t("study.warmupIntro", {
+        count: WARMUP_QUESTION_COUNT,
+        topic: studyPlanEntry?.title || studyTitle,
+      }),
+    });
+
+    try {
+      const warmupContext = [
+        "Generate a recognition warm-up before recall. Cover beginner prerequisites, key terms, relationships, common misconceptions, and high-yield ideas.",
+        studyPlanEntry?.title ? `Topic: ${studyPlanEntry.title}` : null,
+        studyPlanEntry?.learningObjective
+          ? `Learning objective: ${studyPlanEntry.learningObjective}`
+          : null,
+        studyPlanEntry?.description
+          ? `Description: ${studyPlanEntry.description}`
+          : null,
+        studyPlanEntry?.keyConcepts?.length
+          ? `Key concepts: ${studyPlanEntry.keyConcepts.join(", ")}`
+          : null,
+        fullMaterialContext,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+      const generated = await generateWarmupQuestions(
+        studyPlanEntry?.title || studyTitle,
+        warmupContext,
+        WARMUP_QUESTION_COUNT,
+        agentLanguage,
+      );
+      const questions =
+        generated.length >= WARMUP_QUESTION_COUNT
+          ? generated.slice(0, WARMUP_QUESTION_COUNT)
+          : [
+              ...generated,
+              ...buildFallbackWarmupQuestions().slice(
+                0,
+                WARMUP_QUESTION_COUNT - generated.length,
+              ),
+            ];
+
+      setWarmupState({
+        status: "active",
+        questions,
+        currentIndex: 0,
+        answers: [],
+        selectedOptionIndex: null,
+      });
+    } catch (err) {
+      console.warn("[study] Failed to generate warm-up quiz", err);
+      setWarmupState({
+        status: "active",
+        questions: buildFallbackWarmupQuestions(),
+        currentIndex: 0,
+        answers: [],
+        selectedOptionIndex: null,
+      });
+    }
+  }, [
+    agentLanguage,
+    buildFallbackWarmupQuestions,
+    fullMaterialContext,
+    pushMessage,
+    studyPlanEntry,
+    studyTitle,
+    t,
+    warmupState.status,
+  ]);
+
+  const selectWarmupOption = useCallback((optionIndex: number) => {
+    setWarmupState((prev) => {
+      if (prev.status !== "active" || prev.selectedOptionIndex !== null) {
+        return prev;
+      }
+      return { ...prev, selectedOptionIndex: optionIndex };
+    });
+  }, []);
+
+  const continueWarmup = useCallback(() => {
+    const question = warmupState.questions[warmupState.currentIndex];
+    if (!question || warmupState.selectedOptionIndex === null) return;
+
+    const answer: WarmupAnswer = {
+      questionId: question.id,
+      prompt: question.prompt,
+      selectedOptionIndex: warmupState.selectedOptionIndex,
+      correctOptionIndex: question.correctOptionIndex,
+      correct: warmupState.selectedOptionIndex === question.correctOptionIndex,
+      targetConcepts: question.targetConcepts,
+      explanation: question.explanation,
+    };
+    const nextAnswers = [...warmupState.answers, answer];
+    const nextIndex = warmupState.currentIndex + 1;
+
+    if (nextIndex >= warmupState.questions.length) {
+      setWarmupState({
+        ...warmupState,
+        status: "complete",
+        answers: nextAnswers,
+        selectedOptionIndex: null,
+      });
+      finishWarmup(nextAnswers, warmupState.questions);
+      return;
+    }
+
+    setWarmupState({
+      ...warmupState,
+      currentIndex: nextIndex,
+      answers: nextAnswers,
+      selectedOptionIndex: null,
+    });
+  }, [finishWarmup, warmupState]);
+
   const buildDiagnosticQuestion = useCallback(() => {
     const topic = studyPlanEntry?.title || studyTitle;
     const conceptHint = studyPlanEntry?.keyConcepts?.length
@@ -2578,45 +2824,6 @@ export default function StudySessionScreen() {
       conceptHint,
     });
   }, [studyPlanEntry, studyTitle, t]);
-
-  const startColdStartAttempt = useCallback(() => {
-    const question = buildDiagnosticQuestion();
-    const questionId = `diagnostic-${uuid()}`;
-    const diagnosticQuestion: StudyQuestion = {
-      id: questionId,
-      prompt: question,
-      targetConcepts: studyPlanEntry?.keyConcepts,
-      expectedAnswerPoints: [
-        "A low-stakes first guess, prior knowledge, confusion, or an explicit no-clue response.",
-      ],
-      checkType: "recall",
-      requiredForPass: false,
-      difficulty: "basic",
-      assessmentKind: "diagnostic",
-    };
-
-    setQuestions((prev) => [diagnosticQuestion, ...prev]);
-    setCurrentQuestion(diagnosticQuestion);
-    setStudyPhase("diagnostic");
-    setMemorizationSecondsRemaining(null);
-    setTutorCollapsed(false);
-
-    pushMessage({
-      id: uuid(),
-      role: "ai",
-      text: t("study.coldStartIntro", { question }),
-      questionId,
-      tutorQuestion: {
-        question,
-        targetConcepts: diagnosticQuestion.targetConcepts,
-        expectedAnswerPoints: diagnosticQuestion.expectedAnswerPoints,
-        checkType: "recall",
-        requiredForPass: false,
-        difficulty: "basic",
-        assessmentKind: "diagnostic",
-      },
-    });
-  }, [buildDiagnosticQuestion, pushMessage, studyPlanEntry?.keyConcepts, t]);
 
   const submitDiagnosticAttempt = useCallback(
     (attemptText: string, noClue = false) => {
@@ -3368,7 +3575,7 @@ export default function StudySessionScreen() {
     sendToFeynmanAI(topicFocus, undefined, retrievalFocus || topicFocus);
   }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyPlanEntry]);
 
-  // Auto-trigger a low-stakes first attempt when starting a new session
+  // Auto-trigger a recognition warm-up before recall when starting a new session
   useEffect(() => {
     if (
       shouldAutoExplainRef.current &&
@@ -3381,14 +3588,14 @@ export default function StudySessionScreen() {
     ) {
       hasTriggeredAutoExplainRef.current = true;
       shouldAutoExplainRef.current = false;
-      startColdStartAttempt();
+      startWarmupQuiz();
     }
   }, [
     loadingMessages,
     loadingEntry,
     studyTitle,
     messages.length,
-    startColdStartAttempt,
+    startWarmupQuiz,
   ]);
 
   // Scroll chat to specific question message (called from canvas markers)
@@ -3670,6 +3877,24 @@ export default function StudySessionScreen() {
             total: finalQuizState.questions.length || FINAL_QUIZ_QUESTION_COUNT,
           })
         : null;
+  const activeWarmupQuestion =
+    studyPhase === "warmup" && warmupState.status === "active"
+      ? warmupState.questions[warmupState.currentIndex] ?? null
+      : null;
+  const warmupProgressLabel =
+    studyPhase === "warmup"
+      ? warmupState.status === "generating"
+        ? t("study.warmupGenerating")
+        : warmupState.status === "active"
+          ? t("study.warmupProgress", {
+              current: Math.min(
+                warmupState.currentIndex + 1,
+                warmupState.questions.length || WARMUP_QUESTION_COUNT,
+              ),
+              total: warmupState.questions.length || WARMUP_QUESTION_COUNT,
+            })
+          : null
+      : null;
 
   return (
     <ThemedView style={styles.shell}>
@@ -3746,6 +3971,14 @@ export default function StudySessionScreen() {
           canCollapseTutor={false}
           memorizationSecondsRemaining={memorizationSecondsRemaining}
           memorizationTotalSeconds={MEMORIZATION_SECONDS}
+          warmupQuestion={activeWarmupQuestion}
+          warmupSelectedOptionIndex={warmupState.selectedOptionIndex}
+          warmupProgressLabel={warmupProgressLabel}
+          warmupGenerating={
+            studyPhase === "warmup" && warmupState.status === "generating"
+          }
+          onSelectWarmupOption={selectWarmupOption}
+          onContinueWarmup={continueWarmup}
           finalQuizProgressLabel={finalQuizProgressLabel}
           depthProgressItems={depthProgressItems}
           diagnosticQuestion={

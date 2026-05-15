@@ -25,6 +25,7 @@ import {
     StudyCitation,
     StudyPlanEntry,
     StudyQuestion,
+    StudyWarmupQuestion,
 } from "@/types";
 
 type StudyChatPanelProps = {
@@ -46,6 +47,10 @@ type StudyChatPanelProps = {
   canCollapseTutor?: boolean;
   memorizationSecondsRemaining?: number | null;
   memorizationTotalSeconds?: number;
+  warmupQuestion?: StudyWarmupQuestion | null;
+  warmupSelectedOptionIndex?: number | null;
+  warmupProgressLabel?: string | null;
+  warmupGenerating?: boolean;
   finalQuizProgressLabel?: string | null;
   diagnosticQuestion?: string | null;
   depthProgressItems: StudyDepthProgressItem[];
@@ -78,6 +83,8 @@ type StudyChatPanelProps = {
   onViewNotes: (answerLinkId: string) => void;
   onViewDiagram: (blockId: string) => void;
   onSubmitAnswer: () => void;
+  onSelectWarmupOption: (optionIndex: number) => void;
+  onContinueWarmup: () => void;
   onSubmitDiagnosticAttempt: (text: string) => void;
   onDiagnosticNoClue: () => void;
   answerDraft: string;
@@ -103,6 +110,10 @@ export function StudyChatPanel({
   canCollapseTutor = true,
   memorizationSecondsRemaining = null,
   memorizationTotalSeconds = 60,
+  warmupQuestion = null,
+  warmupSelectedOptionIndex = null,
+  warmupProgressLabel = null,
+  warmupGenerating = false,
   finalQuizProgressLabel = null,
   diagnosticQuestion = null,
   depthProgressItems,
@@ -128,6 +139,8 @@ export function StudyChatPanel({
   onViewNotes,
   onViewDiagram,
   onSubmitAnswer,
+  onSelectWarmupOption,
+  onContinueWarmup,
   onSubmitDiagnosticAttempt,
   onDiagnosticNoClue,
   answerDraft,
@@ -204,7 +217,15 @@ export function StudyChatPanel({
           </ThemedText>
         </View>
       )}
-      {!isMemorizing && !diagnosticQuestion && (
+      {warmupProgressLabel && (
+        <View style={styles.warmupBanner}>
+          <Ionicons name="sparkles-outline" size={16} color="#0f766e" />
+          <ThemedText style={styles.warmupBannerText}>
+            {warmupProgressLabel}
+          </ThemedText>
+        </View>
+      )}
+      {!isMemorizing && !diagnosticQuestion && !warmupQuestion && !warmupGenerating && (
         <StudyChatToolbar
           styles={styles}
           t={t}
@@ -220,6 +241,19 @@ export function StudyChatPanel({
       )}
 
       {grading && <GradingStatusCard styles={styles} t={t} />}
+
+      {(warmupQuestion || warmupGenerating) && (
+        <WarmupQuizCard
+          styles={styles}
+          t={t}
+          question={warmupQuestion}
+          selectedOptionIndex={warmupSelectedOptionIndex}
+          loading={warmupGenerating}
+          disabled={isChatting}
+          onSelectOption={onSelectWarmupOption}
+          onContinue={onContinueWarmup}
+        />
+      )}
 
       {diagnosticQuestion && (
         <DiagnosticAttemptCard
@@ -252,7 +286,7 @@ export function StudyChatPanel({
         onViewDiagram={onViewDiagram}
       />
 
-      {!isMemorizing && !diagnosticQuestion && (
+      {!isMemorizing && !diagnosticQuestion && !warmupQuestion && !warmupGenerating && (
         <StudyChatInputArea
           styles={styles}
           t={t}
@@ -269,6 +303,132 @@ export function StudyChatPanel({
           onSendMessage={onSendQuickAction}
         />
       )}
+    </View>
+  );
+}
+
+function WarmupQuizCard({
+  styles,
+  t,
+  question,
+  selectedOptionIndex,
+  loading,
+  disabled,
+  onSelectOption,
+  onContinue,
+}: {
+  styles: StudyStyles;
+  t: (key: string, params?: Record<string, any>) => string;
+  question: StudyWarmupQuestion | null;
+  selectedOptionIndex: number | null;
+  loading: boolean;
+  disabled: boolean;
+  onSelectOption: (optionIndex: number) => void;
+  onContinue: () => void;
+}) {
+  if (loading || !question) {
+    return (
+      <View style={styles.warmupCard}>
+        <View style={styles.warmupHeader}>
+          <View style={styles.warmupIcon}>
+            <ActivityIndicator color="#ffffff" size="small" />
+          </View>
+          <View style={styles.warmupCopy}>
+            <ThemedText style={styles.warmupTitle}>
+              {t("study.warmupTitle")}
+            </ThemedText>
+            <ThemedText style={styles.warmupSubtitle}>
+              {t("study.warmupLoadingSubtitle")}
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  const hasAnswered = selectedOptionIndex !== null;
+  const isCorrect = selectedOptionIndex === question.correctOptionIndex;
+
+  return (
+    <View style={styles.warmupCard}>
+      <View style={styles.warmupHeader}>
+        <View style={styles.warmupIcon}>
+          <Ionicons name="options-outline" size={17} color="#ffffff" />
+        </View>
+        <View style={styles.warmupCopy}>
+          <ThemedText style={styles.warmupTitle}>
+            {t("study.warmupTitle")}
+          </ThemedText>
+          <ThemedText style={styles.warmupSubtitle}>
+            {t("study.warmupSubtitle")}
+          </ThemedText>
+        </View>
+      </View>
+      <ThemedText style={styles.warmupQuestion}>
+        {question.prompt}
+      </ThemedText>
+      <View style={styles.warmupOptions}>
+        {question.options.map((option, index) => {
+          const selected = selectedOptionIndex === index;
+          const correct = hasAnswered && question.correctOptionIndex === index;
+          const wrongSelection = hasAnswered && selected && !correct;
+          return (
+            <Pressable
+              key={`${question.id}-${index}`}
+              style={[
+                styles.warmupOption,
+                selected && styles.warmupOptionSelected,
+                correct && styles.warmupOptionCorrect,
+                wrongSelection && styles.warmupOptionWrong,
+              ]}
+              onPress={() => onSelectOption(index)}
+              disabled={disabled || hasAnswered}
+              accessibilityRole="button"
+              accessibilityLabel={option}
+            >
+              <View style={styles.warmupOptionMarker}>
+                <ThemedText style={styles.warmupOptionMarkerText}>
+                  {String.fromCharCode(65 + index)}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.warmupOptionText}>
+                {option}
+              </ThemedText>
+              {correct && (
+                <Ionicons name="checkmark-circle" size={18} color="#0f766e" />
+              )}
+              {wrongSelection && (
+                <Ionicons name="close-circle" size={18} color="#dc2626" />
+              )}
+            </Pressable>
+          );
+        })}
+      </View>
+      {hasAnswered && (
+        <View style={styles.warmupFeedback}>
+          <ThemedText style={styles.warmupFeedbackTitle}>
+            {isCorrect ? t("study.warmupCorrect") : t("study.warmupIncorrect")}
+          </ThemedText>
+          <ThemedText style={styles.warmupFeedbackText}>
+            {question.explanation}
+          </ThemedText>
+        </View>
+      )}
+      <Pressable
+        style={[
+          styles.submitButton,
+          (!hasAnswered || disabled) && styles.disabledButton,
+        ]}
+        onPress={onContinue}
+        disabled={!hasAnswered || disabled}
+        accessibilityRole="button"
+        accessibilityLabel={t("study.warmupContinue")}
+      >
+        <Ionicons name="arrow-forward-circle" size={18} color="#fff" />
+        <ThemedText style={styles.primaryButtonText}>
+          {t("study.warmupContinue")}
+        </ThemedText>
+      </Pressable>
     </View>
   );
 }
