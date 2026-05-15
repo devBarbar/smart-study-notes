@@ -26,10 +26,6 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         canvasColumnFullscreen: {
             flex: 1,
         },
-        canvasColumnSecondary: {
-            flex: 3,
-            minWidth: 360,
-        },
         canvasHeader: {
             flexDirection: "row",
             alignItems: "flex-start",
@@ -78,10 +74,6 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         },
         chatColumnFullscreen: {
             flex: 1,
-        },
-        chatColumnPrimary: {
-            flex: 5,
-            minWidth: 520,
         },
         chatColumnCollapsed: {
             width: 60,
@@ -1233,23 +1225,6 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             color: palette.primary,
             fontSize: 12,
             fontWeight: "800",
-        },
-        workspaceToggleButton: {
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: Spacing.xs,
-            borderRadius: Radii.md,
-            borderWidth: 1,
-            borderColor: `${palette.success}33`,
-            backgroundColor: `${palette.success}10`,
-            paddingVertical: 9,
-            paddingHorizontal: 12,
-        },
-        workspaceToggleText: {
-            color: palette.success,
-            fontSize: 13,
-            fontWeight: "900",
         },
         socraticHintCard: {
             gap: Spacing.xs,

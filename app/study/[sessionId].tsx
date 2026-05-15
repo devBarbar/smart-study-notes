@@ -879,7 +879,6 @@ export default function StudySessionScreen() {
   const [, setTutorCollapsed] = useState(false);
   const [studyPhase, setStudyPhase] = useState<StudyPhase>("tutor");
   const [studyMode, setStudyMode] = useState<StudyMode>("beginner");
-  const [answerWorkspaceVisible, setAnswerWorkspaceVisible] = useState(true);
   const [mistakeNotebook, setMistakeNotebook] = useState<
     StudyMistakeNotebookItem[]
   >([]);
@@ -4235,28 +4234,27 @@ export default function StudySessionScreen() {
     studyPhase === "warmup" && warmupState.status === "active"
       ? warmupState.questions[warmupState.currentIndex] ?? null
       : null;
-  const activeRecallQuestion: StudyQuestion | null =
-    latestUnansweredTutorQuestionMessage
-      ? {
-          id:
-            latestUnansweredTutorQuestionMessage.questionId ||
-            latestUnansweredTutorQuestionMessage.id,
-          prompt:
-            latestUnansweredTutorQuestionMessage.tutorQuestion?.question ||
-            getQuestionTextForMessage(latestUnansweredTutorQuestionMessage) ||
-            "",
-          targetConcepts:
-            latestUnansweredTutorQuestionMessage.tutorQuestion?.targetConcepts,
-          expectedAnswerPoints:
-            latestUnansweredTutorQuestionMessage.tutorQuestion?.expectedAnswerPoints,
-          checkType: normalizeTutorCheckType(
-            latestUnansweredTutorQuestionMessage.tutorQuestion?.checkType ||
-              currentQuestion?.checkType ||
-              nextDepthCheckType ||
-              "recall",
-          ),
-        }
-      : currentQuestion;
+  const activeRecallQuestion = latestUnansweredTutorQuestionMessage
+    ? {
+        id:
+          latestUnansweredTutorQuestionMessage.questionId ||
+          latestUnansweredTutorQuestionMessage.id,
+        prompt:
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.question ||
+          getQuestionTextForMessage(latestUnansweredTutorQuestionMessage) ||
+          "",
+        targetConcepts:
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.targetConcepts,
+        expectedAnswerPoints:
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.expectedAnswerPoints,
+        checkType: normalizeTutorCheckType(
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.checkType ||
+            currentQuestion?.checkType ||
+            nextDepthCheckType ||
+            "recall",
+        ),
+      }
+    : currentQuestion;
   const recallHintText =
     showCanvasSurface && !grading
       ? buildSocraticHint(activeRecallQuestion, t)
@@ -4276,99 +4274,14 @@ export default function StudySessionScreen() {
           : null
       : null;
 
-  const workspaceVisible = showCanvasSurface && answerWorkspaceVisible;
-
   return (
     <ThemedView style={styles.shell}>
-      <StudyChatPanel
-        styles={styles}
-        palette={palette}
-        t={t}
-        studyPlanEntry={studyPlanEntry}
-        ttsEnabled={ttsEnabled}
-        listeningMode={listeningMode}
-        isChatting={isChatting}
-        isSpeaking={isSpeaking}
-        activeTtsMessageId={activeTtsMessageId}
-        loadingQuestions={loadingQuestions}
-        grading={grading}
-        currentQuestion={showCanvasSurface ? activeRecallQuestion : currentQuestion}
-        messages={messages}
-        answerMarkers={answerMarkers}
-        fullScreen={!workspaceVisible}
-        primary={showCanvasSurface}
-        canCollapseTutor={false}
-        showWorkspaceToggle={showCanvasSurface}
-        workspaceVisible={workspaceVisible}
-        onToggleWorkspace={() => setAnswerWorkspaceVisible((visible) => !visible)}
-        memorizationSecondsRemaining={
-          showCanvasSurface ? null : memorizationSecondsRemaining
-        }
-        memorizationTotalSeconds={MEMORIZATION_SECONDS}
-        warmupQuestion={activeWarmupQuestion}
-        warmupSelectedOptionIndex={warmupState.selectedOptionIndex}
-        warmupProgressLabel={warmupProgressLabel}
-        warmupGenerating={
-          studyPhase === "warmup" && warmupState.status === "generating"
-        }
-        onSelectWarmupOption={selectWarmupOption}
-        onContinueWarmup={continueWarmup}
-        finalQuizProgressLabel={finalQuizProgressLabel}
-        depthProgressItems={depthProgressItems}
-        studyMode={studyMode}
-        studyPrepContent={studyPrepContent}
-        setupActive={studyPhase === "setup"}
-        onStudyModeChange={setStudyMode}
-        onStartWarmup={startWarmupQuiz}
-        mistakeNotebook={mistakeNotebook}
-        diagnosticQuestion={
-          studyPhase === "diagnostic"
-            ? latestDiagnosticQuestionMessage?.tutorQuestion?.question ?? null
-            : null
-        }
-        chatListRef={chatListRef}
-        getItemLayout={getItemLayout}
-        onToggleTutor={toggleTutor}
-        onToggleTts={handleToggleTts}
-        onToggleListening={handleToggleListening}
-        onStopSpeaking={stopSpeaking}
-        onRestartSession={handleRestartSession}
-        onRequestExplanation={requestExplanation}
-        onRequestQuestions={requestQuestions}
-        onAddPage={handleAddPage}
-        onNextQuestion={nextQuestion}
-        onSendQuickAction={sendToFeynmanAI}
-        onVoiceTranscription={handleVoiceTranscription}
-        onListeningModeEnd={() => setListeningMode(false)}
-        ttsFinished={!isSpeaking && listeningMode}
-        getCitationLabel={getCitationLabel}
-        getCitationSourceLabel={getCitationSourceLabel}
-        onReplayMessage={speakMessage}
-        onOpenCitation={openCitationSource}
-        onViewNotes={(answerLinkId) => {
-          setAnswerWorkspaceVisible(true);
-          setTimeout(() => scrollToCanvasAnswer(answerLinkId), 0);
-        }}
-        onViewDiagram={(blockId) => {
-          setAnswerWorkspaceVisible(true);
-          setTimeout(() => handleViewDiagram(blockId), 0);
-        }}
-        onSubmitAnswer={submitAnswer}
-        onSubmitDiagnosticAttempt={(text) =>
-          submitDiagnosticAttempt(text, false)
-        }
-        onDiagnosticNoClue={() => submitDiagnosticAttempt("", true)}
-        answerDraft={answerDraft}
-        onAnswerDraftChange={setAnswerDraft}
-      />
-
-      {workspaceVisible && (
+      {showCanvasSurface ? (
         <StudyCanvasPanel
           styles={styles}
           palette={palette}
           t={t}
           tutorCollapsed
-          secondaryWorkspace
           lockedAnswerMode
           toggleTutor={toggleTutor}
           studyTitle={studyTitle}
@@ -4418,6 +4331,76 @@ export default function StudySessionScreen() {
           recallHintText={recallHintText}
           recallHintRevealed={recallHintRevealed}
           onRevealRecallHint={() => setRecallHintRevealed(true)}
+        />
+      ) : (
+        <StudyChatPanel
+          styles={styles}
+          palette={palette}
+          t={t}
+          studyPlanEntry={studyPlanEntry}
+          ttsEnabled={ttsEnabled}
+          listeningMode={listeningMode}
+          isChatting={isChatting}
+          isSpeaking={isSpeaking}
+          activeTtsMessageId={activeTtsMessageId}
+          loadingQuestions={loadingQuestions}
+          grading={grading}
+          currentQuestion={currentQuestion}
+          messages={messages}
+          answerMarkers={answerMarkers}
+          fullScreen
+          canCollapseTutor={false}
+          memorizationSecondsRemaining={memorizationSecondsRemaining}
+          memorizationTotalSeconds={MEMORIZATION_SECONDS}
+          warmupQuestion={activeWarmupQuestion}
+          warmupSelectedOptionIndex={warmupState.selectedOptionIndex}
+          warmupProgressLabel={warmupProgressLabel}
+          warmupGenerating={
+            studyPhase === "warmup" && warmupState.status === "generating"
+          }
+          onSelectWarmupOption={selectWarmupOption}
+          onContinueWarmup={continueWarmup}
+          finalQuizProgressLabel={finalQuizProgressLabel}
+          depthProgressItems={depthProgressItems}
+          studyMode={studyMode}
+          studyPrepContent={studyPrepContent}
+          setupActive={studyPhase === "setup"}
+          onStudyModeChange={setStudyMode}
+          onStartWarmup={startWarmupQuiz}
+          mistakeNotebook={mistakeNotebook}
+          diagnosticQuestion={
+            studyPhase === "diagnostic"
+              ? latestDiagnosticQuestionMessage?.tutorQuestion?.question ?? null
+              : null
+          }
+          chatListRef={chatListRef}
+          getItemLayout={getItemLayout}
+          onToggleTutor={toggleTutor}
+          onToggleTts={handleToggleTts}
+          onToggleListening={handleToggleListening}
+          onStopSpeaking={stopSpeaking}
+          onRestartSession={handleRestartSession}
+          onRequestExplanation={requestExplanation}
+          onRequestQuestions={requestQuestions}
+          onAddPage={handleAddPage}
+          onNextQuestion={nextQuestion}
+          onSendQuickAction={sendToFeynmanAI}
+          onVoiceTranscription={handleVoiceTranscription}
+          onListeningModeEnd={() => setListeningMode(false)}
+          ttsFinished={!isSpeaking && listeningMode}
+          getCitationLabel={getCitationLabel}
+          getCitationSourceLabel={getCitationSourceLabel}
+          onReplayMessage={speakMessage}
+          onOpenCitation={openCitationSource}
+          onViewNotes={scrollToCanvasAnswer}
+          onViewDiagram={handleViewDiagram}
+          onSubmitAnswer={submitAnswer}
+          onSubmitDiagnosticAttempt={(text) =>
+            submitDiagnosticAttempt(text, false)
+          }
+          onDiagnosticNoClue={() => submitDiagnosticAttempt("", true)}
+          answerDraft={answerDraft}
+          onAnswerDraftChange={setAnswerDraft}
         />
       )}
 
