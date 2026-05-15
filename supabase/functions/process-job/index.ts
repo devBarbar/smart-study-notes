@@ -35,6 +35,10 @@ import {
   SourceCoverageGap,
   SourceCoverageInput,
 } from "../_shared/study-plan-v2.ts";
+import {
+  groupPdfTextItemsIntoLines,
+  splitTextIntoLineChunks,
+} from "../_shared/pdf-source.ts";
 import { insertUsageLog } from "../_shared/usage.ts";
 import { captureSentryException, setSentryJobContext, withSentry } from "../_shared/sentry.ts";
 
@@ -166,12 +170,13 @@ const inferAudioFormat = (file: File) => {
   return "m4a";
 };
 
-type ExtractedPage = { pageNumber: number; text: string };
+type ExtractedPage = { pageNumber: number; text: string; lines?: string[] };
 type LecturePlanFile = {
   id: string;
   name: string;
   uri: string;
   extracted_text?: string | null;
+  extracted_pages?: unknown;
   is_exam?: boolean | null;
 };
 
@@ -182,26 +187,6 @@ const hashText = (input: string): string => {
     hash |= 0;
   }
   return `h${(hash >>> 0).toString(16)}`;
-};
-
-const splitTextForEmbeddings = (text: string, maxChars = 1600, overlap = 200): string[] => {
-  if (text.length <= maxChars) return text.trim() ? [text.trim()] : [];
-  const chunks: string[] = [];
-  let start = 0;
-  while (start < text.length) {
-    const sliceEnd = Math.min(start + maxChars, text.length);
-    let chunk = text.slice(start, sliceEnd);
-    if (sliceEnd < text.length) {
-      const lastBreak = chunk.lastIndexOf("\n\n");
-      if (lastBreak > maxChars * 0.6) chunk = chunk.slice(0, lastBreak);
-    }
-    const trimmed = chunk.trim();
-    if (trimmed) chunks.push(trimmed);
-    const advanceBy = chunk.length > overlap ? chunk.length - overlap : chunk.length;
-    if (advanceBy <= 0) break;
-    start += advanceBy;
-  }
-  return chunks;
 };
 
 const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
@@ -276,17 +261,39 @@ const extractPdfPages = async (pdfUrl: string): Promise<ExtractedPage[]> => {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber);
     const textContent = await page.getTextContent();
-    const text = (textContent.items ?? [])
-      .map((item: any) => ("str" in item ? item.str : ""))
-      .join(" ");
+    const lines = groupPdfTextItemsIntoLines((textContent.items ?? []) as any[]);
+    const text = lines.join("\n");
     const sanitized = sanitizeForDatabase(text);
-    if (sanitized) pages.push({ pageNumber, text: sanitized });
+    if (sanitized) pages.push({ pageNumber, text: sanitized, lines });
   }
   return pages;
 };
 
 const extractPdfPagesWithTimeout = (pdfUrl: string, fileName: string) =>
   withTimeout(extractPdfPages(pdfUrl), PDF_EXTRACTION_TIMEOUT_MS, `PDF extraction for ${fileName}`);
+
+const parseStoredExtractedPages = (value: unknown): ExtractedPage[] => {
+  if (!Array.isArray(value)) return [];
+  const pages: ExtractedPage[] = [];
+
+  value.forEach((page: any, index) => {
+    const pageNumber = Number(page?.pageNumber ?? page?.page_number ?? index + 1);
+    const lines = Array.isArray(page?.lines)
+      ? page.lines.map((line: unknown) => sanitizeForDatabase(String(line ?? ""))).filter(Boolean)
+      : undefined;
+    const text = sanitizeForDatabase(
+      String(page?.text ?? (lines ? lines.join("\n") : "")),
+    );
+    if (!text) return;
+    pages.push({
+      pageNumber: Number.isFinite(pageNumber) ? pageNumber : index + 1,
+      text,
+      lines,
+    });
+  });
+
+  return pages;
+};
 
 const aggregateUsage = (
   current: UsageLogPayload | undefined,
@@ -598,7 +605,7 @@ const handleLecturePlanV2 = async (
 
   const { data: files, error: filesError } = await supabase
     .from("lecture_files")
-    .select("id,name,uri,extracted_text,is_exam")
+    .select("id,name,uri,extracted_text,extracted_pages,is_exam")
     .eq("lecture_id", lectureId)
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
@@ -623,7 +630,10 @@ const handleLecturePlanV2 = async (
 
   for (const file of files as LecturePlanFile[]) {
     let pages: ExtractedPage[] = [];
-    if (file.extracted_text?.trim()) {
+    const storedPages = parseStoredExtractedPages(file.extracted_pages);
+    if (!regenerate && storedPages.length > 0) {
+      pages = storedPages;
+    } else if (!regenerate && file.extracted_text?.trim()) {
       pages = [{ pageNumber: 1, text: sanitizeForDatabase(file.extracted_text) }];
     } else {
       try {
@@ -634,7 +644,14 @@ const handleLecturePlanV2 = async (
         }
         await supabase
           .from("lecture_files")
-          .update({ extracted_text: fullText })
+          .update({
+            extracted_text: fullText,
+            extracted_pages: pages.map((page) => ({
+              pageNumber: page.pageNumber,
+              text: page.text,
+              lines: page.lines ?? page.text.split("\n").filter(Boolean),
+            })),
+          })
           .eq("id", file.id)
           .eq("user_id", userId);
       } catch (error: any) {
@@ -699,7 +716,7 @@ const saveLecturePlanFromParsedPath = async (
 
   const { data: files, error: filesError } = await supabase
     .from("lecture_files")
-    .select("id,name,extracted_text")
+    .select("id,name,extracted_text,extracted_pages")
     .eq("lecture_id", lectureId)
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
@@ -765,15 +782,24 @@ const saveLecturePlanFromParsedPath = async (
 
   const chunkRows: any[] = [];
   for (const file of files ?? []) {
-    const text = sanitizeForDatabase(String((file as any).extracted_text ?? ""));
-    splitTextForEmbeddings(text).forEach((content, chunkIndex) => {
-      chunkRows.push({
-        lecture_id: lectureId,
-        lecture_file_id: (file as any).id,
-        page_number: 1,
-        chunk_index: chunkIndex,
-        content,
-        content_hash: hashText(`${(file as any).id}:1:${chunkIndex}:${content}`),
+    const storedPages = parseStoredExtractedPages((file as any).extracted_pages);
+    const pages =
+      storedPages.length > 0
+        ? storedPages
+        : [{ pageNumber: 1, text: sanitizeForDatabase(String((file as any).extracted_text ?? "")) }];
+
+    pages.forEach((page) => {
+      splitTextIntoLineChunks(page.text).forEach((chunk, chunkIndex) => {
+        chunkRows.push({
+          lecture_id: lectureId,
+          lecture_file_id: (file as any).id,
+          page_number: page.pageNumber,
+          start_line: chunk.startLine,
+          end_line: chunk.endLine,
+          chunk_index: chunkIndex,
+          content: chunk.content,
+          content_hash: hashText(`${(file as any).id}:${page.pageNumber}:${chunk.startLine}:${chunk.endLine}:${chunk.content}`),
+        });
       });
     });
   }

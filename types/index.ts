@@ -19,6 +19,7 @@ export type LectureFile = {
   uri: string;
   mimeType: string;
   extractedText?: string;
+  extractedPages?: { pageNumber: number; text: string }[];
   isExam?: boolean;
   createdAt: string;
 };
@@ -429,6 +430,9 @@ export type StudyCitation = {
   lectureId?: string;
   lectureFileId?: string;
   pageNumber?: number;
+  startLine?: number;
+  endLine?: number;
+  snippet?: string;
   similarity?: number;
   sourceType?: 'lecture' | 'exercise' | 'past_exam';
   sourceBBox?: CanvasBounds;

@@ -19,8 +19,17 @@ if (shouldValidatePublicEnv) {
 
 module.exports = ({ config }) => {
   const plugins = [...(config.plugins ?? [])];
-  if (!plugins.some((plugin) => plugin === 'expo-sharing' || plugin?.[0] === 'expo-sharing')) {
+  const hasPlugin = (name) =>
+    plugins.some((plugin) => plugin === name || plugin?.[0] === name);
+
+  if (!hasPlugin('expo-sharing')) {
     plugins.push('expo-sharing');
+  }
+  if (!hasPlugin('@config-plugins/react-native-blob-util')) {
+    plugins.push('@config-plugins/react-native-blob-util');
+  }
+  if (!hasPlugin('@config-plugins/react-native-pdf')) {
+    plugins.push('@config-plugins/react-native-pdf');
   }
   const runtimeVersion =
     process.env.EXPO_UPDATES_FINGERPRINT_OVERRIDE ?? config.runtimeVersion;

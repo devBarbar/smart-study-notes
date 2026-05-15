@@ -423,15 +423,15 @@ const formatReasoningAccessibilityLabel = (
 
 const citationKey = (citation: StudyCitation, index: number) =>
   citation.lectureFileId
-    ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}`
-    : `${citation.chunkId}-${citation.pageNumber ?? "unknown"}-${index}`;
+    ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}-${citation.startLine ?? "line"}-${citation.endLine ?? "line"}`
+    : `${citation.chunkId}-${citation.pageNumber ?? "unknown"}-${citation.startLine ?? "line"}-${index}`;
 
 const dedupeCitationsBySourcePage = (citations: StudyCitation[]) => {
   const seen = new Set<string>();
   return citations.filter((citation) => {
     const key = citation.lectureFileId
-      ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}`
-      : `${citation.chunkId}-${citation.pageNumber ?? "unknown"}`;
+      ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}-${citation.startLine ?? "line"}-${citation.endLine ?? "line"}`
+      : `${citation.chunkId}-${citation.pageNumber ?? "unknown"}-${citation.startLine ?? "line"}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

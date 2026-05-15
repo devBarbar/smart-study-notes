@@ -166,6 +166,8 @@ export type LectureFileChunk = {
   lectureId: string;
   lectureFileId: string;
   pageNumber: number;
+  startLine?: number;
+  endLine?: number;
   chunkIndex: number;
   content: string;
   similarity?: number;
@@ -177,6 +179,8 @@ type NewLectureChunkInput = {
   lectureId: string;
   lectureFileId: string;
   pageNumber: number;
+  startLine?: number;
+  endLine?: number;
   chunkIndex: number;
   content: string;
   embedding: number[];
@@ -213,6 +217,8 @@ export const upsertLectureChunks = async (chunks: NewLectureChunkInput[]) => {
     lecture_id: chunk.lectureId,
     lecture_file_id: chunk.lectureFileId,
     page_number: chunk.pageNumber,
+    start_line: chunk.startLine ?? null,
+    end_line: chunk.endLine ?? null,
     chunk_index: chunk.chunkIndex,
     content: chunk.content,
     content_hash: chunk.contentHash ?? null,
@@ -254,9 +260,12 @@ export const searchLectureChunks = async (
     lectureId: row.lecture_id,
     lectureFileId: row.lecture_file_id,
     pageNumber: row.page_number,
+    startLine: row.start_line ?? undefined,
+    endLine: row.end_line ?? undefined,
     chunkIndex: row.chunk_index,
     content: row.content,
     similarity: row.similarity ?? undefined,
+    sourceBBox: row.source_bbox ?? undefined,
   }));
 };
 
@@ -540,6 +549,12 @@ export const listLectures = async (): Promise<Lecture[]> => {
         uri: file.uri,
         mimeType: file.mime_type ?? 'application/pdf',
         extractedText: file.extracted_text ?? undefined,
+        extractedPages: Array.isArray(file.extracted_pages)
+          ? file.extracted_pages.map((page: any, index: number) => ({
+              pageNumber: Number(page?.pageNumber ?? page?.page_number ?? index + 1),
+              text: String(page?.text ?? ''),
+            }))
+          : undefined,
         isExam: file.is_exam ?? false,
         createdAt: file.created_at,
       }));
@@ -776,6 +791,7 @@ export const saveLectureFiles = async (lectureId: string, files: Omit<LectureFil
     uri: file.uri,
     mime_type: file.mimeType,
     extracted_text: sanitizeText(file.extractedText),
+    extracted_pages: file.extractedPages ?? null,
     is_exam: file.isExam ?? false,
     user_id: userId,
   }));
@@ -1261,6 +1277,12 @@ export const getLectureWithFiles = async (lectureId: string): Promise<Lecture | 
     uri: file.uri,
     mimeType: file.mime_type ?? 'application/pdf',
     extractedText: file.extracted_text ?? undefined,
+    extractedPages: Array.isArray(file.extracted_pages)
+      ? file.extracted_pages.map((page: any, index: number) => ({
+          pageNumber: Number(page?.pageNumber ?? page?.page_number ?? index + 1),
+          text: String(page?.text ?? ''),
+        }))
+      : undefined,
     isExam: file.is_exam ?? false,
     createdAt: file.created_at,
   }));

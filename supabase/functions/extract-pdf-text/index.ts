@@ -1,5 +1,6 @@
 import { corsHeaders } from '../_shared/cors.ts';
 import { withSentry } from '../_shared/sentry.ts';
+import { groupPdfTextItemsIntoLines } from '../_shared/pdf-source.ts';
 
 // Use unpdf which is designed for serverless/edge environments
 import { getDocumentProxy } from 'npm:unpdf';
@@ -35,16 +36,15 @@ Deno.serve(withSentry("extract-pdf-text", async (req: Request) => {
     // Extract text per page for downstream embeddings
     const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
     const totalPages = pdf.numPages;
-    const pages: { pageNumber: number; text: string }[] = [];
+    const pages: { pageNumber: number; text: string; lines?: string[] }[] = [];
     const fullTextParts: string[] = [];
 
     for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
       const page = await pdf.getPage(pageNumber);
       const textContent = await page.getTextContent();
-      const pageText = (textContent.items ?? [])
-        .map((item: any) => ('str' in item ? item.str : ''))
-        .join(' ');
-      pages.push({ pageNumber, text: pageText });
+      const lines = groupPdfTextItemsIntoLines((textContent.items ?? []) as any[]);
+      const pageText = lines.join('\n');
+      pages.push({ pageNumber, text: pageText, lines });
       fullTextParts.push(pageText);
     }
 
@@ -64,8 +64,9 @@ Deno.serve(withSentry("extract-pdf-text", async (req: Request) => {
 
   } catch (error) {
     console.error('[extract-pdf-text] Error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to extract text from PDF';
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to extract text from PDF' }),
+      JSON.stringify({ error: message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

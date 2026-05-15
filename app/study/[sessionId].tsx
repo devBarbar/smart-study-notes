@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   FlatList,
   LayoutChangeEvent,
-  Linking,
   ScrollView,
 } from "react-native";
 import {
@@ -44,6 +43,7 @@ import { StudyChatPanel } from "@/components/study/study-chat-panel";
 import { StudyFlashcardToast } from "@/components/study/study-flashcard-toast";
 import { StudyLecturePassedToast } from "@/components/study/study-lecture-passed-toast";
 import { createStudyStyles } from "@/components/study/study-styles";
+import { PdfReferenceModal } from "../../components/pdf-reference-modal";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors } from "@/constants/theme";
@@ -69,6 +69,7 @@ import {
   parseAIResponse,
 } from "@/lib/parse-visual-response";
 import { parseLearningResponse } from "@/lib/parse-learning-response";
+import { buildCitationSnippet } from "@/lib/pdf-source";
 import { uploadCanvasImage } from "@/lib/storage";
 import {
   LectureFileChunk,
@@ -652,6 +653,15 @@ export default function StudySessionScreen() {
     });
     return names;
   }, [citationFileMetadata]);
+  const [activeCitation, setActiveCitation] = useState<StudyCitation | null>(null);
+
+  const activeCitationFile = useMemo(
+    () =>
+      activeCitation?.lectureFileId
+        ? lecture?.files.find((file) => file.id === activeCitation.lectureFileId) ?? null
+        : null,
+    [activeCitation, lecture?.files],
+  );
 
   // Study plan entry for focused study
   const [studyPlanEntry, setStudyPlanEntry] = useState<StudyPlanEntry | null>(
@@ -2315,6 +2325,9 @@ export default function StudySessionScreen() {
         lectureId: chunk.lectureId,
         lectureFileId: chunk.lectureFileId,
         pageNumber: chunk.pageNumber,
+        startLine: chunk.startLine,
+        endLine: chunk.endLine,
+        snippet: buildCitationSnippet(chunk.content),
         similarity: chunk.similarity,
         sourceType:
           chunk.sourceType ??
@@ -4086,12 +4099,7 @@ export default function StudySessionScreen() {
       if (!lecture) return;
       const file = lecture.files.find((f) => f.id === citation.lectureFileId);
       if (!file) return;
-      const targetUrl = citation.pageNumber
-        ? `${file.uri}#page=${citation.pageNumber}`
-        : file.uri;
-      Linking.openURL(targetUrl).catch((err) =>
-        console.warn("[study] Failed to open source", err),
-      );
+      setActiveCitation(citation);
     },
     [lecture],
   );
@@ -4111,14 +4119,14 @@ export default function StudySessionScreen() {
       )
       .filter(({ citation }) => {
         const key = citation.lectureFileId
-          ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}`
-          : `${citation.chunkId ?? "chunk"}-${citation.pageNumber ?? "unknown"}`;
+          ? `${citation.lectureFileId}-${citation.pageNumber ?? "unknown"}-${citation.startLine ?? "line"}-${citation.endLine ?? "line"}`
+          : `${citation.chunkId ?? "chunk"}-${citation.pageNumber ?? "unknown"}-${citation.startLine ?? "line"}`;
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
       })
       .map(({ citation, index, messageId }) => ({
-        key: `${messageId}-${citation.lectureFileId ?? citation.chunkId ?? index}-${citation.pageNumber ?? "source"}`,
+        key: `${messageId}-${citation.lectureFileId ?? citation.chunkId ?? index}-${citation.pageNumber ?? "source"}-${citation.startLine ?? "line"}`,
         citation,
         label: getCitationLabel(citation),
         sourceLabel: getCitationSourceLabel(citation),
@@ -4406,6 +4414,16 @@ export default function StudySessionScreen() {
 
       {flashcardAdded && <StudyFlashcardToast styles={styles} t={t} />}
       {lecturePassedToast && <StudyLecturePassedToast styles={styles} t={t} />}
+      <PdfReferenceModal
+        visible={Boolean(activeCitation && activeCitationFile)}
+        file={activeCitationFile}
+        citation={activeCitation}
+        label={activeCitation ? getCitationLabel(activeCitation) : undefined}
+        sourceLabel={
+          activeCitation ? getCitationSourceLabel(activeCitation) : undefined
+        }
+        onClose={() => setActiveCitation(null)}
+      />
     </ThemedView>
   );
 }

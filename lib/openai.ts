@@ -1,5 +1,6 @@
 import { CheatSheetContent, LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness, StudyWarmupQuestion } from '@/types';
 import type { AIPlatform } from './ai-model-options';
+import { splitTextIntoLineChunks } from './pdf-source';
 import { captureTelemetryError, traceAsyncOperation } from './sentry';
 import { getSupabase } from './supabase';
 
@@ -15,7 +16,7 @@ export type ChatMessage = {
   content: string;
 };
 
-export type ExtractedPdfPage = { pageNumber: number; text: string };
+export type ExtractedPdfPage = { pageNumber: number; text: string; lines?: string[] };
 export type ExtractedPdfResult = { text: string; pages?: ExtractedPdfPage[]; pageCount?: number };
 
 /**
@@ -264,19 +265,23 @@ type PreparedChunk = {
   lectureId: string;
   lectureFileId: string;
   pageNumber: number;
+  startLine?: number;
+  endLine?: number;
   chunkIndex: number;
   content: string;
   contentHash: string;
 };
 
 const splitPageIntoChunks = (page: ExtractedPdfPage, maxChars = 1600, overlap = 200): PreparedChunk[] => {
-  const segments = chunkText(page.text, maxChars, overlap);
+  const segments = splitTextIntoLineChunks(page.text, maxChars, overlap);
   return segments.map((segment, idx) => ({
     lectureId: '',
     lectureFileId: '',
     pageNumber: page.pageNumber,
+    startLine: segment.startLine,
+    endLine: segment.endLine,
     chunkIndex: idx,
-    content: segment,
+    content: segment.content,
     contentHash: '',
   }));
 };
@@ -687,6 +692,9 @@ export const extractPdfText = async (pdfUrl: string): Promise<ExtractedPdfResult
         .map((page: any, idx: number) => ({
           pageNumber: page.pageNumber ?? page.page ?? idx + 1,
           text: sanitizeForDatabase(page.text ?? '') ?? '',
+          lines: Array.isArray(page.lines)
+            ? page.lines.map((line: unknown) => sanitizeForDatabase(String(line ?? ''))).filter(Boolean)
+            : undefined,
         }))
         .filter((p: ExtractedPdfPage) => p.text.length > 0)
     : undefined;
