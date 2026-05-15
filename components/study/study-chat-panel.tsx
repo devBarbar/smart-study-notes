@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  ScrollView,
   View,
 } from "react-native";
 
@@ -100,6 +101,9 @@ type StudyChatPanelProps = {
   onAnswerDraftChange: (text: string) => void;
 };
 
+type StudySetupTabKey = "primer" | "conceptMap" | "example";
+type StudyProgressTabKey = "mastery" | "review";
+
 export function StudyChatPanel({
   styles,
   palette,
@@ -161,6 +165,8 @@ export function StudyChatPanel({
   answerDraft,
   onAnswerDraftChange,
 }: StudyChatPanelProps) {
+  const [activeProgressTab, setActiveProgressTab] =
+    useState<StudyProgressTabKey>("mastery");
   const isMemorizing = memorizationSecondsRemaining !== null;
   const timerPercent =
     !isMemorizing
@@ -196,12 +202,15 @@ export function StudyChatPanel({
             : t("study.aiSubtitle")}
         </ThemedText>
       </View>
-      {studyPlanEntry && depthProgressItems.length > 0 && (
-        <StudyDepthProgress
+      {!setupActive && (depthProgressItems.length > 0 || mistakeNotebook.length > 0) && (
+        <StudyProgressTabs
           styles={styles}
           palette={palette}
           t={t}
-          items={depthProgressItems}
+          depthProgressItems={depthProgressItems}
+          mistakeNotebook={mistakeNotebook}
+          activeTab={activeProgressTab}
+          onTabChange={setActiveProgressTab}
         />
       )}
       {memorizationSecondsRemaining !== null && (
@@ -259,10 +268,13 @@ export function StudyChatPanel({
 
       {setupActive && (
         <StudySetupCard
+          palette={palette}
           styles={styles}
           t={t}
           mode={studyMode}
           content={studyPrepContent}
+          depthProgressItems={depthProgressItems}
+          mistakeNotebook={mistakeNotebook}
           onModeChange={onStudyModeChange}
           onStart={onStartWarmup}
           disabled={isChatting}
@@ -290,14 +302,6 @@ export function StudyChatPanel({
           disabled={isChatting}
           onSubmit={onSubmitDiagnosticAttempt}
           onNoClue={onDiagnosticNoClue}
-        />
-      )}
-
-      {mistakeNotebook.length > 0 && !setupActive && (
-        <MistakeNotebookCard
-          styles={styles}
-          t={t}
-          items={mistakeNotebook}
         />
       )}
 
@@ -343,27 +347,48 @@ export function StudyChatPanel({
 }
 
 function StudySetupCard({
+  palette,
   styles,
   t,
   mode,
   content,
+  depthProgressItems,
+  mistakeNotebook,
   disabled,
   onModeChange,
   onStart,
 }: {
+  palette: typeof Colors.light;
   styles: StudyStyles;
   t: (key: string, params?: Record<string, any>) => string;
   mode: StudyMode;
   content: StudyPrepContent;
+  depthProgressItems: StudyDepthProgressItem[];
+  mistakeNotebook: StudyMistakeNotebookItem[];
   disabled: boolean;
   onModeChange: (mode: StudyMode) => void;
   onStart: () => void;
 }) {
+  const [activeSetupTab, setActiveSetupTab] = useState<StudySetupTabKey>("primer");
   const modes: { value: StudyMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { value: "beginner", label: t("study.modeBeginner"), icon: "leaf-outline" },
     { value: "normal", label: t("study.modeNormal"), icon: "school-outline" },
     { value: "exam", label: t("study.modeExam"), icon: "timer-outline" },
   ];
+  const setupTabs: {
+    key: StudySetupTabKey;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }[] = [
+    { key: "primer", label: t("study.primerTab"), icon: "list-outline" },
+    { key: "conceptMap", label: t("study.conceptMapTab"), icon: "git-network-outline" },
+    ...(content.workedExample
+      ? [{ key: "example" as const, label: t("study.workedExampleTab"), icon: "construct-outline" as const }]
+      : []),
+  ];
+  const selectedSetupTab = setupTabs.some((tab) => tab.key === activeSetupTab)
+    ? activeSetupTab
+    : setupTabs[0]?.key;
 
   return (
     <View style={styles.studySetupCard}>
@@ -414,54 +439,110 @@ function StudySetupCard({
         })}
       </View>
 
-      <View style={styles.studySetupSection}>
-        <ThemedText style={styles.studySetupSectionTitle}>
-          {t("study.primerTitle")}
-        </ThemedText>
-        {content.primer.map((item) => (
-          <View key={item} style={styles.studySetupBulletRow}>
-            <Ionicons name="checkmark-circle" size={15} color="#0f766e" />
-            <ThemedText style={styles.studySetupBodyText}>{item}</ThemedText>
-          </View>
-        ))}
+      <View style={styles.supportTabsCard}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.supportTabBar}
+        >
+          {setupTabs.map((tab) => {
+            const selected = selectedSetupTab === tab.key;
+            return (
+              <Pressable
+                key={tab.key}
+                style={[styles.supportTab, selected && styles.supportTabActive]}
+                onPress={() => setActiveSetupTab(tab.key)}
+                accessibilityRole="button"
+                accessibilityLabel={tab.label}
+              >
+                <Ionicons
+                  name={tab.icon}
+                  size={14}
+                  color={selected ? palette.primary : palette.textMuted}
+                />
+                <ThemedText
+                  style={[
+                    styles.supportTabText,
+                    selected && styles.supportTabTextActive,
+                  ]}
+                >
+                  {tab.label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        <ScrollView
+          style={styles.supportTabBodyScroll}
+          contentContainerStyle={styles.supportTabBody}
+          nestedScrollEnabled
+        >
+          {selectedSetupTab === "primer" && (
+            <View style={styles.studySetupSectionCompact}>
+              <ThemedText style={styles.studySetupSectionTitle}>
+                {t("study.primerTitle")}
+              </ThemedText>
+              {content.primer.map((item) => (
+                <View key={item} style={styles.studySetupBulletRow}>
+                  <Ionicons name="checkmark-circle" size={15} color="#0f766e" />
+                  <ThemedText style={styles.studySetupBodyText}>{item}</ThemedText>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {selectedSetupTab === "conceptMap" && (
+            <View style={styles.studySetupSectionCompact}>
+              <ThemedText style={styles.studySetupSectionTitle}>
+                {t("study.conceptMapTitle")}
+              </ThemedText>
+              <View style={styles.conceptMapList}>
+                {content.conceptMap.map((edge, index) => (
+                  <View key={`${edge.from}-${edge.to}-${index}`} style={styles.conceptMapEdge}>
+                    <ThemedText style={styles.conceptMapNode}>{edge.from}</ThemedText>
+                    <View style={styles.conceptMapRelation}>
+                      <Ionicons name="arrow-forward" size={12} color="#0f766e" />
+                      <ThemedText style={styles.conceptMapRelationText}>
+                        {edge.relation}
+                      </ThemedText>
+                    </View>
+                    <ThemedText style={styles.conceptMapNode}>{edge.to}</ThemedText>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {selectedSetupTab === "example" && content.workedExample && (
+            <View style={styles.studySetupSectionCompact}>
+              <ThemedText style={styles.studySetupSectionTitle}>
+                {content.workedExample.title}
+              </ThemedText>
+              {content.workedExample.steps.map((step, index) => (
+                <View key={step} style={styles.studySetupStepRow}>
+                  <View style={styles.studySetupStepNumber}>
+                    <ThemedText style={styles.studySetupStepNumberText}>
+                      {index + 1}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.studySetupBodyText}>{step}</ThemedText>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       </View>
 
-      <View style={styles.studySetupSection}>
-        <ThemedText style={styles.studySetupSectionTitle}>
-          {t("study.conceptMapTitle")}
-        </ThemedText>
-        <View style={styles.conceptMapList}>
-          {content.conceptMap.map((edge, index) => (
-            <View key={`${edge.from}-${edge.to}-${index}`} style={styles.conceptMapEdge}>
-              <ThemedText style={styles.conceptMapNode}>{edge.from}</ThemedText>
-              <View style={styles.conceptMapRelation}>
-                <Ionicons name="arrow-forward" size={12} color="#0f766e" />
-                <ThemedText style={styles.conceptMapRelationText}>
-                  {edge.relation}
-                </ThemedText>
-              </View>
-              <ThemedText style={styles.conceptMapNode}>{edge.to}</ThemedText>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {content.workedExample && (
-        <View style={styles.studySetupSection}>
-          <ThemedText style={styles.studySetupSectionTitle}>
-            {content.workedExample.title}
-          </ThemedText>
-          {content.workedExample.steps.map((step, index) => (
-            <View key={step} style={styles.studySetupStepRow}>
-              <View style={styles.studySetupStepNumber}>
-                <ThemedText style={styles.studySetupStepNumberText}>
-                  {index + 1}
-                </ThemedText>
-              </View>
-              <ThemedText style={styles.studySetupBodyText}>{step}</ThemedText>
-            </View>
-          ))}
-        </View>
+      {(depthProgressItems.length > 0 || mistakeNotebook.length > 0) && (
+        <StudyProgressTabs
+          styles={styles}
+          palette={palette}
+          t={t}
+          depthProgressItems={depthProgressItems}
+          mistakeNotebook={mistakeNotebook}
+          compact
+        />
       )}
 
       <Pressable
@@ -480,40 +561,124 @@ function StudySetupCard({
   );
 }
 
-function MistakeNotebookCard({
+function StudyProgressTabs({
   styles,
+  palette,
   t,
-  items,
+  depthProgressItems,
+  mistakeNotebook,
+  activeTab,
+  onTabChange,
+  compact = false,
 }: {
   styles: StudyStyles;
+  palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
-  items: StudyMistakeNotebookItem[];
+  depthProgressItems: StudyDepthProgressItem[];
+  mistakeNotebook: StudyMistakeNotebookItem[];
+  activeTab?: StudyProgressTabKey;
+  onTabChange?: (tab: StudyProgressTabKey) => void;
+  compact?: boolean;
 }) {
+  const [internalTab, setInternalTab] = useState<StudyProgressTabKey>("mastery");
+  const tabs: {
+    key: StudyProgressTabKey;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    count?: number;
+  }[] = [
+    ...(depthProgressItems.length > 0
+      ? [{ key: "mastery" as const, label: t("study.masteryPathTitle"), icon: "analytics-outline" as const }]
+      : []),
+    ...(mistakeNotebook.length > 0
+      ? [{ key: "review" as const, label: t("study.mistakeNotebookTitle"), icon: "bookmark-outline" as const, count: mistakeNotebook.length }]
+      : []),
+  ];
+  const selectedTab = tabs.some((tab) => tab.key === (activeTab ?? internalTab))
+    ? (activeTab ?? internalTab)
+    : tabs[0]?.key;
+
+  if (!selectedTab) return null;
+
+  const handleTabChange = (tab: StudyProgressTabKey) => {
+    setInternalTab(tab);
+    onTabChange?.(tab);
+  };
+
   return (
-    <View style={styles.mistakeNotebookCard}>
-      <View style={styles.mistakeNotebookHeader}>
-        <View style={styles.mistakeNotebookIcon}>
-          <Ionicons name="bookmark-outline" size={15} color="#ffffff" />
-        </View>
-        <View style={styles.mistakeNotebookCopy}>
-          <ThemedText style={styles.mistakeNotebookTitle}>
-            {t("study.mistakeNotebookTitle")}
-          </ThemedText>
-          <ThemedText style={styles.mistakeNotebookSubtitle}>
-            {t("study.mistakeNotebookSubtitle")}
-          </ThemedText>
-        </View>
-      </View>
-      {items.slice(0, 4).map((item) => (
-        <View key={item.id} style={styles.mistakeNotebookItem}>
-          <ThemedText style={styles.mistakeNotebookConcept}>
-            {item.concept}
-          </ThemedText>
-          <ThemedText style={styles.mistakeNotebookNote} numberOfLines={2}>
-            {item.note}
-          </ThemedText>
-        </View>
-      ))}
+    <View style={[styles.supportTabsCard, compact && styles.supportTabsCardCompact]}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.supportTabBar}
+      >
+        {tabs.map((tab) => {
+          const selected = selectedTab === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              style={[styles.supportTab, selected && styles.supportTabActive]}
+              onPress={() => handleTabChange(tab.key)}
+              accessibilityRole="button"
+              accessibilityLabel={tab.label}
+            >
+              <Ionicons
+                name={tab.icon}
+                size={14}
+                color={selected ? palette.primary : palette.textMuted}
+              />
+              <ThemedText
+                style={[
+                  styles.supportTabText,
+                  selected && styles.supportTabTextActive,
+                ]}
+              >
+                {tab.label}
+              </ThemedText>
+              {tab.count !== undefined && (
+                <View style={styles.supportTabBadge}>
+                  <ThemedText style={styles.supportTabBadgeText}>
+                    {tab.count > 9 ? "9+" : tab.count}
+                  </ThemedText>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <ScrollView
+        style={compact ? styles.supportTabBodyScrollCompact : styles.supportTabBodyScroll}
+        contentContainerStyle={styles.supportTabBody}
+        nestedScrollEnabled
+      >
+        {selectedTab === "mastery" && (
+          <StudyDepthProgress
+            styles={styles}
+            palette={palette}
+            t={t}
+            items={depthProgressItems}
+          />
+        )}
+
+        {selectedTab === "review" && (
+          <View style={styles.mistakeNotebookContent}>
+            <ThemedText style={styles.mistakeNotebookSubtitle}>
+              {t("study.mistakeNotebookSubtitle")}
+            </ThemedText>
+            {mistakeNotebook.slice(0, 4).map((item) => (
+              <View key={item.id} style={styles.mistakeNotebookItem}>
+                <ThemedText style={styles.mistakeNotebookConcept}>
+                  {item.concept}
+                </ThemedText>
+                <ThemedText style={styles.mistakeNotebookNote} numberOfLines={2}>
+                  {item.note}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }

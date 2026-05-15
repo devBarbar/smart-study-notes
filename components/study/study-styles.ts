@@ -814,6 +814,9 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             backgroundColor: palette.surface,
             padding: Spacing.sm,
         },
+        studySetupSectionCompact: {
+            gap: Spacing.xs,
+        },
         studySetupSectionTitle: {
             color: palette.text,
             fontSize: 13,
@@ -906,6 +909,9 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             flex: 1,
             gap: 1,
         },
+        mistakeNotebookContent: {
+            gap: Spacing.xs,
+        },
         mistakeNotebookTitle: {
             color: palette.text,
             fontSize: 13,
@@ -935,6 +941,73 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             fontSize: 12,
             lineHeight: 16,
             fontWeight: "600",
+        },
+        supportTabsCard: {
+            gap: Spacing.xs,
+            borderRadius: Radii.md,
+            borderWidth: 1,
+            borderColor: `${palette.border}cc`,
+            backgroundColor: palette.surfaceAlt,
+            padding: Spacing.xs,
+        },
+        supportTabsCardCompact: {
+            backgroundColor: palette.surface,
+        },
+        supportTabBar: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: Spacing.xs,
+            paddingBottom: 1,
+        },
+        supportTab: {
+            minHeight: 34,
+            borderRadius: Radii.sm,
+            borderWidth: 1,
+            borderColor: palette.border,
+            backgroundColor: palette.surface,
+            paddingHorizontal: 10,
+            paddingVertical: 7,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 5,
+        },
+        supportTabActive: {
+            borderColor: `${palette.primary}55`,
+            backgroundColor: `${palette.primary}12`,
+        },
+        supportTabText: {
+            color: palette.textMuted,
+            fontSize: 12,
+            fontWeight: "900",
+        },
+        supportTabTextActive: {
+            color: palette.primary,
+        },
+        supportTabBadge: {
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 5,
+            backgroundColor: `${palette.warning}20`,
+            borderWidth: 1,
+            borderColor: `${palette.warning}44`,
+        },
+        supportTabBadgeText: {
+            color: palette.warning,
+            fontSize: 10,
+            fontWeight: "900",
+        },
+        supportTabBodyScroll: {
+            maxHeight: 180,
+        },
+        supportTabBodyScrollCompact: {
+            maxHeight: 126,
+        },
+        supportTabBody: {
+            gap: Spacing.xs,
+            paddingTop: 2,
         },
         chatToolbarScroll: {
             marginHorizontal: -4,
