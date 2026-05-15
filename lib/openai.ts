@@ -782,6 +782,10 @@ export const generatePracticeExam = async (params: {
     jobId: string;
   }>('generate-practice-exam', { lectureId, questionCount, language, title, category });
 
+  callSupabaseFunction('process-job', { source: 'client-fallback-practice-exam', jobId }).catch((error) => {
+    console.warn('[openai] practice exam process-job fallback kick failed', error);
+  });
+
   const result = await waitForJobResult<{ practiceExamId: string; questionCount: number; category?: string }>(jobId);
   return {
     practiceExamId: result?.practiceExamId ?? practiceExamId,
