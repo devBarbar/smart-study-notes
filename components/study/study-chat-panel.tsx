@@ -47,7 +47,10 @@ type StudyChatPanelProps = {
   messages: StudyChatMessage[];
   answerMarkers: CanvasAnswerMarker[];
   fullScreen?: boolean;
+  primary?: boolean;
   canCollapseTutor?: boolean;
+  workspaceVisible?: boolean;
+  showWorkspaceToggle?: boolean;
   memorizationSecondsRemaining?: number | null;
   memorizationTotalSeconds?: number;
   warmupQuestion?: StudyWarmupQuestion | null;
@@ -71,6 +74,7 @@ type StudyChatPanelProps = {
     index: number;
   };
   onToggleTutor: () => void;
+  onToggleWorkspace?: () => void;
   onToggleTts: () => void;
   onToggleListening: () => void;
   onStopSpeaking: () => void;
@@ -116,7 +120,10 @@ export function StudyChatPanel({
   messages,
   answerMarkers,
   fullScreen = false,
+  primary = false,
   canCollapseTutor = true,
+  workspaceVisible = false,
+  showWorkspaceToggle = false,
   memorizationSecondsRemaining = null,
   memorizationTotalSeconds = 60,
   warmupQuestion = null,
@@ -133,6 +140,7 @@ export function StudyChatPanel({
   chatListRef,
   getItemLayout,
   onToggleTutor,
+  onToggleWorkspace,
   onToggleTts,
   onToggleListening,
   onStopSpeaking,
@@ -171,7 +179,13 @@ export function StudyChatPanel({
         );
 
   return (
-    <View style={[styles.chatColumn, fullScreen && styles.chatColumnFullscreen]}>
+    <View
+      style={[
+        styles.chatColumn,
+        fullScreen && styles.chatColumnFullscreen,
+        primary && styles.chatColumnPrimary,
+      ]}
+    >
       <StudyChatHeader
         styles={styles}
         t={t}
@@ -196,6 +210,29 @@ export function StudyChatPanel({
             : t("study.aiSubtitle")}
         </ThemedText>
       </View>
+      {showWorkspaceToggle && onToggleWorkspace && (
+        <Pressable
+          style={styles.workspaceToggleButton}
+          onPress={onToggleWorkspace}
+          accessibilityRole="button"
+          accessibilityLabel={
+            workspaceVisible
+              ? t("study.hideWorkspace")
+              : t("study.showWorkspace")
+          }
+        >
+          <Ionicons
+            name={workspaceVisible ? "contract-outline" : "expand-outline"}
+            size={16}
+            color="#0f766e"
+          />
+          <ThemedText style={styles.workspaceToggleText}>
+            {workspaceVisible
+              ? t("study.hideWorkspace")
+              : t("study.showWorkspace")}
+          </ThemedText>
+        </Pressable>
+      )}
       {studyPlanEntry && depthProgressItems.length > 0 && (
         <StudyDepthProgress
           styles={styles}

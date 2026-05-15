@@ -488,6 +488,8 @@ const en = {
   'study.addPage': 'Add page',
   'study.showTutor': 'Show AI Tutor',
   'study.hideTutor': 'Hide AI Tutor',
+  'study.showWorkspace': 'Show workspace',
+  'study.hideWorkspace': 'Hide workspace',
   'study.restartSession': 'Restart session',
 
   'common.close': 'Close',

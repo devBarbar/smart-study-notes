@@ -44,6 +44,7 @@ type StudyCanvasPanelProps = {
   palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
   tutorCollapsed: boolean;
+  secondaryWorkspace?: boolean;
   lockedAnswerMode?: boolean;
   toggleTutor: () => void;
   studyTitle: string;
@@ -105,6 +106,7 @@ export function StudyCanvasPanel({
   palette,
   t,
   tutorCollapsed,
+  secondaryWorkspace = false,
   lockedAnswerMode = false,
   toggleTutor,
   studyTitle,
@@ -167,6 +169,7 @@ export function StudyCanvasPanel({
       style={[
         styles.canvasColumn,
         tutorCollapsed && styles.canvasColumnFullscreen,
+        secondaryWorkspace && styles.canvasColumnSecondary,
       ]}
     >
       <ScrollView

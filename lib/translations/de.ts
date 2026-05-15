@@ -488,6 +488,8 @@ const de = {
   'study.addPage': 'Seite hinzufügen',
   'study.showTutor': 'KI-Tutor anzeigen',
   'study.hideTutor': 'KI-Tutor ausblenden',
+  'study.showWorkspace': 'Workspace anzeigen',
+  'study.hideWorkspace': 'Workspace ausblenden',
   'study.restartSession': 'Sitzung neu starten',
 
   'common.close': 'Schließen',
