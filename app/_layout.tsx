@@ -56,6 +56,7 @@ function RootLayoutNav() {
       <Stack.Screen name="lecture/[id]" options={{ title: 'Lecture' }} />
       <Stack.Screen name="material/[id]" options={{ title: 'Material' }} />
       <Stack.Screen name="study/[sessionId]" options={{ title: 'Study Session' }} />
+      <Stack.Screen name="practice/[examId]" options={{ title: 'Practice Exam' }} />
     </Stack>
   );
 }

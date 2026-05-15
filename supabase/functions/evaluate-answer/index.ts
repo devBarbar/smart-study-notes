@@ -1,6 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { withSentry } from "../_shared/sentry.ts";
-import { callChat, ChatCompletionContent } from "../_shared/openai.ts";
+import { callChat, ChatCompletionContent, stripCodeFences } from "../_shared/openai.ts";
 import { gradingPrompt } from "../_shared/prompts.ts";
 
 type StudyQuestion = {
@@ -47,7 +47,7 @@ Deno.serve(withSentry("evaluate-answer", async (req: Request) => {
 
     let feedback: any = null;
     try {
-      feedback = JSON.parse(output.message);
+      feedback = JSON.parse(stripCodeFences(output.message));
     } catch {
       feedback = {
         summary: output.message,

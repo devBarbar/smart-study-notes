@@ -1,8 +1,9 @@
+import { Button as ExpoButton, Host } from '@expo/ui';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system/legacy';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { v4 as uuid } from 'uuid';
 
 import { CanvasToolbar } from '@/components/canvas-toolbar';
@@ -15,7 +16,7 @@ import {
 import { MarkdownText } from '@/components/markdown-text';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, Radii, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Radii, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLanguage } from '@/contexts/language-context';
 import { evaluateAnswer } from '@/lib/openai';
@@ -32,14 +33,80 @@ import {
   updateStudyPlanEntryMastery,
   updateUserStreak,
 } from '@/lib/supabase';
-import { PracticeExam, PracticeExamQuestion, PracticeExamResponse, ReviewQuality } from '@/types';
+import { PracticeExam, PracticeExamQuestion, PracticeExamResponse, ReviewQuality, StudyFeedback } from '@/types';
+
+type ScoreTone = 'success' | 'warning' | 'danger' | 'muted';
+
+const stripFeedbackCodeFence = (value: string) => {
+  const fenceMatch = value.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return fenceMatch ? fenceMatch[1].trim() : value.trim();
+};
+
+const parseFeedbackJson = (value?: string) => {
+  if (!value) return undefined;
+  const clean = stripFeedbackCodeFence(value);
+  if (!clean.startsWith('{')) return undefined;
+
+  try {
+    return JSON.parse(clean) as Partial<StudyFeedback>;
+  } catch {
+    return undefined;
+  }
+};
+
+const normalizeFeedback = (raw: unknown): StudyFeedback | undefined => {
+  if (!raw) return undefined;
+
+  const base =
+    typeof raw === 'string'
+      ? ({ summary: raw, correctness: 'unknown' } as StudyFeedback)
+      : ({ ...(raw as StudyFeedback) } as StudyFeedback);
+
+  const parsed = parseFeedbackJson(base.summary);
+  const merged = parsed ? { ...base, ...parsed } : base;
+
+  return {
+    ...merged,
+    summary: typeof merged.summary === 'string' ? stripFeedbackCodeFence(merged.summary) : '',
+    correctness: typeof merged.correctness === 'string' ? merged.correctness : 'unknown',
+    whatWentWrong: Array.isArray(merged.whatWentWrong) ? merged.whatWentWrong : [],
+    improvements: Array.isArray(merged.improvements) ? merged.improvements : [],
+    misconceptions: Array.isArray(merged.misconceptions) ? merged.misconceptions : [],
+    sourceNotes: Array.isArray(merged.sourceNotes) ? merged.sourceNotes : [],
+    missingPrerequisites: Array.isArray(merged.missingPrerequisites) ? merged.missingPrerequisites : [],
+  };
+};
+
+const getScoreTone = (score?: number): ScoreTone => {
+  if (score === undefined) return 'muted';
+  if (score >= 80) return 'success';
+  if (score >= 50) return 'warning';
+  return 'danger';
+};
+
+const getToneColor = (palette: typeof Colors.light, tone: ScoreTone) => {
+  if (tone === 'success') return palette.success;
+  if (tone === 'warning') return palette.warning;
+  if (tone === 'danger') return palette.danger;
+  return palette.textMuted;
+};
+
+const formatScore = (score?: number) => (score === undefined ? '--' : `${Math.round(score)}`);
+
+const getCorrectnessIcon = (correctness?: string) => {
+  if (correctness === 'correct') return 'checkmark-circle';
+  if (correctness === 'partial') return 'contrast';
+  if (correctness === 'incorrect') return 'close-circle';
+  return 'sparkles';
+};
 
 export default function PracticeExamScreen() {
   const { examId, lectureId } = useLocalSearchParams<{ examId: string; lectureId?: string }>();
-  const router = useRouter();
   const { t, agentLanguage } = useLanguage();
   const colorScheme = useColorScheme();
-  const palette = Colors[colorScheme ?? 'light'];
+  const scheme = colorScheme === 'dark' ? 'dark' : 'light';
+  const palette = Colors[scheme];
+  const { width } = useWindowDimensions();
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   const [exam, setExam] = useState<PracticeExam | null>(null);
@@ -285,6 +352,51 @@ export default function PracticeExamScreen() {
     return idx >= 0 ? idx + 1 : undefined;
   }, [activeQuestionId, questions]);
 
+  const resultItems = useMemo(
+    () =>
+      questions.map((question) => {
+        const response = responses[question.id];
+        const feedback = normalizeFeedback(response?.feedback);
+        return {
+          question,
+          response,
+          feedback,
+          score: response?.score ?? feedback?.score,
+        };
+      }),
+    [questions, responses]
+  );
+
+  const answeredCount = useMemo(
+    () =>
+      questions.filter((question) => {
+        const response = responses[question.id];
+        return Boolean(
+          answerImages[question.id] ||
+            answers[question.id]?.trim() ||
+            response?.userAnswer?.trim()
+        );
+      }).length,
+    [answerImages, answers, questions, responses]
+  );
+
+  const gradedCount = resultItems.filter((item) => item.feedback || item.score !== undefined).length;
+  const scoredItems = resultItems.filter((item) => item.score !== undefined);
+  const computedAverage =
+    scoredItems.length > 0
+      ? scoredItems.reduce((sum, item) => sum + (item.score ?? 0), 0) / scoredItems.length
+      : undefined;
+  const averageScore = exam?.score ?? computedAverage;
+  const scoreTone = getScoreTone(averageScore);
+  const scoreColor = getToneColor(palette, scoreTone);
+  const isCompact = width < 430;
+  const firstImprovement = resultItems.find((item) => item.feedback?.improvements?.length)?.feedback
+    ?.improvements?.[0];
+  const firstGap = resultItems.find((item) => item.feedback?.whatWentWrong?.length)?.feedback
+    ?.whatWentWrong?.[0];
+  const heroInsight =
+    firstImprovement ?? firstGap ?? (exam?.status === 'completed' ? t('practiceExam.resultReady') : t('practiceExam.resultPending'));
+
   if (!examId) {
     return (
       <ThemedView style={styles.center}>
@@ -312,13 +424,69 @@ export default function PracticeExamScreen() {
 
   return (
     <>
-      <ScrollView contentContainerStyle={styles.container}>
-        <ThemedView style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={18} color={palette.text} />
-            <ThemedText>{t('practiceExam.back')}</ThemedText>
-          </Pressable>
-          <ThemedText type="title">{exam.title}</ThemedText>
+      <Stack.Screen
+        options={{
+          title: exam.title,
+          headerBackTitle: t('practiceExam.back'),
+        }}
+      />
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.container}
+      >
+        <View style={styles.hero}>
+          <View style={styles.heroTopRow}>
+            <View style={styles.heroCopy}>
+              <View style={styles.statusPill}>
+                <View style={[styles.statusDot, { backgroundColor: scoreColor }]} />
+                <ThemedText style={styles.statusPillText}>
+                  {t(`practiceExam.status.${exam.status}`)}
+                </ThemedText>
+              </View>
+              <ThemedText type="display" style={styles.heroTitle}>
+                {exam.status === 'completed'
+                  ? t('practiceExam.resultTitle')
+                  : t('practiceExam.workbenchTitle')}
+              </ThemedText>
+              <ThemedText style={styles.heroSubtitle} selectable>
+                {heroInsight}
+              </ThemedText>
+            </View>
+
+            <View style={[styles.scoreRing, { borderColor: scoreColor }]}>
+              <ThemedText style={[styles.scoreRingValue, { color: scoreColor }]}>
+                {formatScore(averageScore)}
+              </ThemedText>
+              <ThemedText style={styles.scoreRingUnit}>/100</ThemedText>
+            </View>
+          </View>
+
+          <View style={[styles.metricGrid, isCompact && styles.metricGridCompact]}>
+            <View style={styles.metricTile}>
+              <Ionicons name="document-text" size={18} color={palette.accent} />
+              <View>
+                <ThemedText style={styles.metricValue}>
+                  {answeredCount}/{questions.length}
+                </ThemedText>
+                <ThemedText style={styles.metricLabel}>{t('practiceExam.answered')}</ThemedText>
+              </View>
+            </View>
+            <View style={styles.metricTile}>
+              <Ionicons name="ribbon" size={18} color={scoreColor} />
+              <View>
+                <ThemedText style={styles.metricValue}>{gradedCount}</ThemedText>
+                <ThemedText style={styles.metricLabel}>{t('practiceExam.graded')}</ThemedText>
+              </View>
+            </View>
+            <View style={styles.metricTile}>
+              <Ionicons name="layers" size={18} color={palette.primary} />
+              <View>
+                <ThemedText style={styles.metricValue}>{exam.questionCount}</ThemedText>
+                <ThemedText style={styles.metricLabel}>{t('practiceExam.questionsShort')}</ThemedText>
+              </View>
+            </View>
+          </View>
+
           {exam.category && (
             <View style={styles.clusterBadge}>
               <Ionicons name="folder" size={14} color={palette.primary} />
@@ -327,72 +495,160 @@ export default function PracticeExamScreen() {
               </ThemedText>
             </View>
           )}
-          <ThemedText style={styles.metaText}>
-            {t('practiceExam.metaDetail', {
-              status: t(`practiceExam.status.${exam.status}`),
-              count: exam.questionCount,
-            })}
-          </ThemedText>
-          {exam.score !== undefined && (
-            <ThemedText style={styles.scoreText}>
-              {t('practiceExam.score', { value: Math.round(exam.score) })}
-            </ThemedText>
-          )}
-        </ThemedView>
+        </View>
 
         {exam.status === 'pending' && (
-          <ThemedText style={styles.metaText}>{t('practiceExam.generating')}</ThemedText>
+          <View style={styles.generatingCard}>
+            <ActivityIndicator color={palette.primary} />
+            <ThemedText style={styles.generatingText}>{t('practiceExam.generating')}</ThemedText>
+          </View>
         )}
 
-        {questions.map((q, idx) => {
-          const feedback = responses[q.id]?.feedback;
+        <View style={styles.sectionHeader}>
+          <ThemedText type="subtitle">{t('practiceExam.reviewTitle')}</ThemedText>
+          <ThemedText style={styles.sectionSubtitle}>{t('practiceExam.reviewSubtitle')}</ThemedText>
+        </View>
+
+        {resultItems.map(({ question: q, response, feedback, score }, idx) => {
+          const tone = getScoreTone(score);
+          const toneColor = getToneColor(palette, tone);
+          const sourceLabel = q.sourceType ? t(`practiceExam.source.${q.sourceType}`) : undefined;
+          const answerUri = answerImages[q.id];
+          const savedAnswer = response?.userAnswer ?? answers[q.id];
           return (
             <View key={q.id} style={styles.questionCard}>
               <View style={styles.questionHeader}>
-                <ThemedText type="defaultSemiBold" style={styles.questionTitle}>
-                  {t('practiceExam.questionLabel', { index: idx + 1 })}
-                </ThemedText>
-                {feedback?.score !== undefined && (
-                  <View style={styles.scoreBadge}>
-                    <ThemedText style={styles.scoreBadgeText}>{feedback.score}</ThemedText>
+                <View style={styles.questionTitleBlock}>
+                  <View style={styles.questionEyebrowRow}>
+                    <ThemedText style={styles.questionEyebrow}>
+                      {t('practiceExam.questionLabel', { index: idx + 1 })}
+                    </ThemedText>
+                    {sourceLabel && (
+                      <View style={styles.sourceBadge}>
+                        <ThemedText style={styles.sourceBadgeText}>{sourceLabel}</ThemedText>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.questionPromptWrapper}>
+                    <MarkdownText content={q.prompt} />
+                  </View>
+                </View>
+                {score !== undefined && (
+                  <View style={[styles.scoreBadge, { backgroundColor: `${toneColor}16`, borderColor: `${toneColor}44` }]}>
+                    <ThemedText style={[styles.scoreBadgeText, { color: toneColor }]}>
+                      {formatScore(score)}
+                    </ThemedText>
                   </View>
                 )}
               </View>
-              <View style={styles.questionPromptWrapper}>
-                <MarkdownText content={q.prompt} />
-              </View>
+
               <Pressable
                 style={styles.answerInput}
                 onPress={() => openCanvasForQuestion(q.id)}
                 disabled={grading || exam.status === 'completed'}
               >
-                {answerImages[q.id] ? (
+                {answerUri ? (
                   <View style={styles.answerPreview}>
-                    <ThemedText style={styles.answerPreviewLabel}>
-                      {t('practiceExam.tapToAnswer')}
-                    </ThemedText>
                     <Image
-                      source={{ uri: answerImages[q.id] }}
+                      source={{ uri: answerUri }}
                       style={styles.answerPreviewImage}
                       resizeMode="contain"
                     />
+                    <View style={styles.answerPreviewFooter}>
+                      <Ionicons name="create" size={15} color={palette.textMuted} />
+                      <ThemedText style={styles.answerPreviewLabel}>
+                        {exam.status === 'completed'
+                          ? t('practiceExam.yourAnswer')
+                          : t('practiceExam.tapToAnswer')}
+                      </ThemedText>
+                    </View>
                   </View>
                 ) : (
-                  <ThemedText style={styles.answerPlaceholder}>{t('practiceExam.tapToAnswer')}</ThemedText>
+                  <View style={styles.answerPlaceholderWrap}>
+                    <View style={styles.answerPlaceholderIcon}>
+                      <Ionicons name="pencil" size={18} color={palette.primary} />
+                    </View>
+                    <View style={styles.answerPlaceholderCopy}>
+                      <ThemedText style={styles.answerPlaceholderTitle}>
+                        {savedAnswer?.trim() ? t('practiceExam.answerSaved') : t('practiceExam.tapToAnswer')}
+                      </ThemedText>
+                      <ThemedText style={styles.answerPlaceholder}>
+                        {exam.status === 'completed'
+                          ? t('practiceExam.noCanvasPreview')
+                          : t('practiceExam.answerPromptHint')}
+                      </ThemedText>
+                    </View>
+                  </View>
                 )}
               </Pressable>
+
               {feedback && (
                 <View style={styles.feedbackCard}>
-                  <ThemedText type="defaultSemiBold">{t('practiceExam.feedback')}</ThemedText>
-                  <ThemedText style={styles.feedbackText}>{feedback.summary}</ThemedText>
-                  {feedback.improvements && feedback.improvements.length > 0 && (
-                    <View style={styles.feedbackList}>
-                      {feedback.improvements.map((tip, tipIdx) => (
-                        <ThemedText key={tipIdx} style={styles.feedbackTip}>
-                          • {tip}
-                        </ThemedText>
-                      ))}
+                  <View style={styles.feedbackHeader}>
+                    <View style={[styles.feedbackIcon, { backgroundColor: `${toneColor}18` }]}>
+                      <Ionicons
+                        name={getCorrectnessIcon(feedback.correctness)}
+                        size={18}
+                        color={toneColor}
+                      />
                     </View>
+                    <View style={styles.feedbackHeaderCopy}>
+                      <ThemedText style={styles.feedbackTitle}>{t('practiceExam.feedback')}</ThemedText>
+                      <ThemedText style={styles.feedbackText} selectable>
+                        {feedback.summary}
+                      </ThemedText>
+                    </View>
+                  </View>
+
+                  {feedback.whatWentWrong && feedback.whatWentWrong.length > 0 && (
+                    <FeedbackBlock
+                      icon="alert-circle"
+                      title={t('practiceExam.whatWentWrong')}
+                      items={feedback.whatWentWrong}
+                      palette={palette}
+                      toneColor={palette.danger}
+                      styles={styles}
+                    />
+                  )}
+                  {feedback.correctAnswer && (
+                    <FeedbackBlock
+                      icon="bulb"
+                      title={t('practiceExam.correctAnswer')}
+                      body={feedback.correctAnswer}
+                      palette={palette}
+                      toneColor={palette.success}
+                      styles={styles}
+                    />
+                  )}
+                  {feedback.rewriteExample && (
+                    <FeedbackBlock
+                      icon="sparkles"
+                      title={t('practiceExam.rewriteExample')}
+                      body={feedback.rewriteExample}
+                      palette={palette}
+                      toneColor={palette.accent}
+                      styles={styles}
+                    />
+                  )}
+                  {feedback.improvements && feedback.improvements.length > 0 && (
+                    <FeedbackBlock
+                      icon="trending-up"
+                      title={t('practiceExam.nextSteps')}
+                      items={feedback.improvements}
+                      palette={palette}
+                      toneColor={palette.primary}
+                      styles={styles}
+                    />
+                  )}
+                  {feedback.misconceptions && feedback.misconceptions.length > 0 && (
+                    <FeedbackBlock
+                      icon="git-compare"
+                      title={t('practiceExam.misconceptions')}
+                      items={feedback.misconceptions}
+                      palette={palette}
+                      toneColor={palette.warning}
+                      styles={styles}
+                    />
                   )}
                 </View>
               )}
@@ -400,22 +656,27 @@ export default function PracticeExamScreen() {
           );
         })}
 
-        <Pressable
-          style={[styles.submitButton, grading && styles.buttonDisabled]}
-          onPress={handleGrade}
-          disabled={grading || exam.status === 'completed'}
-        >
-          {grading ? (
-            <ActivityIndicator color={palette.textOnPrimary} />
-          ) : (
-            <>
-              <Ionicons name="checkmark" size={18} color={palette.textOnPrimary} />
-              <ThemedText type="defaultSemiBold" style={styles.submitButtonText}>
-                {t('practiceExam.submit')}
-              </ThemedText>
-            </>
-          )}
-        </Pressable>
+        <View style={styles.submitPanel}>
+          <View style={styles.submitCopy}>
+            <ThemedText style={styles.submitTitle}>
+              {exam.status === 'completed' ? t('practiceExam.completedTitle') : t('practiceExam.readyToGrade')}
+            </ThemedText>
+            <ThemedText style={styles.submitSubtitle}>
+              {exam.status === 'completed'
+                ? t('practiceExam.completedBody', { score: Math.round(averageScore ?? 0) })
+                : t('practiceExam.readyToGradeHint')}
+            </ThemedText>
+          </View>
+          {grading && <ActivityIndicator color={palette.primary} />}
+          <Host matchContents={{ vertical: true }} style={styles.nativeButtonHost}>
+            <ExpoButton
+              label={grading ? t('practiceExam.grading') : t('practiceExam.submit')}
+              onPress={handleGrade}
+              disabled={grading || exam.status === 'completed'}
+              variant="filled"
+            />
+          </Host>
+        </View>
       </ScrollView>
 
       <Modal visible={canvasVisible} animationType="slide" onRequestClose={closeCanvas}>
@@ -479,11 +740,58 @@ export default function PracticeExamScreen() {
   );
 }
 
+function FeedbackBlock({
+  icon,
+  title,
+  body,
+  items,
+  palette,
+  toneColor,
+  styles,
+}: {
+  icon: ComponentProps<typeof Ionicons>['name'];
+  title: string;
+  body?: string;
+  items?: string[];
+  palette: typeof Colors.light;
+  toneColor: string;
+  styles: Record<string, any>;
+}) {
+  return (
+    <View style={styles.feedbackBlock}>
+      <View style={[styles.feedbackBlockIcon, { backgroundColor: `${toneColor}16` }]}>
+        <Ionicons name={icon} size={16} color={toneColor} />
+      </View>
+      <View style={styles.feedbackBlockCopy}>
+        <ThemedText style={styles.feedbackBlockTitle}>{title}</ThemedText>
+        {body && (
+          <ThemedText style={styles.feedbackBlockBody} selectable>
+            {body}
+          </ThemedText>
+        )}
+        {items && items.length > 0 && (
+          <View style={styles.feedbackList}>
+            {items.map((item, index) => (
+              <View key={`${title}-${index}`} style={styles.feedbackListItem}>
+                <View style={[styles.feedbackBullet, { backgroundColor: toneColor }]} />
+                <ThemedText style={[styles.feedbackBlockBody, { color: palette.textMuted }]} selectable>
+                  {item}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
 const createStyles = (palette: typeof Colors.light) =>
   StyleSheet.create({
     container: {
-      padding: Spacing.lg,
-      gap: Spacing.md,
+      padding: Spacing.md,
+      paddingBottom: Spacing.xl,
+      gap: Spacing.lg,
       backgroundColor: palette.background,
     },
     center: {
@@ -493,116 +801,353 @@ const createStyles = (palette: typeof Colors.light) =>
       gap: Spacing.sm,
       backgroundColor: palette.background,
     },
-    header: {
-      gap: Spacing.xs,
-      marginBottom: Spacing.sm,
-    },
-    metaText: {
-      color: palette.textMuted,
-      fontSize: 13,
-    },
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: Spacing.xs,
-      marginBottom: Spacing.xs,
-    },
-    scoreText: {
-      color: palette.success,
-      fontSize: 16,
-      fontWeight: '700',
-    },
-    questionCard: {
-      padding: Spacing.md,
-      borderRadius: Radii.md,
+    hero: {
+      padding: Spacing.lg,
+      borderRadius: Radii.lg,
       backgroundColor: palette.surface,
       borderWidth: 1,
       borderColor: palette.border,
+      gap: Spacing.lg,
+      overflow: 'hidden',
+      boxShadow: `0 18px 45px ${palette.shadow}`,
+    },
+    heroTopRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: Spacing.md,
+    },
+    heroCopy: {
+      flex: 1,
       gap: Spacing.sm,
+    },
+    statusPill: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: Radii.pill,
+      backgroundColor: palette.surfaceAlt,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    statusDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+    },
+    statusPillText: {
+      color: palette.textMuted,
+      fontSize: 12,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+    },
+    heroTitle: {
+      color: palette.text,
+      fontSize: 28,
+      lineHeight: 34,
+    },
+    heroSubtitle: {
+      color: palette.textMuted,
+      fontSize: 15,
+      lineHeight: 22,
+      maxWidth: 680,
+    },
+    scoreRing: {
+      width: 104,
+      height: 104,
+      borderRadius: 52,
+      borderWidth: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: palette.background,
+    },
+    scoreRingValue: {
+      fontSize: 30,
+      lineHeight: 34,
+      fontWeight: '800',
+      fontVariant: ['tabular-nums'],
+      fontFamily: Fonts?.rounded,
+    },
+    scoreRingUnit: {
+      color: palette.textMuted,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    metricGrid: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    metricGridCompact: {
+      flexDirection: 'column',
+    },
+    metricTile: {
+      flex: 1,
+      minHeight: 74,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      padding: Spacing.md,
+      borderRadius: Radii.md,
+      backgroundColor: palette.background,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    metricValue: {
+      color: palette.text,
+      fontSize: 18,
+      fontWeight: '800',
+      fontVariant: ['tabular-nums'],
+    },
+    metricLabel: {
+      color: palette.textMuted,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    sectionHeader: {
+      gap: 4,
+    },
+    sectionSubtitle: {
+      color: palette.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    generatingCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      padding: Spacing.md,
+      borderRadius: Radii.md,
+      backgroundColor: `${palette.primary}12`,
+      borderWidth: 1,
+      borderColor: `${palette.primary}30`,
+    },
+    generatingText: {
+      color: palette.text,
+      fontWeight: '600',
+    },
+    questionCard: {
+      padding: Spacing.md,
+      borderRadius: Radii.lg,
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      gap: Spacing.md,
+      boxShadow: `0 10px 28px ${palette.shadow}`,
     },
     questionHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
+      gap: Spacing.md,
     },
-    questionTitle: {
-      color: palette.text,
-      fontSize: 15,
+    questionTitleBlock: {
+      flex: 1,
+      gap: Spacing.sm,
+    },
+    questionEyebrowRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flexWrap: 'wrap',
+      gap: Spacing.xs,
+    },
+    questionEyebrow: {
+      color: palette.primary,
+      fontSize: 12,
+      fontWeight: '800',
+      textTransform: 'uppercase',
     },
     questionPromptWrapper: {
       gap: Spacing.xs,
     },
+    sourceBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: Radii.pill,
+      backgroundColor: `${palette.accent}14`,
+      borderWidth: 1,
+      borderColor: `${palette.accent}35`,
+    },
+    sourceBadgeText: {
+      color: palette.accent,
+      fontSize: 11,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+    },
+    scoreBadge: {
+      minWidth: 54,
+      height: 54,
+      borderRadius: 16,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scoreBadgeText: {
+      fontSize: 20,
+      fontWeight: '800',
+      fontVariant: ['tabular-nums'],
+    },
     answerInput: {
       borderWidth: 1,
       borderColor: palette.border,
-      borderRadius: Radii.md,
-      padding: Spacing.sm,
-      backgroundColor: palette.surfaceAlt,
-      minHeight: 100,
+      borderRadius: Radii.lg,
+      padding: Spacing.md,
+      backgroundColor: palette.background,
+      minHeight: 116,
       justifyContent: 'center',
-      gap: Spacing.xs,
+      overflow: 'hidden',
+    },
+    answerPlaceholderWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+    },
+    answerPlaceholderIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: `${palette.primary}14`,
+    },
+    answerPlaceholderCopy: {
+      flex: 1,
+      gap: 2,
+    },
+    answerPlaceholderTitle: {
+      color: palette.text,
+      fontWeight: '700',
     },
     answerPlaceholder: {
       color: palette.textMuted,
+      fontSize: 13,
+      lineHeight: 18,
     },
     answerPreview: {
-      gap: Spacing.xs,
+      gap: Spacing.sm,
     },
     answerPreviewLabel: {
       color: palette.textMuted,
       fontSize: 13,
+      fontWeight: '600',
     },
     answerPreviewImage: {
       width: '100%',
-      height: 180,
+      height: 210,
       borderRadius: Radii.md,
       backgroundColor: palette.surface,
-    },
-    submitButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: Spacing.xs,
-      backgroundColor: palette.primary,
-      paddingVertical: 12,
-      borderRadius: Radii.md,
-      marginBottom: Spacing.lg,
-    },
-    submitButtonText: {
-      color: palette.textOnPrimary,
-    },
-    buttonDisabled: {
-      opacity: 0.6,
-    },
-    scoreBadge: {
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: Radii.pill,
-      backgroundColor: `${palette.success}14`,
-      borderWidth: 1,
-      borderColor: `${palette.success}33`,
-    },
-    scoreBadgeText: {
-      color: palette.success,
-      fontWeight: '700',
-    },
-    feedbackCard: {
-      padding: Spacing.sm,
-      borderRadius: Radii.md,
-      backgroundColor: palette.surfaceAlt,
       borderWidth: 1,
       borderColor: palette.border,
+    },
+    answerPreviewFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: Spacing.xs,
     },
-    feedbackText: {
+    feedbackCard: {
+      padding: Spacing.md,
+      borderRadius: Radii.lg,
+      backgroundColor: palette.background,
+      borderWidth: 1,
+      borderColor: palette.border,
+      gap: Spacing.md,
+    },
+    feedbackHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.sm,
+    },
+    feedbackIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    feedbackHeaderCopy: {
+      flex: 1,
+      gap: 3,
+    },
+    feedbackTitle: {
       color: palette.text,
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    feedbackText: {
+      color: palette.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    feedbackBlock: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      padding: Spacing.sm,
+      borderRadius: Radii.md,
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    feedbackBlockIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    feedbackBlockCopy: {
+      flex: 1,
+      gap: Spacing.xs,
+    },
+    feedbackBlockTitle: {
+      color: palette.text,
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    feedbackBlockBody: {
+      color: palette.text,
+      fontSize: 14,
+      lineHeight: 20,
     },
     feedbackList: {
+      gap: Spacing.xs,
+    },
+    feedbackListItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: Spacing.xs,
+    },
+    feedbackBullet: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      marginTop: 7,
+    },
+    submitPanel: {
+      padding: Spacing.md,
+      borderRadius: Radii.lg,
+      backgroundColor: palette.surface,
+      borderWidth: 1,
+      borderColor: palette.border,
+      gap: Spacing.md,
+      marginBottom: Spacing.md,
+    },
+    submitCopy: {
       gap: 4,
     },
-    feedbackTip: {
+    submitTitle: {
+      color: palette.text,
+      fontWeight: '800',
+      fontSize: 16,
+    },
+    submitSubtitle: {
       color: palette.textMuted,
       fontSize: 13,
+      lineHeight: 18,
+    },
+    nativeButtonHost: {
+      alignSelf: 'stretch',
     },
     modalContainer: {
       flex: 1,
@@ -622,15 +1167,15 @@ const createStyles = (palette: typeof Colors.light) =>
     },
     modalPrompt: {
       maxHeight: 180,
-      padding: Spacing.sm,
-      borderRadius: Radii.md,
-      backgroundColor: palette.surfaceAlt,
+      padding: Spacing.md,
+      borderRadius: Radii.lg,
+      backgroundColor: palette.surface,
       borderWidth: 1,
       borderColor: palette.border,
     },
     modalCanvasWrapper: {
       flex: 1,
-      borderRadius: Radii.md,
+      borderRadius: Radii.lg,
       borderWidth: 1,
       borderColor: palette.border,
       overflow: 'hidden',
@@ -650,7 +1195,7 @@ const createStyles = (palette: typeof Colors.light) =>
       backgroundColor: palette.primary,
       paddingVertical: 12,
       paddingHorizontal: 16,
-      borderRadius: Radii.md,
+      borderRadius: Radii.pill,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -661,7 +1206,7 @@ const createStyles = (palette: typeof Colors.light) =>
       fontWeight: '600',
     },
     secondaryButton: {
-      borderRadius: Radii.md,
+      borderRadius: Radii.pill,
       paddingVertical: 12,
       paddingHorizontal: 16,
       borderWidth: 1,
@@ -692,4 +1237,3 @@ const createStyles = (palette: typeof Colors.light) =>
       fontWeight: '500',
     },
   });
-

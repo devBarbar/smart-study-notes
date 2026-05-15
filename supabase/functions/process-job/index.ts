@@ -1895,7 +1895,7 @@ const handleGrade = async (
 
   let feedback: any = null;
   try {
-    feedback = JSON.parse(chat.message);
+    feedback = JSON.parse(stripCodeFences(chat.message));
   } catch {
     feedback = {
       summary: chat.message,
