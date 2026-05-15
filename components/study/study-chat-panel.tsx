@@ -23,7 +23,10 @@ import {
     CanvasAnswerMarker,
     StudyChatMessage,
     StudyCitation,
+    StudyMistakeNotebookItem,
+    StudyMode,
     StudyPlanEntry,
+    StudyPrepContent,
     StudyQuestion,
     StudyWarmupQuestion,
 } from "@/types";
@@ -52,6 +55,10 @@ type StudyChatPanelProps = {
   warmupProgressLabel?: string | null;
   warmupGenerating?: boolean;
   finalQuizProgressLabel?: string | null;
+  studyMode: StudyMode;
+  studyPrepContent: StudyPrepContent;
+  setupActive?: boolean;
+  mistakeNotebook: StudyMistakeNotebookItem[];
   diagnosticQuestion?: string | null;
   depthProgressItems: StudyDepthProgressItem[];
   chatListRef: RefObject<FlatList<StudyChatMessage> | null>;
@@ -85,6 +92,8 @@ type StudyChatPanelProps = {
   onSubmitAnswer: () => void;
   onSelectWarmupOption: (optionIndex: number) => void;
   onContinueWarmup: () => void;
+  onStudyModeChange: (mode: StudyMode) => void;
+  onStartWarmup: () => void;
   onSubmitDiagnosticAttempt: (text: string) => void;
   onDiagnosticNoClue: () => void;
   answerDraft: string;
@@ -115,6 +124,10 @@ export function StudyChatPanel({
   warmupProgressLabel = null,
   warmupGenerating = false,
   finalQuizProgressLabel = null,
+  studyMode,
+  studyPrepContent,
+  setupActive = false,
+  mistakeNotebook,
   diagnosticQuestion = null,
   depthProgressItems,
   chatListRef,
@@ -141,6 +154,8 @@ export function StudyChatPanel({
   onSubmitAnswer,
   onSelectWarmupOption,
   onContinueWarmup,
+  onStudyModeChange,
+  onStartWarmup,
   onSubmitDiagnosticAttempt,
   onDiagnosticNoClue,
   answerDraft,
@@ -225,7 +240,7 @@ export function StudyChatPanel({
           </ThemedText>
         </View>
       )}
-      {!isMemorizing && !diagnosticQuestion && !warmupQuestion && !warmupGenerating && (
+      {!isMemorizing && !diagnosticQuestion && !warmupQuestion && !warmupGenerating && !setupActive && (
         <StudyChatToolbar
           styles={styles}
           t={t}
@@ -241,6 +256,18 @@ export function StudyChatPanel({
       )}
 
       {grading && <GradingStatusCard styles={styles} t={t} />}
+
+      {setupActive && (
+        <StudySetupCard
+          styles={styles}
+          t={t}
+          mode={studyMode}
+          content={studyPrepContent}
+          onModeChange={onStudyModeChange}
+          onStart={onStartWarmup}
+          disabled={isChatting}
+        />
+      )}
 
       {(warmupQuestion || warmupGenerating) && (
         <WarmupQuizCard
@@ -266,6 +293,14 @@ export function StudyChatPanel({
         />
       )}
 
+      {mistakeNotebook.length > 0 && !setupActive && (
+        <MistakeNotebookCard
+          styles={styles}
+          t={t}
+          items={mistakeNotebook}
+        />
+      )}
+
       <StudyChatList
         styles={styles}
         t={t}
@@ -286,7 +321,7 @@ export function StudyChatPanel({
         onViewDiagram={onViewDiagram}
       />
 
-      {!isMemorizing && !diagnosticQuestion && !warmupQuestion && !warmupGenerating && (
+      {!isMemorizing && !diagnosticQuestion && !warmupQuestion && !warmupGenerating && !setupActive && (
         <StudyChatInputArea
           styles={styles}
           t={t}
@@ -303,6 +338,182 @@ export function StudyChatPanel({
           onSendMessage={onSendQuickAction}
         />
       )}
+    </View>
+  );
+}
+
+function StudySetupCard({
+  styles,
+  t,
+  mode,
+  content,
+  disabled,
+  onModeChange,
+  onStart,
+}: {
+  styles: StudyStyles;
+  t: (key: string, params?: Record<string, any>) => string;
+  mode: StudyMode;
+  content: StudyPrepContent;
+  disabled: boolean;
+  onModeChange: (mode: StudyMode) => void;
+  onStart: () => void;
+}) {
+  const modes: { value: StudyMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { value: "beginner", label: t("study.modeBeginner"), icon: "leaf-outline" },
+    { value: "normal", label: t("study.modeNormal"), icon: "school-outline" },
+    { value: "exam", label: t("study.modeExam"), icon: "timer-outline" },
+  ];
+
+  return (
+    <View style={styles.studySetupCard}>
+      <View style={styles.studySetupHeader}>
+        <View style={styles.studySetupIcon}>
+          <Ionicons name="map-outline" size={18} color="#ffffff" />
+        </View>
+        <View style={styles.studySetupCopy}>
+          <ThemedText style={styles.studySetupTitle}>
+            {t("study.setupTitle")}
+          </ThemedText>
+          <ThemedText style={styles.studySetupSubtitle}>
+            {t("study.setupSubtitle")}
+          </ThemedText>
+        </View>
+      </View>
+
+      <View style={styles.studyModeSegment}>
+        {modes.map((item) => {
+          const selected = item.value === mode;
+          return (
+            <Pressable
+              key={item.value}
+              style={[
+                styles.studyModeOption,
+                selected && styles.studyModeOptionActive,
+              ]}
+              onPress={() => onModeChange(item.value)}
+              disabled={disabled}
+              accessibilityRole="button"
+              accessibilityLabel={item.label}
+            >
+              <Ionicons
+                name={item.icon}
+                size={15}
+                color={selected ? "#ffffff" : "#0f766e"}
+              />
+              <ThemedText
+                style={[
+                  styles.studyModeOptionText,
+                  selected && styles.studyModeOptionTextActive,
+                ]}
+              >
+                {item.label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={styles.studySetupSection}>
+        <ThemedText style={styles.studySetupSectionTitle}>
+          {t("study.primerTitle")}
+        </ThemedText>
+        {content.primer.map((item) => (
+          <View key={item} style={styles.studySetupBulletRow}>
+            <Ionicons name="checkmark-circle" size={15} color="#0f766e" />
+            <ThemedText style={styles.studySetupBodyText}>{item}</ThemedText>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.studySetupSection}>
+        <ThemedText style={styles.studySetupSectionTitle}>
+          {t("study.conceptMapTitle")}
+        </ThemedText>
+        <View style={styles.conceptMapList}>
+          {content.conceptMap.map((edge, index) => (
+            <View key={`${edge.from}-${edge.to}-${index}`} style={styles.conceptMapEdge}>
+              <ThemedText style={styles.conceptMapNode}>{edge.from}</ThemedText>
+              <View style={styles.conceptMapRelation}>
+                <Ionicons name="arrow-forward" size={12} color="#0f766e" />
+                <ThemedText style={styles.conceptMapRelationText}>
+                  {edge.relation}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.conceptMapNode}>{edge.to}</ThemedText>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {content.workedExample && (
+        <View style={styles.studySetupSection}>
+          <ThemedText style={styles.studySetupSectionTitle}>
+            {content.workedExample.title}
+          </ThemedText>
+          {content.workedExample.steps.map((step, index) => (
+            <View key={step} style={styles.studySetupStepRow}>
+              <View style={styles.studySetupStepNumber}>
+                <ThemedText style={styles.studySetupStepNumberText}>
+                  {index + 1}
+                </ThemedText>
+              </View>
+              <ThemedText style={styles.studySetupBodyText}>{step}</ThemedText>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <Pressable
+        style={[styles.submitButton, disabled && styles.disabledButton]}
+        onPress={onStart}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={t("study.startRecognition")}
+      >
+        <Ionicons name="options-outline" size={18} color="#fff" />
+        <ThemedText style={styles.primaryButtonText}>
+          {t("study.startRecognition")}
+        </ThemedText>
+      </Pressable>
+    </View>
+  );
+}
+
+function MistakeNotebookCard({
+  styles,
+  t,
+  items,
+}: {
+  styles: StudyStyles;
+  t: (key: string, params?: Record<string, any>) => string;
+  items: StudyMistakeNotebookItem[];
+}) {
+  return (
+    <View style={styles.mistakeNotebookCard}>
+      <View style={styles.mistakeNotebookHeader}>
+        <View style={styles.mistakeNotebookIcon}>
+          <Ionicons name="bookmark-outline" size={15} color="#ffffff" />
+        </View>
+        <View style={styles.mistakeNotebookCopy}>
+          <ThemedText style={styles.mistakeNotebookTitle}>
+            {t("study.mistakeNotebookTitle")}
+          </ThemedText>
+          <ThemedText style={styles.mistakeNotebookSubtitle}>
+            {t("study.mistakeNotebookSubtitle")}
+          </ThemedText>
+        </View>
+      </View>
+      {items.slice(0, 4).map((item) => (
+        <View key={item.id} style={styles.mistakeNotebookItem}>
+          <ThemedText style={styles.mistakeNotebookConcept}>
+            {item.concept}
+          </ThemedText>
+          <ThemedText style={styles.mistakeNotebookNote} numberOfLines={2}>
+            {item.note}
+          </ThemedText>
+        </View>
+      ))}
     </View>
   );
 }

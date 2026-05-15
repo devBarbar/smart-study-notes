@@ -90,6 +90,11 @@ Return JSON only with this exact shape:
   }
 ]
 
+Progression rules:
+- Questions 1-${Math.max(1, count - 4)} should be recognition questions: vocabulary, prerequisite ideas, and relationships.
+- The last ${Math.min(4, count)} questions should become slightly harder: common traps, light application, or choosing the best explanation.
+- Respect any study mode provided in the source context: beginner is slower and more prerequisite-heavy, normal is balanced, exam is concise and trap-aware.
+
 Rules:
 - Use exactly 4 options per question.
 - Distribute correct answers across A, B, C, and D. Do not put the correct answer in the same slot repeatedly.

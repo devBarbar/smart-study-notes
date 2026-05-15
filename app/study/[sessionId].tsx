@@ -114,6 +114,9 @@ import {
   StudyDepthCheck,
   StudyPlanEntry,
   StudyQuestion,
+  StudyMode,
+  StudyMistakeNotebookItem,
+  StudyPrepContent,
   StudySession,
   StudyWarmupQuestion,
   TutorCheckType,
@@ -178,6 +181,7 @@ type CitationSourceMetadata = {
 };
 
 type StudyPhase =
+  | "setup"
   | "warmup"
   | "diagnostic"
   | "tutor"
@@ -243,6 +247,167 @@ const shuffleStudyWarmupOptions = (
     options: keyed.map((item) => item.option),
     correctOptionIndex: Math.max(0, keyed.findIndex((item) => item.isCorrect)),
   };
+};
+
+const TECHNICAL_TOPIC_PATTERN =
+  /\b(calcul|formula|equation|proof|algorithm|code|program|derivative|integral|matrix|vector|probability|statistics|physics|chemistry|circuit|network|database|sql|java|python|react|typescript|funktion|gleichung|ableitung|integral|matrix|vektor|wahrscheinlichkeit|statistik|physik|chemie|schaltung|netzwerk|datenbank)\b/i;
+
+const getModeLabel = (mode: StudyMode) => {
+  switch (mode) {
+    case "beginner":
+      return "Beginner";
+    case "exam":
+      return "Exam";
+    case "normal":
+    default:
+      return "Normal";
+  }
+};
+
+const buildStudyPrepContent = (
+  mode: StudyMode,
+  topic: string,
+  keyConcepts: string[],
+  t: (key: string, params?: Record<string, any>) => string,
+  description?: string,
+): StudyPrepContent => {
+  const concepts = keyConcepts.length > 0 ? keyConcepts.slice(0, 6) : [topic];
+  const conceptList = concepts.slice(0, 4).join(", ");
+  const modePrimer: Record<StudyMode, string[]> = {
+    beginner: [
+      t("study.primerBeginnerMain", { topic }),
+      t("study.primerBeginnerConcepts", { concepts: conceptList }),
+      t("study.primerBeginnerRecognition"),
+    ],
+    normal: [
+      t("study.primerNormalMain", { topic }),
+      t("study.primerNormalConcepts", { concepts: conceptList }),
+      t("study.primerNormalProgression"),
+    ],
+    exam: [
+      t("study.primerExamMain", { topic }),
+      t("study.primerExamConcepts", { concepts: conceptList }),
+      t("study.primerExamProgression"),
+    ],
+  };
+  const conceptMap = concepts.slice(0, 5).map((concept, index) => ({
+    from: index === 0 ? topic : concepts[index - 1],
+    relation:
+      index === 0
+        ? t("study.conceptMapSetsUp")
+        : index === concepts.length - 1
+          ? t("study.conceptMapLeadsTo")
+          : t("study.conceptMapConnectsTo"),
+    to: concept,
+  }));
+  const technicalText = `${topic} ${description ?? ""} ${concepts.join(" ")}`;
+  const workedExample = TECHNICAL_TOPIC_PATTERN.test(technicalText)
+    ? {
+        title: t("study.workedExampleTitle", { concept: concepts[0] || topic }),
+        steps: [
+          t("study.workedExampleStepGiven", { concept: concepts[0] || topic }),
+          t("study.workedExampleStepApply"),
+          t("study.workedExampleStepCheck"),
+        ],
+      }
+    : undefined;
+
+  return {
+    primer: modePrimer[mode],
+    conceptMap,
+    workedExample,
+  };
+};
+
+const buildSocraticHint = (
+  question: StudyQuestion | null,
+  t: (key: string, params?: Record<string, any>) => string,
+) => {
+  if (!question) return t("study.socraticHintDefault");
+
+  const concept = question.targetConcepts?.[0];
+  switch (question.checkType) {
+    case "why":
+      return concept
+        ? t("study.socraticHintWhyConcept", { concept })
+        : t("study.socraticHintWhy");
+    case "apply":
+      return t("study.socraticHintApply");
+    case "transfer":
+      return t("study.socraticHintTransfer");
+    case "teach_back":
+      return t("study.socraticHintTeachBack");
+    case "recall":
+    default:
+      return concept
+        ? t("study.socraticHintRecallConcept", { concept })
+        : t("study.socraticHintDefault");
+  }
+};
+
+const buildSessionSummaryText = ({
+  t,
+  topic,
+  warmupAnswers,
+  finalQuizAnswers,
+  finalQuizAverage,
+  mistakes,
+}: {
+  t: (key: string, params?: Record<string, any>) => string;
+  topic: string;
+  warmupAnswers: WarmupAnswer[];
+  finalQuizAnswers: FinalQuizAnswer[];
+  finalQuizAverage?: number;
+  mistakes: StudyMistakeNotebookItem[];
+}) => {
+  const warmupCorrect = warmupAnswers.filter((answer) => answer.correct).length;
+  const strongestFinal = [...finalQuizAnswers]
+    .filter((answer) => typeof answer.score === "number")
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
+  const weakestConcepts = Array.from(
+    new Set(mistakes.map((item) => item.concept).filter(Boolean)),
+  ).slice(0, 4);
+  const strengths = [
+    warmupAnswers.length
+      ? t("study.endSummaryWarmupStrength", {
+          correct: warmupCorrect,
+          total: warmupAnswers.length,
+        })
+      : t("study.endSummaryNoWarmup"),
+    strongestFinal
+      ? t("study.endSummaryBestAnswer", {
+          score: strongestFinal.score ?? 0,
+          type: strongestFinal.checkType || "recall",
+        })
+      : t("study.endSummaryRecallPractice"),
+  ];
+  const weakSpots = weakestConcepts.length
+    ? weakestConcepts.map((concept) =>
+        t("study.endSummaryWeakSpot", { concept }),
+      )
+    : [t("study.endSummaryNoWeakSpots")];
+  const nextSteps = [
+    t("study.endSummaryNextRecognition", { topic }),
+    t("study.endSummaryNextRecall"),
+    t("study.endSummaryNextApply"),
+  ];
+
+  return [
+    t("study.endSummaryTitle", { topic }),
+    "",
+    t("study.endSummaryScore", {
+      score: finalQuizAverage ?? 0,
+    }),
+    "",
+    t("study.endSummaryStrengths"),
+    ...strengths.map((item) => `• ${item}`),
+    "",
+    t("study.endSummaryWeakSpots"),
+    ...weakSpots.map((item) => `• ${item}`),
+    "",
+    t("study.endSummaryNext"),
+    ...nextSteps.map((item) => `• ${item}`),
+  ].join("\n");
 };
 
 const stableStringify = (value: unknown): string => {
@@ -713,6 +878,11 @@ export default function StudySessionScreen() {
   // AI Tutor collapse state
   const [, setTutorCollapsed] = useState(false);
   const [studyPhase, setStudyPhase] = useState<StudyPhase>("tutor");
+  const [studyMode, setStudyMode] = useState<StudyMode>("beginner");
+  const [mistakeNotebook, setMistakeNotebook] = useState<
+    StudyMistakeNotebookItem[]
+  >([]);
+  const [recallHintRevealed, setRecallHintRevealed] = useState(false);
   const [memorizationSecondsRemaining, setMemorizationSecondsRemaining] =
     useState<number | null>(null);
   const [memorizationMessageId, setMemorizationMessageId] = useState<
@@ -733,6 +903,7 @@ export default function StudySessionScreen() {
   });
   const finalQuizStartedRef = useRef(false);
   const finalQuizPassedRef = useRef(false);
+  const endSummaryPushedRef = useRef(false);
 
   const latestDepthProgressFromMessages = useMemo(() => {
     if (responseDepthProgress) return responseDepthProgress;
@@ -780,6 +951,68 @@ export default function StudySessionScreen() {
       };
     });
   }, [depthChecks, latestDepthProgressFromMessages]);
+
+  const studyPrepContent = useMemo(
+    () =>
+      buildStudyPrepContent(
+        studyMode,
+        studyPlanEntry?.title || studyTitle,
+        studyPlanEntry?.keyConcepts ?? [],
+        t,
+        studyPlanEntry?.description,
+      ),
+    [
+      studyMode,
+      studyPlanEntry?.description,
+      studyPlanEntry?.keyConcepts,
+      studyPlanEntry?.title,
+      studyTitle,
+      t,
+    ],
+  );
+
+  const addMistakeNotebookItems = useCallback(
+    (
+      items: {
+        concept?: string;
+        note?: string;
+        source: StudyMistakeNotebookItem["source"];
+      }[],
+    ) => {
+      const normalized = items
+        .map((item) => ({
+          concept: item.concept?.trim(),
+          note: item.note?.trim(),
+          source: item.source,
+        }))
+        .filter(
+          (item): item is Omit<StudyMistakeNotebookItem, "id"> =>
+            Boolean(item.concept) && Boolean(item.note),
+        );
+
+      if (normalized.length === 0) return;
+
+      setMistakeNotebook((prev) => {
+        const existing = new Set(
+          prev.map((item) => `${item.source}:${item.concept.toLowerCase()}`),
+        );
+        const nextItems = normalized
+          .filter((item) => {
+            const key = `${item.source}:${item.concept.toLowerCase()}`;
+            if (existing.has(key)) return false;
+            existing.add(key);
+            return true;
+          })
+          .map((item) => ({
+            id: uuid(),
+            ...item,
+          }));
+
+        return [...nextItems, ...prev].slice(0, 12);
+      });
+    },
+    [],
+  );
 
   // Flashcard added notification state
   const [flashcardAdded, setFlashcardAdded] = useState(false);
@@ -1556,6 +1789,14 @@ export default function StudySessionScreen() {
         setRecentMisconceptions(
           rows.map((row) => `${row.concept}: ${row.note}`).filter(Boolean),
         );
+        setMistakeNotebook(
+          rows.map((row) => ({
+            id: row.id ?? uuid(),
+            concept: row.concept,
+            note: row.note,
+            source: "recall" as const,
+          })),
+        );
       } catch (err) {
         console.warn("[study] Failed to load misconceptions:", err);
       }
@@ -1916,6 +2157,7 @@ export default function StudySessionScreen() {
       "diagnostic"
     ) {
       setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
+      setRecallHintRevealed(false);
       setMemorizationSecondsRemaining(null);
       setTutorCollapsed(false);
       setStudyPhase("diagnostic");
@@ -1934,6 +2176,7 @@ export default function StudySessionScreen() {
     }
 
     setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
+    setRecallHintRevealed(false);
     if (
       shouldOpenCanvasOnResumeRef.current ||
       restoredMessageIdsRef.current.has(latestUnansweredTutorQuestionMessage.id)
@@ -2508,6 +2751,7 @@ export default function StudySessionScreen() {
     }
 
     finalQuizStartedRef.current = true;
+    endSummaryPushedRef.current = false;
     setStudyPhase("final_quiz");
     setTutorCollapsed(false);
     setMemorizationSecondsRemaining(null);
@@ -2675,6 +2919,13 @@ export default function StudySessionScreen() {
           ? `Missed or shaky concepts: ${missedConcepts.join(", ")}`
           : "The student did not miss any warm-up concepts.",
         "Use the warm-up as orientation data, not as a pass/fail grade.",
+        `Study mode: ${getModeLabel(studyMode)}. ${
+          studyMode === "beginner"
+            ? "Explain like the learner is new and avoid assuming prior knowledge."
+            : studyMode === "exam"
+              ? "Keep the teaching concise and exam-oriented, with traps and application in mind."
+              : "Use a balanced pace with clear explanations and real recall."
+        }`,
         "Start with a concise beginner primer that gives the prerequisite mental model before recall. If the score was low, slow down and explain the basics first. If the score was high, briefly connect the key ideas and move toward recall.",
         "Explicitly address the most important missed concept before asking the next recall/depth question.",
         "Teach one small idea clearly, using the source material. Do not dump the whole topic.",
@@ -2692,15 +2943,50 @@ export default function StudySessionScreen() {
           total: questions.length,
         }),
       });
+
+      if (missedConcepts.length > 0) {
+        const missedItems = missedConcepts.map((concept) => ({
+          concept,
+          note: t("study.mistakeNotebookWarmupNote"),
+          source: "warmup" as const,
+        }));
+        addMistakeNotebookItems(missedItems);
+        if (lectureId) {
+          saveStudyMisconceptions(
+            missedItems.map((item) => ({
+              lectureId,
+              studyPlanEntryId: studyPlanEntryId ?? undefined,
+              sessionId: sessionId as string,
+              concept: item.concept,
+              note: item.note,
+            })),
+          ).catch((err) => {
+            console.warn("[study] Failed to save warm-up misconceptions:", err);
+          });
+        }
+      }
     },
     [
+      addMistakeNotebookItems,
+      lectureId,
       nextDepthCheckType,
       sendToFeynmanAI,
+      sessionId,
+      studyMode,
       studyPlanEntry,
+      studyPlanEntryId,
       studyTitle,
       t,
     ],
   );
+
+  const startStudySetup = useCallback(() => {
+    if (!studyTitle) return;
+    setStudyPhase("setup");
+    setTutorCollapsed(false);
+    setCurrentQuestion(null);
+    setMemorizationSecondsRemaining(null);
+  }, [studyTitle]);
 
   const startWarmupQuiz = useCallback(async () => {
     if (!studyTitle || warmupState.status !== "idle") return;
@@ -2728,6 +3014,12 @@ export default function StudySessionScreen() {
     try {
       const warmupContext = [
         "Generate a recognition warm-up before recall. Cover beginner prerequisites, key terms, relationships, common misconceptions, and high-yield ideas.",
+        `Study mode: ${getModeLabel(studyMode)}.`,
+        studyMode === "beginner"
+          ? "Start very accessible: vocabulary and prerequisite mental models first, then only light application near the end."
+          : studyMode === "exam"
+            ? "Use exam-style wording, plausible traps, and application-oriented questions while still staying recognition-based."
+            : "Use a balanced progression from recognition to concept relationships to light application.",
         studyPlanEntry?.title ? `Topic: ${studyPlanEntry.title}` : null,
         studyPlanEntry?.learningObjective
           ? `Learning objective: ${studyPlanEntry.learningObjective}`
@@ -2783,6 +3075,7 @@ export default function StudySessionScreen() {
     pushMessage,
     studyPlanEntry,
     studyTitle,
+    studyMode,
     t,
     warmupState.status,
   ]);
@@ -3271,6 +3564,25 @@ export default function StudySessionScreen() {
         }
       }
 
+      if (!isCheckPassed) {
+        const notebookConcepts =
+          feedback.misconceptions?.length
+            ? feedback.misconceptions
+            : questionToEvaluate.targetConcepts?.length
+              ? questionToEvaluate.targetConcepts
+              : [questionToEvaluate.prompt];
+        addMistakeNotebookItems(
+          notebookConcepts.slice(0, 4).map((concept) => ({
+            concept,
+            note:
+              feedback.whatWentWrong?.[0] ||
+              feedback.summary ||
+              t("study.mistakeNotebookRecallNote"),
+            source: isFinalQuizAnswer ? "final_quiz" : "recall",
+          })),
+        );
+      }
+
       if (!isFinalQuizAnswer && isCheckPassed && lectureId) {
         try {
           // Collect AI explanation from previous messages (up to 3 messages before the question)
@@ -3539,6 +3851,21 @@ export default function StudySessionScreen() {
             finalQuizStartedRef.current = false;
             finalQuizPassedRef.current = false;
           }
+          if (!endSummaryPushedRef.current) {
+            endSummaryPushedRef.current = true;
+            pushMessage({
+              id: uuid(),
+              role: "ai",
+              text: buildSessionSummaryText({
+                t,
+                topic: studyPlanEntry?.title || studyTitle,
+                warmupAnswers: warmupState.answers,
+                finalQuizAnswers: nextFinalQuizAnswers,
+                finalQuizAverage,
+                mistakes: mistakeNotebook,
+              }),
+            });
+          }
         } else if (nextFinalQuizQuestion) {
           pushFinalQuizQuestion(nextFinalQuizQuestion, nextFinalQuizIndex);
         }
@@ -3589,11 +3916,17 @@ export default function StudySessionScreen() {
     const nextCheckInstruction = nextDepthCheckType
       ? `The next required pass-gate checkType is "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}). The hidden learning_question must use that checkType, and the student needs 90+/100 for it to count.`
       : "All depth checks are already passed; ask a focused retention or exam-style review question.";
+    const modeInstruction =
+      studyMode === "beginner"
+        ? "Explain like I am new: define prerequisites first, avoid unexplained jargon, and use one small example before testing."
+        : studyMode === "exam"
+          ? "Use exam mode: be concise, highlight likely traps, and push toward application after the core idea."
+          : "Use normal mode: clear explanation, then recall and application at a balanced pace.";
     const topicFocus = studyPlanEntry
-      ? `Give me a focused explanation of the next key idea from "${studyPlanEntry.title}". Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only, and use enough detail for real understanding without dumping the whole topic. ${nextCheckInstruction} ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply - I will answer on the canvas.`
-      : `Give me a focused explanation of the first key idea in this topic. Cover one step only, and use enough detail for real understanding without dumping the whole topic. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
+      ? `Give me a focused explanation of the next key idea from "${studyPlanEntry.title}". ${modeInstruction} Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only, and use enough detail for real understanding without dumping the whole topic. ${nextCheckInstruction} ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply - I will answer on the canvas.`
+      : `Give me a focused explanation of the first key idea in this topic. ${modeInstruction} Cover one step only, and use enough detail for real understanding without dumping the whole topic. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
     sendToFeynmanAI(topicFocus, undefined, retrievalFocus || topicFocus);
-  }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyPlanEntry]);
+  }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyMode, studyPlanEntry]);
 
   // Auto-trigger a recognition warm-up before recall when starting a new session
   useEffect(() => {
@@ -3608,14 +3941,14 @@ export default function StudySessionScreen() {
     ) {
       hasTriggeredAutoExplainRef.current = true;
       shouldAutoExplainRef.current = false;
-      startWarmupQuiz();
+      startStudySetup();
     }
   }, [
     loadingMessages,
     loadingEntry,
     studyTitle,
     messages.length,
-    startWarmupQuiz,
+    startStudySetup,
   ]);
 
   // Scroll chat to specific question message (called from canvas markers)
@@ -3901,6 +4234,31 @@ export default function StudySessionScreen() {
     studyPhase === "warmup" && warmupState.status === "active"
       ? warmupState.questions[warmupState.currentIndex] ?? null
       : null;
+  const activeRecallQuestion = latestUnansweredTutorQuestionMessage
+    ? {
+        id:
+          latestUnansweredTutorQuestionMessage.questionId ||
+          latestUnansweredTutorQuestionMessage.id,
+        prompt:
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.question ||
+          getQuestionTextForMessage(latestUnansweredTutorQuestionMessage) ||
+          "",
+        targetConcepts:
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.targetConcepts,
+        expectedAnswerPoints:
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.expectedAnswerPoints,
+        checkType: normalizeTutorCheckType(
+          latestUnansweredTutorQuestionMessage.tutorQuestion?.checkType ||
+            currentQuestion?.checkType ||
+            nextDepthCheckType ||
+            "recall",
+        ),
+      }
+    : currentQuestion;
+  const recallHintText =
+    showCanvasSurface && !grading
+      ? buildSocraticHint(activeRecallQuestion, t)
+      : null;
   const warmupProgressLabel =
     studyPhase === "warmup"
       ? warmupState.status === "generating"
@@ -3970,6 +4328,9 @@ export default function StudySessionScreen() {
           references={canvasReferences}
           onOpenCitation={openCitationSource}
           depthProgressItems={depthProgressItems}
+          recallHintText={recallHintText}
+          recallHintRevealed={recallHintRevealed}
+          onRevealRecallHint={() => setRecallHintRevealed(true)}
         />
       ) : (
         <StudyChatPanel
@@ -4001,6 +4362,12 @@ export default function StudySessionScreen() {
           onContinueWarmup={continueWarmup}
           finalQuizProgressLabel={finalQuizProgressLabel}
           depthProgressItems={depthProgressItems}
+          studyMode={studyMode}
+          studyPrepContent={studyPrepContent}
+          setupActive={studyPhase === "setup"}
+          onStudyModeChange={setStudyMode}
+          onStartWarmup={startWarmupQuiz}
+          mistakeNotebook={mistakeNotebook}
           diagnosticQuestion={
             studyPhase === "diagnostic"
               ? latestDiagnosticQuestionMessage?.tutorQuestion?.question ?? null

@@ -95,6 +95,9 @@ type StudyCanvasPanelProps = {
   }[];
   onOpenCitation: (citation: StudyCitation) => void;
   depthProgressItems: StudyDepthProgressItem[];
+  recallHintText?: string | null;
+  recallHintRevealed?: boolean;
+  onRevealRecallHint: () => void;
 };
 
 export function StudyCanvasPanel({
@@ -148,6 +151,9 @@ export function StudyCanvasPanel({
   references,
   onOpenCitation,
   depthProgressItems,
+  recallHintText = null,
+  recallHintRevealed = false,
+  onRevealRecallHint,
 }: StudyCanvasPanelProps) {
   const [referencesOpen, setReferencesOpen] = useState(false);
   const visibleReferences = useMemo(() => references.slice(0, 4), [references]);
@@ -218,6 +224,42 @@ export function StudyCanvasPanel({
                 {referenceCountLabel}
               </ThemedText>
             </Pressable>
+          </View>
+        )}
+
+        {lockedAnswerMode && recallHintText && (
+          <View style={styles.socraticHintCard}>
+            <View style={styles.socraticHintHeader}>
+              <View style={styles.socraticHintIcon}>
+                <Ionicons name="bulb-outline" size={15} color="#ffffff" />
+              </View>
+              <View style={styles.socraticHintCopy}>
+                <ThemedText style={styles.socraticHintTitle}>
+                  {t("study.socraticHintTitle")}
+                </ThemedText>
+                <ThemedText style={styles.socraticHintSubtitle}>
+                  {t("study.socraticHintSubtitle")}
+                </ThemedText>
+              </View>
+              {!recallHintRevealed && (
+                <Pressable
+                  style={styles.socraticHintButton}
+                  onPress={onRevealRecallHint}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("study.showHint")}
+                >
+                  <Ionicons name="eye-outline" size={14} color={palette.warning} />
+                  <ThemedText style={styles.socraticHintButtonText}>
+                    {t("study.showHint")}
+                  </ThemedText>
+                </Pressable>
+              )}
+            </View>
+            {recallHintRevealed && (
+              <ThemedText style={styles.socraticHintText}>
+                {recallHintText}
+              </ThemedText>
+            )}
           </View>
         )}
 

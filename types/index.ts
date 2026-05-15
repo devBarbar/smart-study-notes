@@ -299,6 +299,28 @@ export type StudyWarmupQuestion = {
   targetConcepts?: string[];
 };
 
+export type StudyMode = "beginner" | "normal" | "exam";
+
+export type StudyPrepContent = {
+  primer: string[];
+  conceptMap: {
+    from: string;
+    relation: string;
+    to: string;
+  }[];
+  workedExample?: {
+    title: string;
+    steps: string[];
+  };
+};
+
+export type StudyMistakeNotebookItem = {
+  id: string;
+  concept: string;
+  note: string;
+  source: "warmup" | "recall" | "final_quiz";
+};
+
 export type StudyFeedback = {
   summary: string;
   correctness: string;
