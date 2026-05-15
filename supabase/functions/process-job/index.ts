@@ -1276,11 +1276,13 @@ const handleQuestionGeneration = async (
           return null;
         }
 
+        const shuffled = shuffleWarmupOptions(options, correctOptionIndex);
+
         return {
           id: `warmup-${idx}`,
           prompt: String(item.prompt).trim(),
-          options,
-          correctOptionIndex,
+          options: shuffled.options,
+          correctOptionIndex: shuffled.correctOptionIndex,
           explanation: String(item?.explanation ?? "").trim() || options[correctOptionIndex],
           targetConcepts: Array.isArray(item?.targetConcepts)
             ? item.targetConcepts.map((concept: unknown) => String(concept ?? "").trim()).filter(Boolean)
@@ -1330,6 +1332,23 @@ const handleQuestionGeneration = async (
       lectureId: payload?.lectureId ?? payload?.lecture_id ?? null,
       metadata: { questions: questions.length },
     },
+  };
+};
+
+const shuffleWarmupOptions = (options: string[], correctOptionIndex: number) => {
+  const keyed = options.map((option, index) => ({
+    option,
+    isCorrect: index === correctOptionIndex,
+  }));
+
+  for (let index = keyed.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [keyed[index], keyed[swapIndex]] = [keyed[swapIndex], keyed[index]];
+  }
+
+  return {
+    options: keyed.map((item) => item.option),
+    correctOptionIndex: Math.max(0, keyed.findIndex((item) => item.isCorrect)),
   };
 };
 

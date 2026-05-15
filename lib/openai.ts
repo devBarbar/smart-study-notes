@@ -89,15 +89,34 @@ const normalizeWarmupQuestion = (
     return null;
   }
 
+  const shuffled = shuffleWarmupOptions(options, correctOptionIndex);
+
   return {
     id: question.id || `warmup-${index}`,
     prompt,
-    options,
-    correctOptionIndex,
+    options: shuffled.options,
+    correctOptionIndex: shuffled.correctOptionIndex,
     explanation: String(question.explanation ?? '').trim() || options[correctOptionIndex],
     targetConcepts: Array.isArray(question.targetConcepts)
       ? question.targetConcepts.map((concept) => String(concept ?? '').trim()).filter(Boolean)
       : undefined,
+  };
+};
+
+const shuffleWarmupOptions = (options: string[], correctOptionIndex: number) => {
+  const keyed = options.map((option, index) => ({
+    option,
+    isCorrect: index === correctOptionIndex,
+  }));
+
+  for (let index = keyed.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [keyed[index], keyed[swapIndex]] = [keyed[swapIndex], keyed[index]];
+  }
+
+  return {
+    options: keyed.map((item) => item.option),
+    correctOptionIndex: Math.max(0, keyed.findIndex((item) => item.isCorrect)),
   };
 };
 

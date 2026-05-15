@@ -225,6 +225,26 @@ type FeynmanSendOptions = {
   questionId?: string;
 };
 
+const shuffleStudyWarmupOptions = (
+  question: StudyWarmupQuestion,
+): StudyWarmupQuestion => {
+  const keyed = question.options.map((option, index) => ({
+    option,
+    isCorrect: index === question.correctOptionIndex,
+  }));
+
+  for (let index = keyed.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [keyed[index], keyed[swapIndex]] = [keyed[swapIndex], keyed[index]];
+  }
+
+  return {
+    ...question,
+    options: keyed.map((item) => item.option),
+    correctOptionIndex: Math.max(0, keyed.findIndex((item) => item.isCorrect)),
+  };
+};
+
 const stableStringify = (value: unknown): string => {
   if (Array.isArray(value)) {
     return `[${value.map(stableStringify).join(",")}]`;
@@ -2602,7 +2622,7 @@ export default function StudySessionScreen() {
 
     return Array.from({ length: WARMUP_QUESTION_COUNT }, (_, index) => {
       const concept = sourceConcepts[index % sourceConcepts.length] || studyTitle;
-      return {
+      return shuffleStudyWarmupOptions({
         id: `warmup-fallback-${index}`,
         prompt: t("study.warmupFallbackPrompt", { concept }),
         options: [
@@ -2614,7 +2634,7 @@ export default function StudySessionScreen() {
         correctOptionIndex: 0,
         explanation: t("study.warmupFallbackExplanation", { concept }),
         targetConcepts: [concept],
-      };
+      });
     });
   }, [studyPlanEntry, studyTitle, t]);
 

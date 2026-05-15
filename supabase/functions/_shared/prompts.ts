@@ -83,8 +83,8 @@ Return JSON only with this exact shape:
 [
   {
     "prompt": "Short question",
-    "options": ["A plausible answer", "A common misconception", "Another plausible answer", "Another distractor"],
-    "correctOptionIndex": 0,
+    "options": ["A common misconception", "Another plausible distractor", "The correct answer", "Another distractor"],
+    "correctOptionIndex": 2,
     "explanation": "One or two short sentences explaining why the correct option is right and why a tempting wrong idea is wrong.",
     "targetConcepts": ["concept"]
   }
@@ -92,6 +92,7 @@ Return JSON only with this exact shape:
 
 Rules:
 - Use exactly 4 options per question.
+- Distribute correct answers across A, B, C, and D. Do not put the correct answer in the same slot repeatedly.
 - Make questions answerable from recognition, not free recall.
 - Cover prerequisites, vocabulary, key relationships, common misconceptions, and high-yield ideas.
 - Start easier, then add 2-3 application-oriented questions near the end.
