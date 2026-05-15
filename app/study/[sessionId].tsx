@@ -700,7 +700,7 @@ export default function StudySessionScreen() {
         return;
       }
       try {
-        const checks = await listStudyDepthChecks(studyPlanEntryId);
+        const checks = await listStudyDepthChecks(studyPlanEntryId, sessionId as string);
         setDepthChecks(checks);
       } catch (err) {
         console.warn("[study] Failed to load depth checks:", err);
@@ -708,7 +708,7 @@ export default function StudySessionScreen() {
     };
 
     loadDepthChecks();
-  }, [studyPlanEntryId]);
+  }, [sessionId, studyPlanEntryId]);
 
   // Build the study title based on context
   const studyTitle = useMemo(() => {

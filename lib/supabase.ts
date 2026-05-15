@@ -1026,15 +1026,22 @@ export const saveStudyDepthCheck = async (
 
 export const listStudyDepthChecks = async (
   studyPlanEntryId: string,
+  sessionId?: string | null,
   limit = 100,
 ): Promise<StudyDepthCheck[]> => {
   const client = ensureClient();
-  const { data, error } = await client
+  let query = client
     .from('study_depth_checks')
     .select()
     .eq('study_plan_entry_id', studyPlanEntryId)
     .order('created_at', { ascending: false })
     .limit(limit);
+
+  if (sessionId) {
+    query = query.eq('session_id', sessionId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (error.code === '42P01') return [];
