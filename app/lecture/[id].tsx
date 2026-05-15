@@ -3,7 +3,7 @@ import { useFocusEffect } from 'expo-router/react-navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, LayoutChangeEvent, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, LayoutChangeEvent, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { v4 as uuid } from 'uuid';
 
 import { CircularReadinessGraph } from '@/components/circular-readiness-graph';
@@ -22,8 +22,9 @@ import { useFlashcardCount } from '@/hooks/use-flashcards';
 import { useLectures } from '@/hooks/use-lectures';
 import { usePracticeExams } from '@/hooks/use-practice-exams';
 import { useSessions } from '@/hooks/use-sessions';
-import { generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
-import { createSession, deleteLecture, enqueueLecturePlanGeneration, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
+import { exportCheatSheetPdf } from '@/lib/cheat-sheet-export';
+import { enqueueCheatSheetRefresh, generateCheatSheet, generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
+import { createSession, deleteLecture, enqueueLecturePlanGeneration, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, markLectureCheatSheetPending, saveLectureCheatSheetSettings, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
 import { PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 
 const stripCodeFences = (text: string) => {
@@ -31,7 +32,7 @@ const stripCodeFences = (text: string) => {
   return fenceMatch ? fenceMatch[1].trim() : text;
 };
 
-type TabKey = 'overview' | 'studyPlan' | 'flashcards' | 'practice' | 'materials';
+type TabKey = 'overview' | 'studyPlan' | 'flashcards' | 'practice' | 'cheatSheet' | 'materials';
 
 const getSessionTime = (session: StudySession) => {
   const time = Date.parse(session.createdAt);
@@ -106,6 +107,9 @@ export default function LectureDetailScreen() {
   const [creatingClusterQuiz, setCreatingClusterQuiz] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState<Record<string, boolean>>({});
+  const [savingCheatSheetSetting, setSavingCheatSheetSetting] = useState(false);
+  const [refreshingCheatSheet, setRefreshingCheatSheet] = useState(false);
+  const [exportingCheatSheet, setExportingCheatSheet] = useState(false);
   const CLUSTER_QUIZ_PASS_THRESHOLD = 70;
 
   // Refs for scroll-to functionality
@@ -640,6 +644,66 @@ export default function LectureDetailScreen() {
     }
   }, [agentLanguage, clusterQuizResults, lecture, notesDraft, orderedPlan, queryClient, sectionStatusCounts.failed, sectionStatusCounts.inProgress, sectionStatusCounts.notStarted, sectionStatusCounts.passed, t]);
 
+  const toggleCheatSheetEnabled = useCallback(async (enabled: boolean) => {
+    if (!lecture) return;
+    setSavingCheatSheetSetting(true);
+    try {
+      await saveLectureCheatSheetSettings(lecture.id, enabled);
+      queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      if (enabled) {
+        await markLectureCheatSheetPending(lecture.id);
+        queryClient.invalidateQueries({ queryKey: ['lectures'] });
+        enqueueCheatSheetRefresh({
+          lectureId: lecture.id,
+          language: agentLanguage,
+          force: false,
+        }).catch((err) => console.warn('[lecture] cheat sheet enqueue failed', err));
+      }
+    } catch (err) {
+      console.warn('[lecture] cheat sheet setting failed', err);
+      Alert.alert(t('common.errorGeneric'), t('cheatSheet.settingError'));
+    } finally {
+      setSavingCheatSheetSetting(false);
+    }
+  }, [agentLanguage, lecture, queryClient, t]);
+
+  const refreshCheatSheet = useCallback(async () => {
+    if (!lecture) return;
+    setRefreshingCheatSheet(true);
+    try {
+      await markLectureCheatSheetPending(lecture.id, cheatSheet?.enabled ?? true);
+      queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      await generateCheatSheet({
+        lectureId: lecture.id,
+        language: agentLanguage,
+        force: true,
+      });
+      queryClient.invalidateQueries({ queryKey: ['lectures'] });
+    } catch (err) {
+      console.warn('[lecture] cheat sheet refresh failed', err);
+      Alert.alert(t('common.errorGeneric'), t('cheatSheet.refreshError'));
+    } finally {
+      setRefreshingCheatSheet(false);
+    }
+  }, [agentLanguage, cheatSheet?.enabled, lecture, queryClient, t]);
+
+  const exportCheatSheet = useCallback(async () => {
+    if (!lecture?.cheatSheet?.content) return;
+    setExportingCheatSheet(true);
+    try {
+      await exportCheatSheetPdf({
+        content: lecture.cheatSheet.content,
+        lectureTitle: lecture.title,
+        generatedAt: lecture.cheatSheet.lastGeneratedAt,
+      });
+    } catch (err) {
+      console.warn('[lecture] cheat sheet export failed', err);
+      Alert.alert(t('common.errorGeneric'), t('cheatSheet.exportError'));
+    } finally {
+      setExportingCheatSheet(false);
+    }
+  }, [lecture, t]);
+
   useEffect(() => {
     if (!hasStudyPlan) {
       prevPassedCountRef.current = null;
@@ -773,6 +837,8 @@ export default function LectureDetailScreen() {
 
   const readinessData = readiness ?? { percentage: 0, predictedGrade: 'Failed' as const };
   const roadmapItems = roadmap ?? [];
+  const cheatSheet = lecture.cheatSheet;
+  const cheatSheetContent = cheatSheet?.content;
 
   // Tab rendering
   const tabs: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; badge?: number }[] = [
@@ -780,6 +846,7 @@ export default function LectureDetailScreen() {
     { key: 'studyPlan', label: t('lectureDetail.tabs.studyPlan'), icon: 'list' },
     { key: 'flashcards', label: t('lectureDetail.tabs.flashcards'), icon: 'layers', badge: flashcardCount > 0 ? flashcardCount : undefined },
     { key: 'practice', label: t('lectureDetail.tabs.practice'), icon: 'clipboard' },
+    { key: 'cheatSheet', label: t('lectureDetail.tabs.cheatSheet'), icon: 'document-text' },
     { key: 'materials', label: t('lectureDetail.tabs.materials'), icon: 'documents' },
   ];
 
@@ -1368,6 +1435,154 @@ export default function LectureDetailScreen() {
     </View>
   );
 
+  const renderCheatSheetTab = () => (
+    <View style={styles.tabContent}>
+      <View style={styles.cheatSheetSettingsCard}>
+        <View style={styles.cheatSheetSettingsRow}>
+          <View style={styles.cheatSheetSettingsCopy}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="document-text" size={18} color="#0f766e" />
+              <ThemedText type="defaultSemiBold">{t('cheatSheet.title')}</ThemedText>
+            </View>
+            <ThemedText style={styles.sectionSubtitle}>{t('cheatSheet.description')}</ThemedText>
+          </View>
+          {savingCheatSheetSetting ? (
+            <ActivityIndicator color={palette.primary} size="small" />
+          ) : (
+            <Switch
+              value={cheatSheet?.enabled ?? false}
+              onValueChange={toggleCheatSheetEnabled}
+              trackColor={{ false: palette.border, true: '#99f6e4' }}
+              thumbColor={cheatSheet?.enabled ? '#0f766e' : '#f8fafc'}
+            />
+          )}
+        </View>
+      </View>
+
+      {cheatSheet?.status === 'pending' && (
+        <View style={styles.cheatSheetStatusCard}>
+          <ActivityIndicator color="#0f766e" size="small" />
+          <ThemedText style={styles.cheatSheetStatusText}>{t('cheatSheet.generating')}</ThemedText>
+        </View>
+      )}
+
+      {cheatSheet?.status === 'failed' && (
+        <View style={[styles.cheatSheetStatusCard, styles.cheatSheetErrorCard]}>
+          <Ionicons name="warning" size={18} color="#ef4444" />
+          <ThemedText style={styles.errorText}>
+            {cheatSheet.error || t('cheatSheet.refreshError')}
+          </ThemedText>
+        </View>
+      )}
+
+      {cheatSheetContent ? (
+        <View style={styles.cheatSheetCard}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="sparkles" size={18} color="#0f766e" />
+              <ThemedText type="defaultSemiBold" style={styles.cheatSheetTitle}>
+                {cheatSheetContent.title}
+              </ThemedText>
+            </View>
+          </View>
+          {cheatSheetContent.summary && (
+            <ThemedText style={styles.cheatSheetSummary}>{cheatSheetContent.summary}</ThemedText>
+          )}
+          <View style={styles.cheatSheetMetaRow}>
+            <ThemedText style={styles.cheatSheetMeta}>
+              {t('cheatSheet.evidenceCount', { count: cheatSheet?.evidenceCount ?? 0 })}
+            </ThemedText>
+            {cheatSheet?.lastGeneratedAt && (
+              <ThemedText style={styles.cheatSheetMeta}>
+                {new Date(cheatSheet.lastGeneratedAt).toLocaleDateString()}
+              </ThemedText>
+            )}
+          </View>
+
+          {cheatSheetContent.sections.map((section, sectionIndex) => (
+            <View key={`${section.title}-${sectionIndex}`} style={styles.cheatSheetSection}>
+              <ThemedText type="defaultSemiBold" style={styles.cheatSheetSectionTitle}>
+                {section.title}
+              </ThemedText>
+              {section.items.map((item, itemIndex) => (
+                <View key={`${item.title}-${itemIndex}`} style={styles.cheatSheetItem}>
+                  <ThemedText type="defaultSemiBold" style={styles.cheatSheetItemTitle}>
+                    {item.title}
+                  </ThemedText>
+                  <ThemedText style={styles.cheatSheetItemText}>
+                    <ThemedText style={styles.cheatSheetItemLabel}>{t('cheatSheet.gapLabel')} </ThemedText>
+                    {item.gap}
+                  </ThemedText>
+                  <ThemedText style={styles.cheatSheetItemText}>
+                    <ThemedText style={styles.cheatSheetItemLabel}>{t('cheatSheet.fixLabel')} </ThemedText>
+                    {item.fix}
+                  </ThemedText>
+                  {item.example && (
+                    <ThemedText style={styles.cheatSheetExample}>{item.example}</ThemedText>
+                  )}
+                </View>
+              ))}
+            </View>
+          ))}
+
+          <View style={styles.cheatSheetActions}>
+            <Pressable
+              style={[styles.secondaryActionButton, refreshingCheatSheet && styles.buttonDisabled]}
+              onPress={refreshCheatSheet}
+              disabled={refreshingCheatSheet || !lecture}
+            >
+              {refreshingCheatSheet ? (
+                <ActivityIndicator color={palette.text} size="small" />
+              ) : (
+                <>
+                  <Ionicons name="refresh" size={16} color={palette.text} />
+                  <ThemedText style={styles.secondaryActionButtonText}>{t('cheatSheet.refresh')}</ThemedText>
+                </>
+              )}
+            </Pressable>
+            <Pressable
+              style={[styles.generateExamButton, exportingCheatSheet && styles.buttonDisabled]}
+              onPress={exportCheatSheet}
+              disabled={exportingCheatSheet || !cheatSheetContent}
+            >
+              {exportingCheatSheet ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="share" size={16} color="#fff" />
+                  <ThemedText style={styles.generateExamButtonText}>{t('cheatSheet.exportPdf')}</ThemedText>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.emptyStateCard}>
+          <Ionicons name="document-text-outline" size={40} color={palette.textMuted} />
+          <ThemedText style={styles.emptyStateText}>
+            {cheatSheet?.enabled ? t('cheatSheet.emptyEnabled') : t('cheatSheet.emptyDisabled')}
+          </ThemedText>
+          {cheatSheet?.enabled && (
+            <Pressable
+              style={[styles.generateButton, refreshingCheatSheet && styles.buttonDisabled]}
+              onPress={refreshCheatSheet}
+              disabled={refreshingCheatSheet}
+            >
+              {refreshingCheatSheet ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Ionicons name="flash" size={18} color="#fff" />
+                  <ThemedText style={styles.generateButtonText}>{t('cheatSheet.refresh')}</ThemedText>
+                </>
+              )}
+            </Pressable>
+          )}
+        </View>
+      )}
+    </View>
+  );
+
   const renderMaterialsTab = () => (
     <View style={styles.tabContent}>
       <View style={styles.materialsHeader}>
@@ -1487,6 +1702,7 @@ export default function LectureDetailScreen() {
         {activeTab === 'studyPlan' && renderStudyPlanTab()}
         {activeTab === 'flashcards' && renderFlashcardsTab()}
         {activeTab === 'practice' && renderPracticeTab()}
+        {activeTab === 'cheatSheet' && renderCheatSheetTab()}
         {activeTab === 'materials' && renderMaterialsTab()}
       </ScrollView>
 
@@ -1580,6 +1796,7 @@ const createStyles = (palette: typeof Colors.light) =>
     // Tab Bar
     tabBar: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       backgroundColor: palette.surface,
       borderRadius: Radii.md,
       padding: 4,
@@ -1588,7 +1805,8 @@ const createStyles = (palette: typeof Colors.light) =>
       borderColor: palette.border,
     },
     tab: {
-      flex: 1,
+      flexGrow: 1,
+      flexBasis: '30%',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -2336,6 +2554,123 @@ const createStyles = (palette: typeof Colors.light) =>
       color: '#fff',
       fontWeight: '600',
       fontSize: 15,
+    },
+
+    // Cheat Sheet Tab
+    cheatSheetSettingsCard: {
+      backgroundColor: palette.surface,
+      borderRadius: Radii.lg,
+      padding: Spacing.md,
+      borderWidth: 1,
+      borderColor: palette.border,
+    },
+    cheatSheetSettingsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+    },
+    cheatSheetSettingsCopy: {
+      flex: 1,
+      gap: Spacing.xs,
+    },
+    cheatSheetStatusCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      backgroundColor: `${palette.success}10`,
+      borderRadius: Radii.md,
+      padding: Spacing.md,
+      borderWidth: 1,
+      borderColor: `${palette.success}30`,
+    },
+    cheatSheetErrorCard: {
+      backgroundColor: `${palette.danger}10`,
+      borderColor: `${palette.danger}30`,
+    },
+    cheatSheetStatusText: {
+      color: palette.textMuted,
+      fontSize: 13,
+    },
+    cheatSheetCard: {
+      backgroundColor: palette.surface,
+      borderRadius: Radii.lg,
+      padding: Spacing.md,
+      borderWidth: 1,
+      borderColor: palette.border,
+      gap: Spacing.md,
+    },
+    cheatSheetTitle: {
+      flex: 1,
+    },
+    cheatSheetSummary: {
+      color: palette.textMuted,
+      lineHeight: 20,
+    },
+    cheatSheetMetaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: Spacing.sm,
+    },
+    cheatSheetMeta: {
+      color: palette.textMuted,
+      fontSize: 12,
+    },
+    cheatSheetSection: {
+      gap: Spacing.sm,
+      paddingTop: Spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: palette.border,
+    },
+    cheatSheetSectionTitle: {
+      color: '#0f766e',
+      fontSize: 15,
+    },
+    cheatSheetItem: {
+      gap: 3,
+      backgroundColor: palette.surfaceAlt,
+      borderRadius: Radii.md,
+      padding: Spacing.sm,
+    },
+    cheatSheetItemTitle: {
+      fontSize: 14,
+    },
+    cheatSheetItemText: {
+      color: palette.text,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    cheatSheetItemLabel: {
+      fontWeight: '700',
+      color: palette.textMuted,
+      fontSize: 13,
+    },
+    cheatSheetExample: {
+      color: palette.textMuted,
+      fontSize: 12,
+      fontStyle: 'italic',
+      lineHeight: 18,
+    },
+    cheatSheetActions: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    secondaryActionButton: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.xs,
+      backgroundColor: palette.surfaceAlt,
+      borderWidth: 1,
+      borderColor: palette.border,
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: Radii.md,
+    },
+    secondaryActionButtonText: {
+      color: palette.text,
+      fontWeight: '600',
+      fontSize: 14,
     },
     
     // Materials Tab

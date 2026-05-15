@@ -57,6 +57,7 @@ import { computeMasteryScore, computeNextReviewDate } from "@/lib/mastery";
 import {
   ChatMessage,
   embedQuery,
+  enqueueCheatSheetRefresh,
   evaluateAnswer,
   generateQuestions,
   streamFeynmanChat,
@@ -87,6 +88,8 @@ import {
   saveStudyDepthCheck,
   saveStudyMisconceptions,
   saveSessionMessage,
+  saveTutorAnswerEvaluation,
+  markLectureCheatSheetPending,
   searchLectureChunks,
   updateSession,
   updateStudyPlanEntryMastery,
@@ -2797,6 +2800,34 @@ export default function StudySessionScreen() {
       const evaluatedCheckType = normalizeTutorCheckType(
         feedback.checkType || questionToEvaluate.checkType || nextDepthCheckType || "recall",
       );
+      if (lectureId) {
+        const currentLectureId = lectureId;
+        saveTutorAnswerEvaluation({
+          lectureId: currentLectureId,
+          studyPlanEntryId: studyPlanEntryId ?? undefined,
+          sessionId: sessionId as string,
+          questionId: questionToEvaluate.id,
+          questionText: questionToEvaluate.prompt,
+          answerText: answerDraft,
+          score: normalizedScore,
+          correctness: feedback.correctness,
+          checkType: evaluatedCheckType,
+          feedback,
+          misconceptions: feedback.misconceptions ?? [],
+        })
+          .then(async () => {
+            if (!lecture?.cheatSheet?.enabled) return;
+            await markLectureCheatSheetPending(currentLectureId);
+            await enqueueCheatSheetRefresh({
+              lectureId: currentLectureId,
+              language: agentLanguage,
+              force: false,
+            });
+          })
+          .catch((err) => {
+            console.warn("[study] Failed to save cheat sheet evidence:", err);
+          });
+      }
       const depthCheckPassed =
         !isFinalQuizAnswer &&
         feedbackPassesDepthCheck({

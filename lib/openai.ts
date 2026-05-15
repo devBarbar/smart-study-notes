@@ -1,4 +1,4 @@
-import { LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness } from '@/types';
+import { CheatSheetContent, LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness } from '@/types';
 import type { AIPlatform } from './ai-model-options';
 import { captureTelemetryError, traceAsyncOperation } from './sentry';
 import { getSupabase } from './supabase';
@@ -691,6 +691,27 @@ export const generateReadinessAndRoadmap = async (
     },
     roadmap: Array.isArray(data.roadmap) ? data.roadmap : [],
   };
+};
+
+export const enqueueCheatSheetRefresh = async (params: {
+  lectureId: string;
+  language?: LanguageCode;
+  force?: boolean;
+}): Promise<string> =>
+  enqueueJob('cheat_sheet', {
+    lectureId: params.lectureId,
+    language: params.language ?? 'en',
+    force: params.force ?? false,
+  });
+
+export const generateCheatSheet = async (params: {
+  lectureId: string;
+  language?: LanguageCode;
+  force?: boolean;
+}): Promise<{ content?: CheatSheetContent; skipped?: boolean }> => {
+  const jobId = await enqueueCheatSheetRefresh(params);
+  const data = await waitForJobResult<{ content?: CheatSheetContent; skipped?: boolean }>(jobId);
+  return data ?? {};
 };
 
 export const generatePracticeExam = async (params: {

@@ -11,6 +11,7 @@ export type AIUseCase =
   | "answer_grading"
   | "practice_exam"
   | "readiness_roadmap"
+  | "cheat_sheet"
   | "embeddings"
   | "transcription"
   | "tts";
@@ -91,6 +92,11 @@ export const AI_USE_CASE_DEFAULTS: Record<AIUseCase, AIModelConfig> = {
     reasoningEffort: OPENAI_REASONING_EFFORT,
   },
   readiness_roadmap: {
+    platform: "openai",
+    model: OPENAI_MODEL,
+    reasoningEffort: OPENAI_REASONING_EFFORT,
+  },
+  cheat_sheet: {
     platform: "openai",
     model: OPENAI_MODEL,
     reasoningEffort: OPENAI_REASONING_EFFORT,

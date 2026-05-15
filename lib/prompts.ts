@@ -1,5 +1,54 @@
 import { StudyQuestion } from '@/types';
 
+export const cheatSheetPrompt = (
+  input: {
+    lectureTitle: string;
+    evidenceSummary: string;
+    existingCheatSheet?: string;
+    pageFormat?: string;
+  },
+  language = 'en',
+) =>
+  `You are creating a compact exam cheat sheet from a student's AI tutor history.
+
+Lecture: ${input.lectureTitle}
+Format constraint: ${input.pageFormat ?? 'Exactly one DIN A4 page. Be selective and concise.'}
+
+Tutor evidence:
+${input.evidenceSummary || 'No graded evidence provided.'}
+
+${input.existingCheatSheet ? `Previous cheat sheet to update, not blindly preserve:\n${input.existingCheatSheet}\n` : ''}
+
+Return JSON only with this exact shape:
+{
+  "title": "Short cheat sheet title",
+  "summary": "One sentence naming the biggest pattern in the student's gaps",
+  "sections": [
+    {
+      "title": "Focus area",
+      "items": [
+        {
+          "title": "Specific concept",
+          "gap": "What the student keeps missing",
+          "fix": "The corrected rule, method, or mental model",
+          "example": "Tiny example or cue, optional",
+          "sourceQuestion": "Short source question summary, optional",
+          "topicTitle": "Study plan topic, optional",
+          "priority": 0-100
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+- Include only the highest-value gaps that fit one DIN A4 page.
+- Prefer recurring gaps, scores below 90, failed/partial answers, unresolved misconceptions, and high-priority or exam-relevant topics.
+- Do not include topics the student clearly mastered unless they clarify a recurring confusion.
+- Maximum 4 sections and maximum 4 items per section.
+- Keep each gap/fix/example short enough for a printable one-page sheet.
+- Respond in ${language} but keep JSON keys in English.`;
+
 export const questionPrompt = (materialTitle: string, outline: string, count: number, language = 'en') =>
   `You are a tutor using the Feynman technique. Generate ${count} short, concrete questions to test understanding of the material titled "${materialTitle}". Use the following outline or text:\n${outline}\nReturn each question as a numbered item with no explanations. Keep them concise. Use LaTeX math notation with $...$ for inline math and $$...$$ for block math when questions involve formulas or equations. Respond in ${language}.`;
 

@@ -19,6 +19,9 @@ if (shouldValidatePublicEnv) {
 
 module.exports = ({ config }) => {
   const plugins = [...(config.plugins ?? [])];
+  if (!plugins.some((plugin) => plugin === 'expo-sharing' || plugin?.[0] === 'expo-sharing')) {
+    plugins.push('expo-sharing');
+  }
   const runtimeVersion =
     process.env.EXPO_UPDATES_FINGERPRINT_OVERRIDE ?? config.runtimeVersion;
 

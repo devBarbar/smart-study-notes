@@ -1,4 +1,4 @@
-import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureFile, MasteryData, Material, PlanSettings, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, SourceRef, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyDepthCheck, StudyMisconception, StudyPlanEntry, StudyPlanModule, StudyReadiness, StudySession } from '@/types';
+import { CanvasBounds, CanvasPage, CanvasVisualBlock, Flashcard, FlashcardDifficulty, LanguageCode, Lecture, LectureCheatSheet, LectureFile, MasteryData, Material, PlanSettings, PlanStatus, PracticeExam, PracticeExamQuestion, PracticeExamResponse, PracticeExamStatus, ReviewEvent, RoadmapStep, SectionStatus, SourceRef, StreakInfo, StudyAnswerLink, StudyChatMessage, StudyDepthCheck, StudyFeedback, StudyMisconception, StudyPlanEntry, StudyPlanModule, StudyReadiness, StudySession, TutorAnswerEvaluation } from '@/types';
 import { createClient, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
@@ -491,18 +491,32 @@ const mapStudyPlanModule = (module: any): StudyPlanModule => ({
   createdAt: module.created_at,
 });
 
+const mapLectureCheatSheet = (row: any): LectureCheatSheet => ({
+  lectureId: row.lecture_id,
+  enabled: row.enabled ?? false,
+  status: row.status ?? 'idle',
+  content: row.content ?? undefined,
+  error: row.error ?? undefined,
+  lastGeneratedAt: row.last_generated_at ?? undefined,
+  evidenceCount: row.evidence_count ?? 0,
+  sourceHash: row.source_hash ?? undefined,
+  updatedAt: row.updated_at ?? undefined,
+});
+
 export const listLectures = async (): Promise<Lecture[]> => {
   const client = ensureClient();
   const [
     { data: lectures, error: lectureError }, 
     { data: files, error: fileError },
     { data: studyPlanEntries, error: studyPlanError },
-    { data: studyPlanModuleRows, error: studyPlanModulesError }
+    { data: studyPlanModuleRows, error: studyPlanModulesError },
+    { data: cheatSheetRows, error: cheatSheetError },
   ] = await Promise.all([
     client.from('lectures').select().order('created_at', { ascending: false }),
     client.from('lecture_files').select(),
     client.from('study_plan_entries').select().order('order_index', { ascending: true }),
     client.from('study_plan_modules').select().order('order_index', { ascending: true }),
+    client.from('lecture_cheat_sheets').select(),
   ]);
   if (lectureError) throw lectureError;
   if (fileError) throw fileError;
@@ -511,6 +525,9 @@ export const listLectures = async (): Promise<Lecture[]> => {
   }
   if (studyPlanModulesError && studyPlanModulesError.code !== '42P01') {
     console.warn('[supabase] study_plan_modules query failed:', studyPlanModulesError.message);
+  }
+  if (cheatSheetError && cheatSheetError.code !== '42P01') {
+    console.warn('[supabase] lecture_cheat_sheets query failed:', cheatSheetError.message);
   }
 
   return (lectures ?? []).map((row) => {
@@ -547,6 +564,9 @@ export const listLectures = async (): Promise<Lecture[]> => {
       studyPlan: studyPlan.length > 0 ? studyPlan : undefined,
       roadmap: (row.roadmap as RoadmapStep[] | null) ?? undefined,
       readiness: (row.readiness as StudyReadiness | null) ?? undefined,
+      cheatSheet: (cheatSheetError ? [] : cheatSheetRows ?? [])
+        .filter((sheet) => sheet.lecture_id === row.id)
+        .map<LectureCheatSheet>(mapLectureCheatSheet)[0],
       planStatus: (row.plan_status as PlanStatus | null) ?? 'ready',
       planGeneratedAt: row.plan_generated_at ?? undefined,
       planError: row.plan_error ?? undefined,
@@ -607,6 +627,98 @@ export const saveLecturePlanSettings = async (lectureId: string, settings: PlanS
   }
   const { error } = await client.from('lectures').update(patch).eq('id', lectureId);
   if (error) throw error;
+};
+
+export const saveLectureCheatSheetSettings = async (
+  lectureId: string,
+  enabled: boolean,
+): Promise<LectureCheatSheet | null> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const timestamp = new Date().toISOString();
+  const { data: updated, error: updateError } = await client
+    .from('lecture_cheat_sheets')
+    .update({ enabled, updated_at: timestamp })
+    .eq('lecture_id', lectureId)
+    .select()
+    .maybeSingle();
+
+  if (updateError) {
+    if (updateError.code === '42P01') {
+      console.warn('[supabase] lecture_cheat_sheets table missing, skipping setting save');
+      return null;
+    }
+    throw updateError;
+  }
+
+  if (updated) return mapLectureCheatSheet(updated);
+
+  const { data: inserted, error: insertError } = await client
+    .from('lecture_cheat_sheets')
+    .insert({
+      lecture_id: lectureId,
+      user_id: userId,
+      enabled,
+      status: 'idle',
+      updated_at: timestamp,
+    })
+    .select()
+    .single();
+
+  if (insertError) {
+    if (insertError.code === '42P01') return null;
+    throw insertError;
+  }
+
+  return mapLectureCheatSheet(inserted);
+};
+
+export const markLectureCheatSheetPending = async (
+  lectureId: string,
+  enabled = true,
+): Promise<LectureCheatSheet | null> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const { data, error } = await client
+    .from('lecture_cheat_sheets')
+    .upsert(
+      {
+        lecture_id: lectureId,
+        user_id: userId,
+        enabled,
+        status: 'pending',
+        error: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'lecture_id' },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '42P01') return null;
+    throw error;
+  }
+
+  return mapLectureCheatSheet(data);
+};
+
+export const getLectureCheatSheet = async (
+  lectureId: string,
+): Promise<LectureCheatSheet | null> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('lecture_cheat_sheets')
+    .select()
+    .eq('lecture_id', lectureId)
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === '42P01') return null;
+    throw error;
+  }
+
+  return data ? mapLectureCheatSheet(data) : null;
 };
 
 export const updateLectureNotes = async (lectureId: string, additionalNotes: string | null) => {
@@ -801,6 +913,60 @@ export const listStudyMisconceptions = async (
     resolved: row.resolved ?? false,
     createdAt: row.created_at,
   }));
+};
+
+export const saveTutorAnswerEvaluation = async (
+  evaluation: Omit<TutorAnswerEvaluation, 'id' | 'createdAt'> & { id?: string; createdAt?: string },
+): Promise<TutorAnswerEvaluation | null> => {
+  const client = ensureClient();
+  const userId = await requireUserId();
+  const feedback = evaluation.feedback as StudyFeedback | undefined;
+  const payload = {
+    id: evaluation.id,
+    user_id: userId,
+    lecture_id: evaluation.lectureId,
+    study_plan_entry_id: evaluation.studyPlanEntryId ?? null,
+    session_id: evaluation.sessionId ?? null,
+    question_id: evaluation.questionId ?? null,
+    question_text: sanitizeText(evaluation.questionText) ?? '',
+    answer_text: sanitizeText(evaluation.answerText) ?? null,
+    score: evaluation.score ?? null,
+    correctness: evaluation.correctness ?? null,
+    check_type: evaluation.checkType ?? null,
+    feedback: feedback ?? null,
+    misconceptions: evaluation.misconceptions ?? [],
+    created_at: evaluation.createdAt ?? new Date().toISOString(),
+  };
+
+  const { data, error } = await client
+    .from('tutor_answer_evaluations')
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '42P01') {
+      console.warn('[supabase] tutor_answer_evaluations table missing, skipping evidence tracking');
+      return null;
+    }
+    throw error;
+  }
+
+  return {
+    id: data.id,
+    lectureId: data.lecture_id,
+    studyPlanEntryId: data.study_plan_entry_id ?? undefined,
+    sessionId: data.session_id ?? undefined,
+    questionId: data.question_id ?? undefined,
+    questionText: data.question_text,
+    answerText: data.answer_text ?? undefined,
+    score: data.score ?? undefined,
+    correctness: data.correctness ?? undefined,
+    checkType: data.check_type ?? undefined,
+    feedback: data.feedback ?? undefined,
+    misconceptions: data.misconceptions ?? undefined,
+    createdAt: data.created_at,
+  };
 };
 
 export const saveStudyDepthCheck = async (

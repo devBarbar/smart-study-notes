@@ -16,7 +16,7 @@ export const useLectures = () => {
       if (!client) return;
 
       const channelSuffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const tables = ['lectures', 'study_plan_entries', 'study_plan_modules'];
+      const tables = ['lectures', 'study_plan_entries', 'study_plan_modules', 'lecture_cheat_sheets'];
       const channels = tables.map((table) =>
         client
           .channel(`lectures-status-${table}-${channelSuffix}`)

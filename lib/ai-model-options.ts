@@ -13,6 +13,7 @@ export type AIUseCase =
   | 'answer_grading'
   | 'practice_exam'
   | 'readiness_roadmap'
+  | 'cheat_sheet'
   | 'embeddings'
   | 'transcription'
   | 'tts';
@@ -272,6 +273,13 @@ export const AI_USE_CASES: Array<{
     id: 'readiness_roadmap',
     label: 'Readiness roadmap',
     hint: 'Exam readiness and next-step prioritization.',
+    supportsReasoning: true,
+    defaultModels: { openai: 'gpt-5.5', openrouter: 'openai/gpt-5.5' },
+  },
+  {
+    id: 'cheat_sheet',
+    label: 'Cheat sheet',
+    hint: 'One-page gap-focused lecture cheat sheets.',
     supportsReasoning: true,
     defaultModels: { openai: 'gpt-5.5', openrouter: 'openai/gpt-5.5' },
   },

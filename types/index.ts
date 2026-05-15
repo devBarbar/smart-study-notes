@@ -37,6 +37,39 @@ export type RoadmapStep = {
   examTopics?: string[];
 };
 
+export type CheatSheetStatus = 'idle' | 'pending' | 'ready' | 'failed';
+
+export type CheatSheetItem = {
+  title: string;
+  gap: string;
+  fix: string;
+  example?: string;
+  sourceQuestion?: string;
+  priority?: number;
+  topicTitle?: string;
+};
+
+export type CheatSheetContent = {
+  title: string;
+  summary?: string;
+  sections: {
+    title: string;
+    items: CheatSheetItem[];
+  }[];
+};
+
+export type LectureCheatSheet = {
+  lectureId: string;
+  enabled: boolean;
+  status: CheatSheetStatus;
+  content?: CheatSheetContent;
+  error?: string;
+  lastGeneratedAt?: string;
+  evidenceCount?: number;
+  sourceHash?: string;
+  updatedAt?: string;
+};
+
 export type GermanGrade = '1.0' | '1.3' | '1.7' | '2.0' | '2.3' | '2.7' | '3.0' | '3.3' | '3.7' | '4.0' | 'Failed';
 
 export type PlanSettings = {
@@ -122,6 +155,7 @@ export type Lecture = {
   studyPlan?: StudyPlanEntry[];
   roadmap?: RoadmapStep[];
   readiness?: StudyReadiness;
+  cheatSheet?: LectureCheatSheet;
   planStatus?: PlanStatus;
   planGeneratedAt?: string;
   planError?: string;
@@ -409,6 +443,22 @@ export type StudyMisconception = {
   concept: string;
   note: string;
   resolved?: boolean;
+  createdAt?: string;
+};
+
+export type TutorAnswerEvaluation = {
+  id?: string;
+  lectureId: string;
+  studyPlanEntryId?: string;
+  sessionId?: string;
+  questionId?: string;
+  questionText: string;
+  answerText?: string;
+  score?: number;
+  correctness?: string;
+  checkType?: TutorCheckType;
+  feedback?: StudyFeedback;
+  misconceptions?: string[];
   createdAt?: string;
 };
 

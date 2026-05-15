@@ -16,6 +16,7 @@ import {
 import { loadUserAISettings, UserAISettings } from "../_shared/ai-settings.ts";
 import { toTokenUsage } from "../_shared/openai-response-utils.ts";
 import {
+  cheatSheetPrompt,
   feynmanSystemPrompt,
   gradingPrompt,
   lectureMetadataPrompt,
@@ -1452,6 +1453,262 @@ Rules:
   };
 };
 
+const summarizeFeedback = (feedback: any) => {
+  if (!feedback || typeof feedback !== "object") return "";
+  const parts = [
+    feedback.summary,
+    Array.isArray(feedback.whatWentWrong) ? `Went wrong: ${feedback.whatWentWrong.join("; ")}` : "",
+    Array.isArray(feedback.improvements) ? `Improve: ${feedback.improvements.join("; ")}` : "",
+    Array.isArray(feedback.misconceptions) ? `Misconceptions: ${feedback.misconceptions.join("; ")}` : "",
+  ].filter(Boolean);
+  return parts.join(" | ");
+};
+
+const handleCheatSheet = async (
+  payload: any,
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
+  const { lectureId, language = "en", force = false } = payload ?? {};
+  if (!lectureId) throw new Error("lectureId is required");
+  if (!userId) throw new Error("User is required");
+
+  const { data: lecture, error: lectureError } = await supabase
+    .from("lectures")
+    .select("id,title")
+    .eq("id", lectureId)
+    .single();
+  if (lectureError) throw lectureError;
+
+  const { data: sheet, error: sheetError } = await supabase
+    .from("lecture_cheat_sheets")
+    .select()
+    .eq("lecture_id", lectureId)
+    .maybeSingle();
+  if (sheetError) throw sheetError;
+
+  if (!sheet?.enabled && !force) {
+    return {
+      result: { skipped: true, reason: "disabled" },
+      usage: { feature: "cheat_sheet", lectureId, metadata: { skipped: "disabled" } },
+    };
+  }
+
+  await supabase
+    .from("lecture_cheat_sheets")
+    .upsert(
+      {
+        lecture_id: lectureId,
+        user_id: userId,
+        enabled: sheet?.enabled ?? true,
+        status: "pending",
+        error: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "lecture_id" },
+    );
+
+  const [
+    { data: evaluations, error: evaluationsError },
+    { data: depthChecks, error: depthChecksError },
+    { data: misconceptions, error: misconceptionsError },
+    { data: planEntries, error: planEntriesError },
+  ] = await Promise.all([
+    supabase
+      .from("tutor_answer_evaluations")
+      .select("*, study_plan_entries(title, priority_score, exam_relevance, from_exam_source, mentioned_in_notes)")
+      .eq("lecture_id", lectureId)
+      .order("created_at", { ascending: false })
+      .limit(80),
+    supabase
+      .from("study_depth_checks")
+      .select("*, study_plan_entries(title, priority_score, exam_relevance, from_exam_source, mentioned_in_notes)")
+      .eq("lecture_id", lectureId)
+      .order("created_at", { ascending: false })
+      .limit(80),
+    supabase
+      .from("study_misconceptions")
+      .select("*, study_plan_entries(title, priority_score, exam_relevance, from_exam_source, mentioned_in_notes)")
+      .eq("lecture_id", lectureId)
+      .eq("resolved", false)
+      .order("created_at", { ascending: false })
+      .limit(40),
+    supabase
+      .from("study_plan_entries")
+      .select("id,title,priority_score,exam_relevance,from_exam_source,mentioned_in_notes,status,status_score")
+      .eq("lecture_id", lectureId),
+  ]);
+
+  if (evaluationsError && evaluationsError.code !== "42P01") throw evaluationsError;
+  if (depthChecksError && depthChecksError.code !== "42P01") throw depthChecksError;
+  if (misconceptionsError && misconceptionsError.code !== "42P01") throw misconceptionsError;
+  if (planEntriesError && planEntriesError.code !== "42P01") throw planEntriesError;
+
+  const evidenceItems = [
+    ...((evaluationsError ? [] : evaluations) ?? []).map((item: any) => ({
+      kind: "graded answer",
+      topic: item.study_plan_entries?.title,
+      priority: item.study_plan_entries?.priority_score,
+      examRelevance: item.study_plan_entries?.exam_relevance,
+      question: item.question_text,
+      answer: item.answer_text,
+      score: item.score,
+      correctness: item.correctness,
+      checkType: item.check_type,
+      feedback: summarizeFeedback(item.feedback),
+      misconceptions: Array.isArray(item.misconceptions) ? item.misconceptions : [],
+      createdAt: item.created_at,
+    })),
+    ...((depthChecksError ? [] : depthChecks) ?? []).map((item: any) => ({
+      kind: "depth check",
+      topic: item.study_plan_entries?.title,
+      priority: item.study_plan_entries?.priority_score,
+      examRelevance: item.study_plan_entries?.exam_relevance,
+      question: item.question_text,
+      score: item.score,
+      correctness: item.correctness,
+      checkType: item.check_type,
+      feedback: item.feedback_summary,
+      misconceptions: [],
+      createdAt: item.created_at,
+    })),
+    ...((misconceptionsError ? [] : misconceptions) ?? []).map((item: any) => ({
+      kind: "unresolved misconception",
+      topic: item.study_plan_entries?.title,
+      priority: item.study_plan_entries?.priority_score,
+      examRelevance: item.study_plan_entries?.exam_relevance,
+      question: item.concept,
+      feedback: item.note,
+      score: 0,
+      correctness: "misconception",
+      misconceptions: [item.concept],
+      createdAt: item.created_at,
+    })),
+  ];
+
+  const planSignals = ((planEntriesError ? [] : planEntries) ?? [])
+    .filter((entry: any) =>
+      entry.status === "failed" ||
+      (typeof entry.status_score === "number" && entry.status_score < 90) ||
+      entry.exam_relevance === "high" ||
+      entry.from_exam_source ||
+      entry.mentioned_in_notes
+    )
+    .slice(0, 30)
+    .map((entry: any) => ({
+      title: entry.title,
+      priority: entry.priority_score,
+      examRelevance: entry.exam_relevance,
+      status: entry.status,
+      score: entry.status_score,
+      fromExamSource: entry.from_exam_source,
+      mentionedInNotes: entry.mentioned_in_notes,
+    }));
+
+  const sourceHash = hashText(JSON.stringify({ evidenceItems, planSignals }));
+  const evidenceCount = evidenceItems.length;
+  if (!force && sheet?.source_hash === sourceHash && sheet?.content) {
+    await supabase
+      .from("lecture_cheat_sheets")
+      .update({
+        status: "ready",
+        error: null,
+        evidence_count: evidenceCount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("lecture_id", lectureId);
+    return {
+      result: { skipped: true, content: sheet.content },
+      usage: { feature: "cheat_sheet", lectureId, metadata: { skipped: "unchanged", evidenceCount } },
+    };
+  }
+
+  const weakEvidence = evidenceItems
+    .filter((item: any) =>
+      item.correctness !== "correct" ||
+      (typeof item.score === "number" && item.score < 90) ||
+      item.misconceptions.length > 0
+    )
+    .slice(0, 60);
+  const evidenceSummary = truncateToTokenLimit(
+    JSON.stringify({ weakEvidence, planSignals }, null, 2),
+    20000,
+  );
+
+  let content: any = {
+    title: `${lecture.title} Cheat Sheet`,
+    summary: "No graded gaps have been recorded yet.",
+    sections: [],
+  };
+  let chat: Awaited<ReturnType<typeof callChat>> | null = null;
+
+  if (evidenceCount > 0) {
+    chat = await callChat([{ type: "text", text: cheatSheetPrompt({
+      lectureTitle: lecture.title,
+      evidenceSummary,
+      existingCheatSheet: sheet?.content ? JSON.stringify(sheet.content) : undefined,
+      pageFormat: "Exactly one DIN A4 page with no more than 4 sections and 16 total items.",
+    }, language) }], {
+      aiSettings,
+      useCase: "cheat_sheet",
+    });
+
+    try {
+      content = JSON.parse(stripCodeFences(chat.message));
+    } catch (error) {
+      console.warn("[process-job][cheat_sheet] parse failed, using fallback", error);
+      content = {
+        title: `${lecture.title} Cheat Sheet`,
+        summary: "Review the most recent weak answers and unresolved misconceptions.",
+        sections: weakEvidence.slice(0, 4).map((item: any) => ({
+          title: item.topic || item.checkType || "Focus area",
+          items: [{
+            title: item.misconceptions?.[0] || item.question || "Weak concept",
+            gap: item.feedback || "The answer needs reinforcement.",
+            fix: "Review the source explanation, then answer a similar tutor question from memory.",
+            sourceQuestion: item.question,
+            topicTitle: item.topic,
+            priority: typeof item.score === "number" ? 100 - item.score : 80,
+          }],
+        })),
+      };
+    }
+  }
+
+  const now = new Date().toISOString();
+  await supabase
+    .from("lecture_cheat_sheets")
+    .update({
+      status: "ready",
+      content,
+      error: null,
+      last_generated_at: now,
+      evidence_count: evidenceCount,
+      source_hash: sourceHash,
+      updated_at: now,
+    })
+    .eq("lecture_id", lectureId);
+
+  return {
+    result: {
+      content,
+      evidenceCount,
+      sourceHash,
+    },
+    usage: {
+      feature: "cheat_sheet",
+      model: chat?.model ?? null,
+      usage: chat?.usage,
+      costUsd: chat?.costUsd,
+      inputCostUsd: chat?.inputCostUsd,
+      outputCostUsd: chat?.outputCostUsd,
+      lectureId,
+      metadata: { evidenceCount },
+    },
+  };
+};
+
 const handleMetadata = async (
   payload: any,
   aiSettings: UserAISettings,
@@ -1800,6 +2057,8 @@ const runJob = async (
       return await handleQuestionGeneration(job.payload, aiSettings);
     case "readiness_roadmap":
       return await handleReadinessRoadmap(job.payload, aiSettings);
+    case "cheat_sheet":
+      return await handleCheatSheet(job.payload, supabase, job.user_id, aiSettings);
     case "chat":
       return await handleChat(job.payload, aiSettings);
     case "grade":
@@ -1917,6 +2176,19 @@ const processPlanJob = async (
             plan_error: jobError?.message?.slice(0, 500) ?? "Job failed",
           })
           .eq("id", lectureId);
+      }
+    }
+    if (locked.type === "cheat_sheet") {
+      const lectureId = locked.payload?.lectureId ?? locked.payload?.lecture_id;
+      if (lectureId) {
+        await supabase
+          .from("lecture_cheat_sheets")
+          .update({
+            status: "failed",
+            error: jobError?.message?.slice(0, 500) ?? "Cheat sheet generation failed",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("lecture_id", lectureId);
       }
     }
     await supabase

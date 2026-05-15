@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { feynmanSystemPrompt, gradingPrompt, lectureMetadataPrompt, practiceExamPrompt, questionPrompt } from '../lib/prompts';
+import { cheatSheetPrompt, feynmanSystemPrompt, gradingPrompt, lectureMetadataPrompt, practiceExamPrompt, questionPrompt } from '../lib/prompts';
 
 test('questionPrompt includes title and count', () => {
   const prompt = questionPrompt('Biology', 'Cells and DNA', 3);
@@ -48,4 +48,15 @@ test('practiceExamPrompt mentions passed topics and count', () => {
   assert.match(prompt, /practice exam/i);
   assert.match(prompt, /4 questions/i);
   assert.match(prompt, /Passed topics/i);
+});
+
+test('cheatSheetPrompt constrains output for DIN A4 JSON', () => {
+  const prompt = cheatSheetPrompt({
+    lectureTitle: 'Linear Algebra',
+    evidenceSummary: 'score 45, eigenvalues confused with eigenvectors',
+  });
+  assert.match(prompt, /DIN A4/i);
+  assert.match(prompt, /Return JSON only/i);
+  assert.match(prompt, /Maximum 4 sections/i);
+  assert.match(prompt, /priority/i);
 });
