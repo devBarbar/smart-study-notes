@@ -295,6 +295,38 @@ const parseStoredExtractedPages = (value: unknown): ExtractedPage[] => {
   return pages;
 };
 
+const buildLectureFileChunkRows = (
+  lectureId: string,
+  files: Array<{ id: string; extracted_text?: string | null; extracted_pages?: unknown }>,
+) => {
+  const chunkRows: any[] = [];
+
+  for (const file of files) {
+    const storedPages = parseStoredExtractedPages(file.extracted_pages);
+    const pages =
+      storedPages.length > 0
+        ? storedPages
+        : [{ pageNumber: 1, text: sanitizeForDatabase(String(file.extracted_text ?? "")) }];
+
+    pages.forEach((page) => {
+      splitTextIntoLineChunks(page.text).forEach((chunk, chunkIndex) => {
+        chunkRows.push({
+          lecture_id: lectureId,
+          lecture_file_id: file.id,
+          page_number: page.pageNumber,
+          start_line: chunk.startLine,
+          end_line: chunk.endLine,
+          chunk_index: chunkIndex,
+          content: chunk.content,
+          content_hash: hashText(`${file.id}:${page.pageNumber}:${chunk.startLine}:${chunk.endLine}:${chunk.content}`),
+        });
+      });
+    });
+  }
+
+  return chunkRows;
+};
+
 const aggregateUsage = (
   current: UsageLogPayload | undefined,
   next: Partial<UsageLogPayload>,
@@ -313,6 +345,133 @@ const aggregateUsage = (
   lectureId: next.lectureId ?? current?.lectureId ?? null,
   metadata: { ...(current?.metadata ?? {}), ...(next.metadata ?? {}) },
 });
+
+const handleLecturePdfReindex = async (
+  payload: any,
+  supabase: ReturnType<typeof createClient>,
+  userId: string | null,
+  aiSettings: UserAISettings,
+): Promise<JobRunResult> => {
+  const { lectureId, forceExtract = true } = payload ?? {};
+  if (!lectureId) throw new Error("lectureId is required");
+  if (!userId) throw new Error("User context required for lecture PDF reindexing");
+
+  const { data: lecture, error: lectureError } = await supabase
+    .from("lectures")
+    .select("id,title")
+    .eq("id", lectureId)
+    .eq("user_id", userId)
+    .single();
+  if (lectureError) throw lectureError;
+  if (!lecture) throw new Error("Lecture not found");
+
+  const { data: files, error: filesError } = await supabase
+    .from("lecture_files")
+    .select("id,name,uri,extracted_text,extracted_pages")
+    .eq("lecture_id", lectureId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (filesError) throw filesError;
+  if (!files?.length) throw new Error("Lecture has no files");
+
+  const filesForIndex: Array<{
+    id: string;
+    extracted_text?: string | null;
+    extracted_pages?: unknown;
+  }> = [];
+  let extractedFiles = 0;
+  let reusedFiles = 0;
+  let pageCount = 0;
+
+  for (const file of files as LecturePlanFile[]) {
+    const storedPages = parseStoredExtractedPages(file.extracted_pages);
+    const shouldExtract = forceExtract || storedPages.length === 0;
+    let pages = storedPages;
+
+    if (shouldExtract) {
+      pages = await extractPdfPagesWithTimeout(file.uri, file.name);
+      const fullText = pages.map((page) => page.text).join("\n\n");
+      if (!fullText.trim()) {
+        throw new Error(`PDF text extraction returned no text for ${file.name}`);
+      }
+
+      await supabase
+        .from("lecture_files")
+        .update({
+          extracted_text: fullText,
+          extracted_pages: pages.map((page) => ({
+            pageNumber: page.pageNumber,
+            text: page.text,
+            lines: page.lines ?? page.text.split("\n").filter(Boolean),
+          })),
+        })
+        .eq("id", file.id)
+        .eq("user_id", userId);
+      extractedFiles += 1;
+    } else {
+      reusedFiles += 1;
+    }
+
+    pageCount += pages.length;
+    filesForIndex.push({
+      id: file.id,
+      extracted_text: pages.map((page) => page.text).join("\n\n"),
+      extracted_pages: pages.map((page) => ({
+        pageNumber: page.pageNumber,
+        text: page.text,
+        lines: page.lines ?? page.text.split("\n").filter(Boolean),
+      })),
+    });
+  }
+
+  const chunkRows = buildLectureFileChunkRows(lectureId, filesForIndex);
+  if (chunkRows.length === 0) throw new Error("No PDF text available for embeddings");
+
+  const embeddingResult = await embedTexts(chunkRows.map((chunk) => chunk.content), {
+    aiSettings,
+    useCase: "embeddings",
+  });
+
+  await supabase.from("lecture_file_chunks").delete().eq("lecture_id", lectureId);
+
+  const rowsWithEmbeddings = chunkRows.map((chunk, idx) => ({
+    ...chunk,
+    embedding: embeddingResult.embeddings[idx],
+  }));
+  const { error: chunkInsertError } = await supabase
+    .from("lecture_file_chunks")
+    .upsert(rowsWithEmbeddings, { onConflict: "content_hash" });
+  if (chunkInsertError) throw chunkInsertError;
+
+  return {
+    result: {
+      lectureId,
+      lectureTitle: lecture.title,
+      files: files.length,
+      extractedFiles,
+      reusedFiles,
+      pages: pageCount,
+      chunks: chunkRows.length,
+    },
+    usage: {
+      feature: "lecture_pdf_reindex",
+      model: embeddingResult.model,
+      usage: embeddingResult.usage,
+      costUsd: embeddingResult.costUsd,
+      inputCostUsd: embeddingResult.inputCostUsd,
+      outputCostUsd: embeddingResult.outputCostUsd,
+      lectureId,
+      metadata: {
+        forceExtract,
+        files: files.length,
+        extractedFiles,
+        reusedFiles,
+        pages: pageCount,
+        chunks: chunkRows.length,
+      },
+    },
+  };
+};
 
 const normalizeFileName = (value: unknown) => String(value ?? "").trim().toLowerCase();
 
@@ -780,29 +939,7 @@ const saveLecturePlanFromParsedPath = async (
   const { error: entryInsertError } = await supabase.from("study_plan_entries").insert(entryRows);
   if (entryInsertError) throw entryInsertError;
 
-  const chunkRows: any[] = [];
-  for (const file of files ?? []) {
-    const storedPages = parseStoredExtractedPages((file as any).extracted_pages);
-    const pages =
-      storedPages.length > 0
-        ? storedPages
-        : [{ pageNumber: 1, text: sanitizeForDatabase(String((file as any).extracted_text ?? "")) }];
-
-    pages.forEach((page) => {
-      splitTextIntoLineChunks(page.text).forEach((chunk, chunkIndex) => {
-        chunkRows.push({
-          lecture_id: lectureId,
-          lecture_file_id: (file as any).id,
-          page_number: page.pageNumber,
-          start_line: chunk.startLine,
-          end_line: chunk.endLine,
-          chunk_index: chunkIndex,
-          content: chunk.content,
-          content_hash: hashText(`${(file as any).id}:${page.pageNumber}:${chunk.startLine}:${chunk.endLine}:${chunk.content}`),
-        });
-      });
-    });
-  }
+  const chunkRows = buildLectureFileChunkRows(lectureId, files ?? []);
 
   if (chunkRows.length > 0) {
     const embeddingResult = await embedTexts(chunkRows.map((chunk) => chunk.content), {
@@ -2175,6 +2312,8 @@ const runJob = async (
       return await handleEmbed(job.payload, aiSettings);
     case "practice_exam":
       return await handlePracticeExam(job.payload, supabase, job.user_id, aiSettings);
+    case "lecture_pdf_reindex":
+      return await handleLecturePdfReindex(job.payload, supabase, job.user_id, aiSettings);
     case "lecture_plan_v2":
       return await handleLecturePlanV2(job.payload, supabase, job.user_id, aiSettings);
     case "lecture_plan_inventory":
@@ -2381,6 +2520,7 @@ Deno.serve(withSentry("process-job", async (req: Request) => {
       const aiSettings = await loadUserAISettings(supabase, locked.user_id);
       if (
         locked.type === "plan" ||
+        locked.type === "lecture_pdf_reindex" ||
         locked.type === "lecture_plan_v2" ||
         locked.type === "lecture_plan_synthesize"
       ) {
