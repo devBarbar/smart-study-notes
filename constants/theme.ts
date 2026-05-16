@@ -131,7 +131,7 @@ export const Typography = {
     lineHeight: 18,
     letterSpacing: 0.2,
   },
-};
+} as const;
 
 export const Fonts = Platform.select({
   ios: {

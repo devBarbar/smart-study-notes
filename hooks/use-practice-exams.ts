@@ -14,6 +14,7 @@ export const usePracticeExams = (lectureId?: string) => {
 
     try {
       const client = getSupabase();
+      if (!client) return;
       const channel = client
         .channel(`practice-exams-${lectureId}`)
         .on(
@@ -48,5 +49,4 @@ export const usePracticeExams = (lectureId?: string) => {
     },
   });
 };
-
 

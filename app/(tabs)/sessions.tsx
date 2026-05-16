@@ -20,11 +20,11 @@ export default function SessionsScreen() {
   const styles = useMemo(() => createStyles(palette), [palette]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView testID="sessions-screen" contentContainerStyle={styles.container}>
       <ThemedView variant="plain" style={styles.hero}>
         <ImageBackground source={heroBg} resizeMode="cover" style={styles.heroBg} imageStyle={styles.heroBgImage}>
           <View style={styles.heroContent}>
-            <ThemedText type="display" tone="inverse">
+            <ThemedText testID="sessions-title" type="display" tone="inverse">
               {t('sessions.title')}
             </ThemedText>
             <ThemedText tone="inverse" style={styles.heroSubtitle}>
@@ -86,4 +86,3 @@ const createStyles = (palette: typeof Colors.light) =>
       marginTop: 8,
     },
   });
-

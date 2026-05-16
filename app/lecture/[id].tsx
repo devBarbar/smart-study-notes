@@ -616,6 +616,8 @@ export default function LectureDetailScreen() {
     });
     return { passed, failed, inProgress, notStarted };
   }, [orderedPlan]);
+  const cheatSheet = lecture?.cheatSheet;
+  const cheatSheetContent = cheatSheet?.content;
 
   const refreshInsights = useCallback(async () => {
     if (!lecture || orderedPlan.length === 0) return;
@@ -840,8 +842,6 @@ export default function LectureDetailScreen() {
 
   const readinessData = readiness ?? { percentage: 0, predictedGrade: 'Failed' as const };
   const roadmapItems = roadmap ?? [];
-  const cheatSheet = lecture.cheatSheet;
-  const cheatSheetContent = cheatSheet?.content;
 
   // Tab rendering
   const tabs: { key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap; badge?: number }[] = [

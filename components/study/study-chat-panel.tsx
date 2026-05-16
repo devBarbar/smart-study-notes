@@ -177,7 +177,10 @@ export function StudyChatPanel({
         );
 
   return (
-    <View style={[styles.chatColumn, fullScreen && styles.chatColumnFullscreen]}>
+    <View
+      testID="study-chat-panel"
+      style={[styles.chatColumn, fullScreen && styles.chatColumnFullscreen]}
+    >
       <StudyChatHeader
         styles={styles}
         t={t}

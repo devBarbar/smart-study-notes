@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, type Href } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Colors, Radii, Spacing } from '@/constants/theme';
@@ -15,14 +15,14 @@ type Props = {
   session: StudySession;
 };
 
-const buildSessionHref = (session: StudySession): string => {
+const buildSessionHref = (session: StudySession): Href => {
   const params = new URLSearchParams();
   if (session.materialId) params.set('materialId', session.materialId);
   if (session.lectureId) params.set('lectureId', session.lectureId);
   if (session.studyPlanEntryId) params.set('studyPlanEntryId', session.studyPlanEntryId);
   
   const queryString = params.toString();
-  return `/study/${session.id}${queryString ? `?${queryString}` : ''}`;
+  return `/study/${session.id}${queryString ? `?${queryString}` : ''}` as Href;
 };
 
 const getStatusColor = (status: string, palette: typeof Colors.light): string => {
@@ -57,10 +57,10 @@ export const SessionCard = ({ session }: Props) => {
 
   return (
     <Link href={buildSessionHref(session)} asChild>
-      <Pressable style={styles.card}>
+      <Pressable testID="session-card" style={styles.card}>
         <ThemedView variant="card" style={styles.container}>
           <View style={styles.header}>
-            <ThemedText type="title" numberOfLines={2}>
+            <ThemedText testID="session-card-title" type="title" numberOfLines={2}>
               {session.title}
             </ThemedText>
             <View style={[styles.statusBadge, { backgroundColor: `${statusColor}1a`, borderColor: `${statusColor}33` }]}>
@@ -120,4 +120,3 @@ const createStyles = (palette: typeof Colors.light) =>
       fontSize: 13,
     },
   });
-

@@ -179,6 +179,7 @@ export function StudyCanvasPanel({
 
   return (
     <View
+      testID="study-canvas-panel"
       style={[
         styles.canvasColumn,
         tutorCollapsed && styles.canvasColumnFullscreen,

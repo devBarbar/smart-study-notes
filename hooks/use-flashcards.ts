@@ -16,6 +16,7 @@ export const useFlashcards = (lectureId: string | undefined) => {
 
     try {
       const client = getSupabase();
+      if (!client) return;
       const channel = client
         .channel(`flashcards-${lectureId}`)
         .on(

@@ -1,4 +1,4 @@
-import { StyleSheet, Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
 import { Colors, Fonts, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -63,7 +63,7 @@ export function ThemedText({
   );
 }
 
-const typography = StyleSheet.create({
+const typography = StyleSheet.create<Record<string, TextStyle>>({
   default: {
     ...Typography.body,
   },
