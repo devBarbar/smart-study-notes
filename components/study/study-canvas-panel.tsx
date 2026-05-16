@@ -39,12 +39,17 @@ import {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+const getStagePageLabel = (label: string, pageNumber: number) =>
+  pageNumber > 1 ? `${label} ${pageNumber}` : label;
+
 type StudyCanvasPanelProps = {
   styles: StudyStyles;
   palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
   tutorCollapsed: boolean;
   lockedAnswerMode?: boolean;
+  guidedNotesMode?: boolean;
+  canSubmitAnswer?: boolean;
   toggleTutor: () => void;
   studyTitle: string;
   studyOutline: string;
@@ -106,6 +111,8 @@ export function StudyCanvasPanel({
   t,
   tutorCollapsed,
   lockedAnswerMode = false,
+  guidedNotesMode = false,
+  canSubmitAnswer = true,
   toggleTutor,
   studyTitle,
   studyOutline,
@@ -208,10 +215,16 @@ export function StudyCanvasPanel({
         {lockedAnswerMode && (
           <View style={styles.answerModeBanner}>
             <View style={styles.answerModeBannerIcon}>
-              <Ionicons name="eye-off-outline" size={16} color="#ffffff" />
+              <Ionicons
+                name={guidedNotesMode ? "create-outline" : "eye-off-outline"}
+                size={16}
+                color="#ffffff"
+              />
             </View>
             <ThemedText style={styles.answerModeBannerText}>
-              {t("study.answerModeLocked")}
+              {guidedNotesMode
+                ? t("study.guidedNotesMode")
+                : t("study.answerModeLocked")}
             </ThemedText>
             <Pressable
               style={styles.referenceSummaryButton}
@@ -299,10 +312,15 @@ export function StudyCanvasPanel({
               </ThemedText>
               <ThemedText style={styles.workspaceSubtitle}>
                 {activePage
-                  ? t("study.pageLabel", {
-                      number:
-                        canvasPages.findIndex((page) => page.id === activePage.id) + 1,
-                    })
+                  ? activePage.stageLabel
+                    ? getStagePageLabel(
+                        activePage.stageLabel,
+                        activePage.stagePageNumber ?? 1,
+                      )
+                    : t("study.pageLabel", {
+                        number:
+                          canvasPages.findIndex((page) => page.id === activePage.id) + 1,
+                      })
                   : t("study.pageLabel", { number: 1 })}
               </ThemedText>
             </View>
@@ -351,7 +369,9 @@ export function StudyCanvasPanel({
                         page.id === activePageId && styles.pageTabTextActive,
                       ]}
                     >
-                      {t("study.pageLabel", { number: index + 1 })}
+                      {page.stageLabel
+                        ? getStagePageLabel(page.stageLabel, page.stagePageNumber ?? 1)
+                        : t("study.pageLabel", { number: index + 1 })}
                     </ThemedText>
                   )}
                 </Pressable>
@@ -488,7 +508,7 @@ export function StudyCanvasPanel({
                   />
                 ))}
 
-                {lastDrawingPosition && (
+                {lastDrawingPosition && canSubmitAnswer && (
                   <AnimatedPressable
                     style={[
                       styles.checkAnswerButton,

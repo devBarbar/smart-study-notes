@@ -255,11 +255,17 @@ export type CanvasVisualBlock = {
   createdAt: string;
 };
 
+export type CanvasStageKind = 'guided_notes' | 'answer' | 'recall' | 'final_quiz' | 'diagnostic';
+
 export type CanvasPage = {
   id: string;
   titleStrokes: CanvasStrokeData[];
   strokes: CanvasStrokeData[];
   visualBlocks?: CanvasVisualBlock[];
+  stageKind?: CanvasStageKind;
+  stageId?: string;
+  stageLabel?: string;
+  stagePageNumber?: number;
   width: number;
   height: number;
 };
@@ -453,7 +459,7 @@ export type TutorCheckType = 'recall' | 'why' | 'apply' | 'transfer' | 'teach_ba
 
 export type TutorQuestionDifficulty = 'basic' | 'exam' | 'edge_case';
 
-export type AssessmentKind = 'diagnostic' | 'depth' | 'final_quiz';
+export type AssessmentKind = 'diagnostic' | 'depth' | 'final_quiz' | 'guided_notes';
 
 export type StudyDepthCheck = {
   id?: string;

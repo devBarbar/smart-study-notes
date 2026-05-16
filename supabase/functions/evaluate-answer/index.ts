@@ -19,7 +19,7 @@ Deno.serve(withSentry("evaluate-answer", async (req: Request) => {
   }
 
   try {
-    const { question, answerText, answerImageDataUrl, language = "en" } = await req.json();
+    const { question, answerText, answerImageDataUrl, answerCanvasBounds, language = "en" } = await req.json();
 
     if (!question || !question.prompt) {
       return new Response(
@@ -29,7 +29,16 @@ Deno.serve(withSentry("evaluate-answer", async (req: Request) => {
     }
 
     const content: ChatCompletionContent[] = [
-      { type: "text", text: gradingPrompt(question as StudyQuestion, answerText, language) },
+      {
+        type: "text",
+        text: gradingPrompt(
+          question as StudyQuestion,
+          answerText,
+          language,
+          undefined,
+          answerCanvasBounds,
+        ),
+      },
     ];
 
     if (answerText) {

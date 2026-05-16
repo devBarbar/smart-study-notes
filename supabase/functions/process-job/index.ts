@@ -2108,6 +2108,7 @@ const handleGrade = async (
     question,
     answerText,
     answerImageDataUrl,
+    answerCanvasBounds,
     language = "en",
     lectureId,
     gradingContext,
@@ -2117,7 +2118,7 @@ const handleGrade = async (
   }
 
   const content: any[] = [
-    { type: "text", text: gradingPrompt(question, answerText, language, gradingContext) },
+    { type: "text", text: gradingPrompt(question, answerText, language, gradingContext, answerCanvasBounds) },
   ];
 
   if (answerText) {

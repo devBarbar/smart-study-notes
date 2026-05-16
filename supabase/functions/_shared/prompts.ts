@@ -111,6 +111,7 @@ export const gradingPrompt = (
   answerText?: string,
   language = "en",
   gradingContext?: string,
+  answerCanvasBounds?: { x: number; y: number; width: number; height: number },
 ) =>
   `You are grading a student's response for the question "${
     question.prompt
@@ -129,6 +130,9 @@ Depth check:
 
 Source context:
 ${gradingContext?.trim() || "No additional source context provided."}
+
+Canvas answer bounds:
+${answerCanvasBounds ? `Grade only the handwritten answer inside this canvas region: x=${Math.round(answerCanvasBounds.x)}, y=${Math.round(answerCanvasBounds.y)}, width=${Math.round(answerCanvasBounds.width)}, height=${Math.round(answerCanvasBounds.height)}. Ignore question text, guided listening notes, and other canvas content outside this region.` : "No answer bounds provided; grade the visible student answer content."}
 
 Return JSON only:
 {

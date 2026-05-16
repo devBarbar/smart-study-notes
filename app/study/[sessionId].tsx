@@ -103,6 +103,7 @@ import {
   CanvasAnswerMarker,
   CanvasBounds,
   CanvasPage,
+  CanvasStageKind,
   CanvasStrokeData,
   CanvasVisualBlock as CanvasVisualBlockType,
   Lecture,
@@ -138,6 +139,14 @@ const INITIAL_CANVAS_HEIGHT = 760;
 const CANVAS_GROW_CHUNK = 600;
 // Threshold from edge to trigger growth (px)
 const EDGE_THRESHOLD = 80;
+
+const STAGE_LABELS: Record<CanvasStageKind, string> = {
+  guided_notes: "Guided notes",
+  answer: "Answer",
+  recall: "Recall",
+  final_quiz: "Final quiz",
+  diagnostic: "Diagnostic",
+};
 
 const canvasPagesHaveWork = (pages?: CanvasPage[]) =>
   Boolean(
@@ -187,10 +196,23 @@ type StudyPhase =
   | "warmup"
   | "diagnostic"
   | "tutor"
+  | "guided_notes"
   | "memorize"
   | "answer"
   | "grading"
   | "final_quiz";
+
+type CanvasStageInfo = {
+  stageKind: CanvasStageKind;
+  stageId: string;
+  stageLabel: string;
+};
+
+type PendingGuidedQuestion = {
+  messageId: string;
+  questionText: string;
+  tutorQuestion: NonNullable<StudyChatMessage["tutorQuestion"]>;
+};
 
 type FinalQuizAnswer = {
   questionId: string;
@@ -851,6 +873,9 @@ export default function StudySessionScreen() {
   const [listeningMode, setListeningMode] = useState(false);
   const ttsPlayerRef = useRef<StreamingTTSPlayer | null>(null);
   const pendingTtsMessageIdRef = useRef<string | null>(null);
+  const guidedQuestionReadyRef = useRef(false);
+  const pendingGuidedQuestionRef = useRef<PendingGuidedQuestion | null>(null);
+  const finishGuidedNotesStageRef = useRef<() => void>(() => undefined);
 
   // Scroll control for stylus drawing
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -894,6 +919,10 @@ export default function StudySessionScreen() {
   const [, setTutorCollapsed] = useState(false);
   const [studyPhase, setStudyPhase] = useState<StudyPhase>("tutor");
   const [studyMode, setStudyMode] = useState<StudyMode>("beginner");
+  const [activeCanvasStage, setActiveCanvasStage] =
+    useState<CanvasStageInfo | null>(null);
+  const [pendingGuidedQuestion, setPendingGuidedQuestion] =
+    useState<PendingGuidedQuestion | null>(null);
   const [mistakeNotebook, setMistakeNotebook] = useState<
     StudyMistakeNotebookItem[]
   >([]);
@@ -1130,30 +1159,124 @@ export default function StudySessionScreen() {
     };
   }, [sessionId]);
 
+  const getStageInfoForPage = useCallback((page?: CanvasPage | null): CanvasStageInfo | null => {
+    if (!page?.stageKind || !page.stageId || !page.stageLabel) return null;
+    return {
+      stageKind: page.stageKind,
+      stageId: page.stageId,
+      stageLabel: page.stageLabel,
+    };
+  }, []);
+
   // Create a new blank page
   const createNewPage = useCallback(
-    (): CanvasPage => ({
+    (stage?: CanvasStageInfo | null, stagePageNumber?: number): CanvasPage => ({
       id: `page-${uuid()}`,
       titleStrokes: [],
       strokes: [],
       width: INITIAL_CANVAS_WIDTH,
       height: INITIAL_CANVAS_HEIGHT,
+      ...(stage
+        ? {
+            stageKind: stage.stageKind,
+            stageId: stage.stageId,
+            stageLabel: stage.stageLabel,
+            stagePageNumber,
+          }
+        : {}),
     }),
     [],
   );
 
+  const saveCanvasPagesNow = useCallback(
+    (pages: CanvasPage[]) => {
+      if (!sessionId) return;
+      updateSession(sessionId, { canvasPages: pages }).catch((err) => {
+        console.warn("[study] Failed to save canvas pages:", err);
+      });
+    },
+    [sessionId],
+  );
+
+  const getNextStagePageNumber = useCallback(
+    (stage: CanvasStageInfo) =>
+      Math.max(
+        0,
+        ...canvasPages
+          .filter(
+            (page) =>
+              page.stageKind === stage.stageKind && page.stageId === stage.stageId,
+          )
+          .map((page) => page.stagePageNumber ?? 1),
+      ) + 1,
+    [canvasPages],
+  );
+
+  const ensureCanvasStagePage = useCallback(
+    (
+      stageKind: CanvasStageKind,
+      stageId: string,
+      options: { forceNew?: boolean; label?: string } = {},
+    ) => {
+      const stage: CanvasStageInfo = {
+        stageKind,
+        stageId,
+        stageLabel: options.label ?? STAGE_LABELS[stageKind],
+      };
+      const existingPage = options.forceNew
+        ? undefined
+        : canvasPages.find(
+            (page) =>
+              page.stageKind === stageKind &&
+              page.stageId === stageId &&
+              (page.stagePageNumber ?? 1) === 1,
+          );
+      const page =
+        existingPage ??
+        createNewPage(stage, options.forceNew ? 1 : getNextStagePageNumber(stage));
+      const updatedPages = existingPage ? canvasPages : [...canvasPages, page];
+
+      setCanvasPages(updatedPages);
+      setActivePageId(page.id);
+      setActiveCanvasStage(stage);
+      canvasBaselineRef.current = page.strokes.length;
+      hasInitializedCanvasRef.current = true;
+      setHasDrawnAfterQuestion(false);
+      setLastDrawingPosition(null);
+      saveCanvasPagesNow(updatedPages);
+
+      return page.id;
+    },
+    [canvasPages, createNewPage, getNextStagePageNumber, saveCanvasPagesNow],
+  );
+
   // Add a new page
   const handleAddPage = useCallback(() => {
-    const newPage = createNewPage();
-    setCanvasPages((prev) => [...prev, newPage]);
+    const stage = activeCanvasStage ?? getStageInfoForPage(activePage);
+    const newPage = createNewPage(
+      stage,
+      stage ? getNextStagePageNumber(stage) : undefined,
+    );
+    const updatedPages = [...canvasPages, newPage];
+    setCanvasPages(updatedPages);
     setActivePageId(newPage.id);
+    setActiveCanvasStage(stage);
     // Reset baseline for new page
     canvasBaselineRef.current = 0;
     hasInitializedCanvasRef.current = true;
     // New blank page should hide any previous check button position/state
     setHasDrawnAfterQuestion(false);
     setLastDrawingPosition(null);
-  }, [createNewPage]);
+    saveCanvasPagesNow(updatedPages);
+  }, [
+    activeCanvasStage,
+    activePage,
+    canvasPages,
+    createNewPage,
+    getNextStagePageNumber,
+    getStageInfoForPage,
+    saveCanvasPagesNow,
+  ]);
 
   // Switch to a different page
   const handleSelectPage = useCallback(
@@ -1162,10 +1285,11 @@ export default function StudySessionScreen() {
       setActivePageId(pageId);
       // Update baseline for the new page
       const page = canvasPages.find((p) => p.id === pageId);
+      setActiveCanvasStage(getStageInfoForPage(page));
       canvasBaselineRef.current = page?.strokes.length || 0;
       hasInitializedCanvasRef.current = true;
     },
-    [activePageId, canvasPages],
+    [activePageId, canvasPages, getStageInfoForPage],
   );
 
   const canvasRef = useRef<HandwritingCanvasHandle>(null);
@@ -1536,26 +1660,19 @@ export default function StudySessionScreen() {
     [questions],
   );
 
-  const writeQuestionToCanvas = useCallback(
-    (questionText: string, customBaseY?: number) => {
-      if (!activePage) return customBaseY ?? 0;
-
+  const createStageAnswerPageWithQuestion = useCallback(
+    (stageKind: CanvasStageKind, stageId: string, questionText: string) => {
+      const stage: CanvasStageInfo = {
+        stageKind,
+        stageId,
+        stageLabel: STAGE_LABELS[stageKind],
+      };
+      const page = createNewPage(stage, 1);
       const padding = 32;
-      // Get fresh strokes from canvas ref and account for visual blocks
-      const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
-      
-      // We add a safety buffer to ensure we don't overlap with recently added visual blocks
-      const baseY = customBaseY ?? 
-        (getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 60);
-      
-      const availableWidth = Math.max(
-        (activePage.width || canvasSize.width) - padding * 2,
-        220,
-      );
-
+      const baseY = 40;
+      const availableWidth = Math.max(page.width - padding * 2, 220);
       const questionNumber = canvasQuestionCounterRef.current + 1;
       canvasQuestionCounterRef.current = questionNumber;
-
       const {
         strokes: generatedStrokes,
         width: textWidth,
@@ -1570,71 +1687,34 @@ export default function StudySessionScreen() {
         maxWidth: availableWidth,
         jitter: 1,
       });
-
-      if (generatedStrokes.length === 0) return baseY;
-
-      const updatedStrokes = [...canvasStrokes, ...generatedStrokes];
-      canvasRef.current?.setStrokes(updatedStrokes as CanvasStroke[]);
+      const pageWithQuestion: CanvasPage = {
+        ...page,
+        strokes: generatedStrokes,
+        height: Math.max(page.height, baseY + textHeight + 60),
+        width: Math.max(page.width, padding + textWidth + 60),
+      };
 
       setCanvasPages((prev) => {
-        const updatedPages = prev.map((page) => {
-          if (page.id !== activePageId) return page;
-          const nextHeight = Math.max(page.height, baseY + textHeight + 60);
-          const nextWidth = Math.max(page.width, padding + textWidth + 60);
-          return {
-            ...page,
-            strokes: updatedStrokes,
-            height: nextHeight,
-            width: nextWidth,
-          };
-        });
-
-        if (sessionId) {
-          if (saveCanvasDebounceRef.current) {
-            clearTimeout(saveCanvasDebounceRef.current);
-          }
-          saveCanvasDebounceRef.current = setTimeout(async () => {
-            try {
-              await updateSession(sessionId, { canvasPages: updatedPages });
-              console.log(
-                "[study] Canvas pages saved with",
-                updatedPages.length,
-                "pages (auto question)",
-              );
-            } catch (err) {
-              console.warn(
-                "[study] Failed to save canvas pages (auto question):",
-                err,
-              );
-            }
-          }, 800);
-        }
-
+        const updatedPages = [...prev, pageWithQuestion];
+        saveCanvasPagesNow(updatedPages);
         return updatedPages;
       });
-
-      canvasBaselineRef.current = updatedStrokes.length;
+      setActivePageId(pageWithQuestion.id);
+      setActiveCanvasStage(stage);
+      canvasBaselineRef.current = generatedStrokes.length;
       hasInitializedCanvasRef.current = true;
+      setHasDrawnAfterQuestion(false);
+      setLastDrawingPosition(null);
 
       setTimeout(() => {
-        const scrollY = Math.max(baseY - 24, 0);
-        canvasScrollRef.current?.scrollTo({ y: scrollY, animated: true });
+        pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+        canvasScrollRef.current?.scrollTo({ y: 0, animated: true });
         canvasHScrollRef.current?.scrollTo({ x: 0, animated: true });
       }, 150);
 
-      return baseY + textHeight;
+      return pageWithQuestion.id;
     },
-    [
-      activePage,
-      activePageId,
-      activeVisualBlocks,
-      canvasColor,
-      canvasSize.width,
-      canvasStrokes,
-      getMaxYWithVisualBlocks,
-      sessionId,
-      setCanvasPages,
-    ],
+    [canvasColor, createNewPage, saveCanvasPagesNow],
   );
 
   // Load existing session data (messages, canvas, notes) from database
@@ -1874,6 +1954,7 @@ export default function StudySessionScreen() {
 
     messages.forEach((msg) => {
       if (msg.role !== "ai") return;
+      if (msg.tutorQuestion?.assessmentKind === "guided_notes") return;
       if (streamingAiMessageIdsRef.current.has(msg.id)) return;
       if (writtenQuestionIdsRef.current.has(msg.id)) return;
 
@@ -1885,13 +1966,28 @@ export default function StudySessionScreen() {
       if (!isLikelyQuestion) return;
 
       writtenQuestionIdsRef.current.add(msg.id);
-      writeQuestionToCanvas(trimmed);
+      const stageKind =
+        msg.tutorQuestion?.assessmentKind === "final_quiz"
+          ? "final_quiz"
+          : "recall";
+      const existingStagePage = canvasPages.find(
+        (page) => page.stageKind === stageKind && page.stageId === msg.id,
+      );
+      if (existingStagePage) {
+        setActivePageId(existingStagePage.id);
+        setActiveCanvasStage(getStageInfoForPage(existingStagePage));
+        canvasBaselineRef.current = existingStagePage.strokes.length;
+      } else {
+        createStageAnswerPageWithQuestion(stageKind, msg.id, trimmed);
+      }
     });
   }, [
+    canvasPages,
+    createStageAnswerPageWithQuestion,
     messages,
     loadingMessages,
     getQuestionTextForMessage,
-    writeQuestionToCanvas,
+    getStageInfoForPage,
   ]);
 
   // Handle canvas mode change
@@ -2040,6 +2136,7 @@ export default function StudySessionScreen() {
     const player = new StreamingTTSPlayer({
       onStateChange: handleStateChange,
       onPlaybackEnd: () => {
+        finishGuidedNotesStageRef.current();
         // If listening mode is on, auto-rearm voice input after TTS completes
         // This is handled by the voice-input component
       },
@@ -2075,7 +2172,54 @@ export default function StudySessionScreen() {
     setIsSpeaking(false);
     setActiveTtsMessageId(null);
     pendingTtsMessageIdRef.current = null;
+    if (pendingGuidedQuestionRef.current) {
+      setTimeout(() => finishGuidedNotesStageRef.current(), 0);
+    }
   }, []);
+
+  const finishGuidedNotesStage = useCallback(() => {
+    const guidedQuestion =
+      pendingGuidedQuestionRef.current ?? pendingGuidedQuestion;
+    if (!guidedQuestion || guidedQuestionReadyRef.current) return;
+
+    guidedQuestionReadyRef.current = true;
+    const questionId = guidedQuestion.messageId;
+    createStageAnswerPageWithQuestion(
+      "answer",
+      questionId,
+      guidedQuestion.questionText,
+    );
+    writtenQuestionIdsRef.current.add(questionId);
+    setCurrentQuestion({
+      id: questionId,
+      prompt: guidedQuestion.questionText,
+      targetConcepts: guidedQuestion.tutorQuestion.targetConcepts,
+      expectedAnswerPoints:
+        guidedQuestion.tutorQuestion.expectedAnswerPoints,
+      checkType:
+        guidedQuestion.tutorQuestion.checkType ||
+        nextDepthCheckType ||
+        "recall",
+      requiredForPass: false,
+      difficulty: guidedQuestion.tutorQuestion.difficulty || "basic",
+      assessmentKind: "guided_notes",
+    });
+    pendingGuidedQuestionRef.current = null;
+    setPendingGuidedQuestion(null);
+    setMemorizationMessageId(questionId);
+    setMemorizationSecondsRemaining(null);
+    setTutorCollapsed(true);
+    setStudyPhase("answer");
+  }, [
+    createStageAnswerPageWithQuestion,
+    nextDepthCheckType,
+    pendingGuidedQuestion,
+  ]);
+
+  useEffect(() => {
+    pendingGuidedQuestionRef.current = pendingGuidedQuestion;
+    finishGuidedNotesStageRef.current = finishGuidedNotesStage;
+  }, [finishGuidedNotesStage, pendingGuidedQuestion]);
 
   const pushMessage = useCallback(
     (message: StudyChatMessage, speak = true) => {
@@ -2179,6 +2323,40 @@ export default function StudySessionScreen() {
       return;
     }
 
+    if (
+      latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
+      "guided_notes"
+    ) {
+      const questionText = getQuestionTextForMessage(
+        latestUnansweredTutorQuestionMessage,
+      );
+      if (questionText) {
+        const existingAnswerPage = canvasPages.find(
+          (page) =>
+            page.stageKind === "answer" &&
+            page.stageId === latestUnansweredTutorQuestionMessage.id,
+        );
+        if (existingAnswerPage) {
+          setActivePageId(existingAnswerPage.id);
+          setActiveCanvasStage(getStageInfoForPage(existingAnswerPage));
+          canvasBaselineRef.current = existingAnswerPage.strokes.length;
+        } else {
+          createStageAnswerPageWithQuestion(
+            "answer",
+            latestUnansweredTutorQuestionMessage.id,
+            questionText,
+          );
+        }
+        writtenQuestionIdsRef.current.add(latestUnansweredTutorQuestionMessage.id);
+      }
+      setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
+      setRecallHintRevealed(false);
+      setMemorizationSecondsRemaining(null);
+      setTutorCollapsed(true);
+      setStudyPhase("answer");
+      return;
+    }
+
     const questionText = getQuestionTextForMessage(
       latestUnansweredTutorQuestionMessage,
     );
@@ -2187,7 +2365,27 @@ export default function StudySessionScreen() {
       !writtenQuestionIdsRef.current.has(latestUnansweredTutorQuestionMessage.id)
     ) {
       writtenQuestionIdsRef.current.add(latestUnansweredTutorQuestionMessage.id);
-      writeQuestionToCanvas(questionText);
+      const stageKind =
+        latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
+        "final_quiz"
+          ? "final_quiz"
+          : "recall";
+      const existingStagePage = canvasPages.find(
+        (page) =>
+          page.stageKind === stageKind &&
+          page.stageId === latestUnansweredTutorQuestionMessage.id,
+      );
+      if (existingStagePage) {
+        setActivePageId(existingStagePage.id);
+        setActiveCanvasStage(getStageInfoForPage(existingStagePage));
+        canvasBaselineRef.current = existingStagePage.strokes.length;
+      } else {
+        createStageAnswerPageWithQuestion(
+          stageKind,
+          latestUnansweredTutorQuestionMessage.id,
+          questionText,
+        );
+      }
     }
 
     setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
@@ -2213,13 +2411,15 @@ export default function StudySessionScreen() {
     );
   }, [
     getQuestionTextForMessage,
+    canvasPages,
+    createStageAnswerPageWithQuestion,
     grading,
+    getStageInfoForPage,
     isChatting,
     latestUnansweredTutorQuestionMessage,
     loadingEntry,
     loadingMessages,
     memorizationMessageId,
-    writeQuestionToCanvas,
   ]);
 
   useEffect(() => {
@@ -2515,9 +2715,47 @@ export default function StudySessionScreen() {
               const questionText =
                 learningParsed.tutorQuestion?.question ||
                 getQuestionTextForMessage(tempMsg);
+              const shouldUseGuidedNotes =
+                studyMode === "beginner" &&
+                Boolean(questionText) &&
+                Boolean(learningParsed.tutorQuestion) &&
+                learningParsed.tutorQuestion?.assessmentKind !== "final_quiz" &&
+                learningParsed.tutorQuestion?.assessmentKind !== "diagnostic";
+              const tutorQuestionForMessage =
+                shouldUseGuidedNotes && learningParsed.tutorQuestion
+                  ? {
+                      ...learningParsed.tutorQuestion,
+                      requiredForPass: false,
+                      assessmentKind: "guided_notes" as const,
+                    }
+                  : learningParsed.tutorQuestion;
+              const explanationOnlyText =
+                shouldUseGuidedNotes && questionText
+                  ? visibleTutorText
+                      .replace(questionText, "")
+                      .replace(/\n{3,}/g, "\n\n")
+                      .trim() || visibleTutorText
+                  : visibleTutorText;
+
+              if (shouldUseGuidedNotes && questionText && tutorQuestionForMessage) {
+                const guidedQuestion = {
+                  messageId: aiMsgId,
+                  questionText,
+                  tutorQuestion: tutorQuestionForMessage,
+                };
+                guidedQuestionReadyRef.current = false;
+                pendingGuidedQuestionRef.current = guidedQuestion;
+                setPendingGuidedQuestion(guidedQuestion);
+                setMemorizationMessageId(aiMsgId);
+                setMemorizationSecondsRemaining(null);
+                setTutorCollapsed(true);
+                setStudyPhase("guided_notes");
+                ensureCanvasStagePage("guided_notes", aiMsgId);
+                pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+              }
 
               // 1. Add visual blocks first, stacked below existing content
-              if (parsed.hasVisuals) {
+              if (parsed.hasVisuals && !shouldUseGuidedNotes) {
                 for (const partialBlock of parsed.visualBlocks) {
                   const result = addVisualBlockToCanvas(
                     partialBlock,
@@ -2538,10 +2776,17 @@ export default function StudySessionScreen() {
               }
 
               // 2. Place the question after the last inserted element
-              if (questionText && !writtenQuestionIdsRef.current.has(aiMsgId)) {
+              if (
+                questionText &&
+                !shouldUseGuidedNotes &&
+                !writtenQuestionIdsRef.current.has(aiMsgId)
+              ) {
                 writtenQuestionIdsRef.current.add(aiMsgId);
-                // writeQuestionToCanvas returns the bottom Y coordinate
-                currentBatchY = writeQuestionToCanvas(questionText, currentBatchY);
+                const stageKind =
+                  tutorQuestionForMessage?.assessmentKind === "final_quiz"
+                    ? "final_quiz"
+                    : "recall";
+                createStageAnswerPageWithQuestion(stageKind, aiMsgId, questionText);
               }
 
               // Final update with citations, cost, and visual block references
@@ -2566,14 +2811,17 @@ export default function StudySessionScreen() {
                   ...result.usage,
                 },
                 citations,
-                tutorQuestion: learningParsed.tutorQuestion,
+                tutorQuestion: tutorQuestionForMessage,
                 visualBlockIds:
                   visualBlockIds.length > 0 ? visualBlockIds : undefined,
               };
               updateMessage(aiMsgId, finalMessage);
 
               // Speak the cleaned message (without visual block JSON)
-              speakMessage(visibleTutorText, aiMsgId);
+              speakMessage(explanationOnlyText, aiMsgId);
+              if (shouldUseGuidedNotes && !ttsEnabled) {
+                setTimeout(() => finishGuidedNotesStageRef.current(), 0);
+              }
 
               // Save the final message to database
               if (sessionId) {
@@ -2627,10 +2875,13 @@ export default function StudySessionScreen() {
       selectCitedChunks,
       updateMessage,
       speakMessage,
+      studyMode,
       t,
+      ttsEnabled,
       sessionId,
       addVisualBlockToCanvas,
-      writeQuestionToCanvas,
+      createStageAnswerPageWithQuestion,
+      ensureCanvasStagePage,
     ],
   );
 
@@ -3306,6 +3557,8 @@ export default function StudySessionScreen() {
 
     const isFinalQuizAnswer =
       questionToEvaluate.assessmentKind === "final_quiz";
+    const isGuidedNotesAnswer =
+      questionToEvaluate.assessmentKind === "guided_notes";
     setMemorizationSecondsRemaining(null);
     setTutorCollapsed(false);
     setStudyPhase("grading");
@@ -3339,6 +3592,7 @@ export default function StudySessionScreen() {
           question: questionToEvaluate,
           answerText: answerDraft,
           answerImageDataUrl: dataUrl,
+          answerCanvasBounds: canvasBounds ?? undefined,
           lectureId,
           gradingContext,
         },
@@ -3411,15 +3665,17 @@ export default function StudySessionScreen() {
       }
       const depthCheckPassed =
         !isFinalQuizAnswer &&
+        !isGuidedNotesAnswer &&
         feedbackPassesDepthCheck({
           ...feedback,
           score: normalizedScore,
         });
       const canCountForPass =
         !isFinalQuizAnswer &&
+        !isGuidedNotesAnswer &&
         depthCheckPassed &&
         questionToEvaluate.requiredForPass !== false;
-      const localDepthCheck: StudyDepthCheck | null = !isFinalQuizAnswer && studyPlanEntryId
+      const localDepthCheck: StudyDepthCheck | null = !isFinalQuizAnswer && !isGuidedNotesAnswer && studyPlanEntryId
         ? {
             id: uuid(),
             lectureId,
@@ -3468,7 +3724,7 @@ export default function StudySessionScreen() {
       };
 
       // Update study plan entry status when focusing on a specific section
-      if (studyPlanEntryId && !isFinalQuizAnswer) {
+      if (studyPlanEntryId && !isFinalQuizAnswer && !isGuidedNotesAnswer) {
         const nextStatus = deriveSectionStatus(
           normalizedScore,
           feedback.correctness,
@@ -3598,6 +3854,9 @@ export default function StudySessionScreen() {
         isFinalQuizAnswer
           ? typeof normalizedScore === "number" &&
             normalizedScore >= FINAL_QUIZ_PASS_SCORE
+          : isGuidedNotesAnswer
+            ? typeof normalizedScore === "number" &&
+              normalizedScore >= DEPTH_PASS_SCORE
           : depthCheckPassed;
       const isTopicDepthPassed = studyPlanEntryId
         ? canPassStudyPlanEntry(latestDepthChecks)
@@ -3644,7 +3903,7 @@ export default function StudySessionScreen() {
         );
       }
 
-      if (!isFinalQuizAnswer && isCheckPassed && lectureId) {
+      if (!isFinalQuizAnswer && !isGuidedNotesAnswer && isCheckPassed && lectureId) {
         try {
           // Collect AI explanation from previous messages (up to 3 messages before the question)
           const questionMsgIndex = messages.findIndex(
@@ -3804,6 +4063,7 @@ export default function StudySessionScreen() {
           : null;
       const shouldStartFinalQuiz =
         !isFinalQuizAnswer &&
+        !isGuidedNotesAnswer &&
         isCheckPassed &&
         isTopicDepthPassed &&
         Boolean(studyPlanEntry) &&
@@ -3812,6 +4072,31 @@ export default function StudySessionScreen() {
       const followUpQuestion: StudyQuestion | null =
         finalQuizRestartQuestion
           ? finalQuizRestartQuestion
+          : isGuidedNotesAnswer
+            ? {
+                id: `guided-recall-${uuid()}`,
+                prompt:
+                  studyPlanEntry
+                    ? buildDepthQuestion(
+                        nextMissingCheckType || evaluatedCheckType || "recall",
+                        studyPlanEntry,
+                      )
+                    : feedback.followUpQuestion ||
+                      `Explain this again from memory: ${questionToEvaluate.prompt}`,
+                targetConcepts:
+                  studyPlanEntry?.keyConcepts ||
+                  questionToEvaluate.targetConcepts ||
+                  feedback.misconceptions,
+                expectedAnswerPoints:
+                  questionToEvaluate.expectedAnswerPoints ||
+                  (nextMissingCheckType
+                    ? [TUTOR_CHECK_DESCRIPTIONS[nextMissingCheckType]]
+                    : undefined),
+                checkType: nextMissingCheckType || evaluatedCheckType || "recall",
+                requiredForPass: true,
+                difficulty: "basic",
+                assessmentKind: "depth",
+              }
           : !isFinalQuizAnswer && !isCheckPassed
           ? {
               id: `follow-up-${uuid()}`,
@@ -3829,6 +4114,7 @@ export default function StudySessionScreen() {
               assessmentKind: "depth",
             }
           : !isFinalQuizAnswer &&
+              !isGuidedNotesAnswer &&
               isCheckPassed &&
               !isTopicDepthPassed &&
               nextMissingCheckType &&
@@ -4279,7 +4565,8 @@ export default function StudySessionScreen() {
     );
   }
 
-  const showCanvasSurface = studyPhase === "answer" || grading;
+  const showCanvasSurface =
+    studyPhase === "guided_notes" || studyPhase === "answer" || grading;
   const finalQuizProgressLabel =
     finalQuizState.status === "generating"
       ? t("study.finalQuizGenerating")
@@ -4345,6 +4632,8 @@ export default function StudySessionScreen() {
           t={t}
           tutorCollapsed
           lockedAnswerMode
+          guidedNotesMode={studyPhase === "guided_notes"}
+          canSubmitAnswer={studyPhase !== "guided_notes"}
           toggleTutor={toggleTutor}
           studyTitle={studyTitle}
           studyOutline={studyOutline}

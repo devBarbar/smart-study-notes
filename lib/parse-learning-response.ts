@@ -25,6 +25,8 @@ const normalizeTutorQuestion = (value: unknown): TutorQuestionMetadata | undefin
   const assessmentKind =
     data.assessmentKind === 'final_quiz'
       ? 'final_quiz'
+      : data.assessmentKind === 'guided_notes'
+        ? 'guided_notes'
       : data.assessmentKind === 'depth'
         ? 'depth'
         : undefined;

@@ -46,6 +46,19 @@ Teach it back?
     assert.equal(parsed.tutorQuestion?.assessmentKind, 'depth');
   });
 
+  it('preserves guided notes assessment metadata', () => {
+    const parsed = parseLearningResponse(`Explanation first.
+
+\`\`\`learning_question
+{"question":"Summarize it?","checkType":"recall","requiredForPass":false,"difficulty":"basic","assessmentKind":"guided_notes"}
+\`\`\``);
+
+    assert.equal(parsed.text, 'Explanation first.');
+    assert.equal(parsed.tutorQuestion?.question, 'Summarize it?');
+    assert.equal(parsed.tutorQuestion?.requiredForPass, false);
+    assert.equal(parsed.tutorQuestion?.assessmentKind, 'guided_notes');
+  });
+
   it('removes generic json code fences only when they contain tutor metadata', () => {
     const parsed = parseLearningResponse(`Why does this happen?
 

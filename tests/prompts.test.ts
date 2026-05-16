@@ -33,6 +33,19 @@ test('gradingPrompt mentions question text', () => {
   assert.doesNotMatch(prompt, /2-4 clear sentences/i);
 });
 
+test('gradingPrompt can constrain grading to answer canvas bounds', () => {
+  const prompt = gradingPrompt(
+    { id: 'q1', prompt: 'Explain photosynthesis', checkType: 'recall' },
+    undefined,
+    'en',
+    undefined,
+    { x: 12, y: 34, width: 200, height: 120 },
+  );
+  assert.match(prompt, /Grade only the handwritten answer inside this canvas region/i);
+  assert.match(prompt, /x=12, y=34, width=200, height=120/);
+  assert.match(prompt, /Ignore question text, guided listening notes/i);
+});
+
 test('feynmanSystemPrompt covers the full study session and hidden metadata', () => {
   const prompt = feynmanSystemPrompt('Learning objective: Limits\nKey Concepts to Master: epsilon, delta');
   assert.match(prompt, /systematically cover the learning objective/i);
