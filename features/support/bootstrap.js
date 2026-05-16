@@ -35,6 +35,31 @@ Module._load = function load(request, parent, isMain) {
     return reactNativeShim;
   }
 
+  if (request === 'expo-constants') {
+    return {
+      __esModule: true,
+      default: {
+        expoConfig: {
+          slug: 'smart-learning-notes',
+          version: '1.0.0-test',
+        },
+      },
+    };
+  }
+
+  if (request === '@sentry/react-native') {
+    return {
+      init: () => undefined,
+      setUser: () => undefined,
+      captureException: () => undefined,
+      startSpan: (_options, callback) => callback(),
+      addBreadcrumb: () => undefined,
+      addIntegration: () => undefined,
+      supabaseIntegration: () => ({}),
+      wrap: (component) => component,
+    };
+  }
+
   return originalLoad.apply(this, arguments);
 };
 

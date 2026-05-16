@@ -2,50 +2,68 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 
-const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
-const SENTRY_ENVIRONMENT =
-  process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development';
-const SENTRY_TRACES_SAMPLE_RATE = Number(process.env.EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? '1');
-const SENTRY_PROFILES_SAMPLE_RATE = Number(process.env.EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE ?? '1');
-const SENTRY_REPLAY_SESSION_SAMPLE_RATE = Number(
-  process.env.EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE ?? '0.1'
-);
-const SENTRY_DEBUG = process.env.EXPO_PUBLIC_SENTRY_DEBUG === 'true';
-
-const appVersion = Constants.expoConfig?.version ?? '0.0.0';
-const appSlug = Constants.expoConfig?.slug ?? 'smart-learning-notes';
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+type SentryInitOptions = Parameters<typeof Sentry.init>[0];
+type TelemetryEnv = Record<string, string | undefined>;
+type TelemetryExpoConfig = {
+  slug?: string;
+  version?: string;
+};
+type BuildSentryInitOptionsParams = { env?: TelemetryEnv; expoConfig?: TelemetryExpoConfig | null; platformOS?: string };
+const SUPABASE_FUNCTION_TRACE_TARGET = /^https:\/\/.*\.supabase\.co\/functions\/v1\//;
+const LOCAL_FUNCTION_TRACE_TARGETS = [/^http:\/\/localhost(:\d+)?\/functions\/v1\//, /^http:\/\/127\.0\.0\.1(:\d+)?\/functions\/v1\//];
 
 const parseSampleRate = (value: number, fallback: number) => {
   if (!Number.isFinite(value)) return fallback;
   return Math.max(0, Math.min(1, value));
 };
 
-const tracePropagationTargets = [
-  ...(supabaseUrl ? [supabaseUrl] : []),
-  /^https:\/\/.*\.supabase\.co\/functions\/v1\//,
-  /^http:\/\/localhost(:\d+)?\/functions\/v1\//,
-  /^http:\/\/127\.0\.0\.1(:\d+)?\/functions\/v1\//,
-];
+export const buildSentryInitOptions = (params: BuildSentryInitOptionsParams = {}): SentryInitOptions => { const env = params.env ?? process.env;
+  const expoConfig = params.expoConfig ?? Constants.expoConfig;
+  const platformOS = params.platformOS ?? Platform.OS;
+  const sentryDsn = env.EXPO_PUBLIC_SENTRY_DSN;
+  const appVersion = expoConfig?.version ?? '0.0.0';
+  const appSlug = expoConfig?.slug ?? 'smart-learning-notes';
+  const supabaseUrl = env.EXPO_PUBLIC_SUPABASE_URL;
+  const replaySessionSampleRate =
+    env.EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE === undefined
+      ? undefined
+      : parseSampleRate(Number(env.EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE), 0);
+  const replayOnErrorSampleRate =
+    env.EXPO_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE === undefined
+      ? undefined
+      : parseSampleRate(Number(env.EXPO_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE), 0);
+  const profilesSampleRate =
+    env.EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE === undefined
+      ? undefined
+      : parseSampleRate(Number(env.EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE), 0);
 
-Sentry.init({
-  dsn: SENTRY_DSN,
-  enabled: Boolean(SENTRY_DSN),
-  debug: SENTRY_DEBUG,
-  environment: SENTRY_ENVIRONMENT,
-  release: `${appSlug}@${appVersion}`,
-  dist: Platform.OS,
-  sendDefaultPii: true,
-  enableLogs: true,
-  enableCaptureFailedRequests: true,
-  enableUserInteractionTracing: true,
-  attachViewHierarchy: true,
-  tracesSampleRate: parseSampleRate(SENTRY_TRACES_SAMPLE_RATE, 1),
-  profilesSampleRate: parseSampleRate(SENTRY_PROFILES_SAMPLE_RATE, 1),
-  replaysOnErrorSampleRate: 1,
-  replaysSessionSampleRate: parseSampleRate(SENTRY_REPLAY_SESSION_SAMPLE_RATE, 0.1),
-  tracePropagationTargets,
-});
+  const options: SentryInitOptions = {
+    dsn: sentryDsn,
+    enabled: Boolean(sentryDsn),
+    debug: env.EXPO_PUBLIC_SENTRY_DEBUG === 'true',
+    environment:
+      env.EXPO_PUBLIC_SENTRY_ENVIRONMENT ?? env.NODE_ENV ?? 'development',
+    release: `${appSlug}@${appVersion}`,
+    dist: platformOS,
+    sendDefaultPii: true,
+    enableLogs: true,
+    enableCaptureFailedRequests: true,
+    enableUserInteractionTracing: true,
+    attachViewHierarchy: true,
+    tracesSampleRate: parseSampleRate(Number(env.EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? '1'), 1),
+    tracePropagationTargets: [
+      ...(supabaseUrl ? [supabaseUrl] : []),
+      SUPABASE_FUNCTION_TRACE_TARGET,
+      ...LOCAL_FUNCTION_TRACE_TARGETS,
+    ],
+  };
+
+  if (profilesSampleRate !== undefined && profilesSampleRate > 0) options.profilesSampleRate = profilesSampleRate;
+  if (replayOnErrorSampleRate !== undefined && replayOnErrorSampleRate > 0) options.replaysOnErrorSampleRate = replayOnErrorSampleRate;
+  if (replaySessionSampleRate !== undefined && replaySessionSampleRate > 0) options.replaysSessionSampleRate = replaySessionSampleRate;
+  return options; };
+
+Sentry.init(buildSentryInitOptions());
 
 type TelemetryUser = {
   id?: string;
