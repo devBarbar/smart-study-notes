@@ -32,6 +32,7 @@ export const buildSentryInitOptions = (params: BuildSentryInitOptionsParams = {}
     env.EXPO_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE === undefined
       ? undefined
       : parseSampleRate(Number(env.EXPO_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE), 0);
+  const profilingEnabled = env.EXPO_PUBLIC_SENTRY_ENABLE_PROFILING === 'true';
   const profilesSampleRate =
     env.EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE === undefined
       ? undefined
@@ -58,7 +59,7 @@ export const buildSentryInitOptions = (params: BuildSentryInitOptionsParams = {}
     ],
   };
 
-  if (profilesSampleRate !== undefined && profilesSampleRate > 0) options.profilesSampleRate = profilesSampleRate;
+  if (profilingEnabled && profilesSampleRate !== undefined && profilesSampleRate > 0) options.profilesSampleRate = profilesSampleRate;
   if (replayOnErrorSampleRate !== undefined && replayOnErrorSampleRate > 0) options.replaysOnErrorSampleRate = replayOnErrorSampleRate;
   if (replaySessionSampleRate !== undefined && replaySessionSampleRate > 0) options.replaysSessionSampleRate = replaySessionSampleRate;
   return options; };

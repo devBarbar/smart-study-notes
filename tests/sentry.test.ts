@@ -54,10 +54,24 @@ test('sentry mobile replay is opt-in through positive replay sample rates', () =
   assert.equal(options.replaysOnErrorSampleRate, 1);
 });
 
-test('sentry Hermes profiling is opt-in through a positive profile sample rate', () => {
+test('sentry Hermes profiling stays disabled when only a positive profile sample rate is set', () => {
   const options = buildSentryInitOptions({
     env: {
       ...baseEnv,
+      EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE: '0.5',
+    },
+    expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
+    platformOS: 'ios',
+  });
+
+  assert.equal('profilesSampleRate' in options, false);
+});
+
+test('sentry Hermes profiling requires an explicit enable flag and positive profile sample rate', () => {
+  const options = buildSentryInitOptions({
+    env: {
+      ...baseEnv,
+      EXPO_PUBLIC_SENTRY_ENABLE_PROFILING: 'true',
       EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE: '0.5',
     },
     expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },

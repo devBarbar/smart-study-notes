@@ -49,6 +49,18 @@ Given(
   },
 );
 
+Given(
+  'production telemetry is configured with a profile sample rate only',
+  function (this: StartupTelemetryWorld) {
+    this.telemetryEnv = {
+      NODE_ENV: 'production',
+      EXPO_PUBLIC_SENTRY_DSN: 'https://example@sentry.io/1',
+      EXPO_PUBLIC_SUPABASE_URL: 'https://unit-test.supabase.co',
+      EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE: '0.5',
+    };
+  },
+);
+
 When('the app prepares startup telemetry', function (this: StartupTelemetryWorld) {
   assert.ok(this.telemetryEnv, 'Expected telemetry env to be configured');
   this.screen = render(<StartupTelemetryHarness env={this.telemetryEnv} />);
