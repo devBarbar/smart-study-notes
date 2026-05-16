@@ -15,8 +15,10 @@
     "deploy-functions": "npx supabase functions deploy extract-pdf-text embed-texts generate-lecture-metadata generate-study-plan feynman-chat evaluate-answer transcribe-audio enqueue-job process-job stream-tts ai-settings generate-practice-exam",
     "maestro:test:ios": "maestro test .maestro/ai-settings-ios.yaml",
     "test": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\",\"types\":[\"node\"]}' node --require ts-node/register --test tests/*.test.ts",
-    "test:unit:coverage": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\",\"types\":[\"node\"]}' node --experimental-test-coverage --test-coverage-include='lib/study/*.ts' --test-coverage-lines=100 --require ts-node/register --test tests/study-session-utils.test.ts tests/study-canvas-pages.test.ts",
-    "test:coverage": "npm run test:unit:coverage"
+    "test:cucumber": "cucumber-js",
+    "test:cucumber:coverage": "node scripts/check-cucumber-coverage.js",
+    "test:unit:coverage": "node scripts/check-unit-coverage.js",
+    "test:coverage": "npm run test:unit:coverage && npm run test:cucumber:coverage"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.36",
@@ -81,12 +83,18 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@babel/register": "^7.29.3",
+    "@cucumber/cucumber": "^12.9.0",
+    "@testing-library/react-native": "^13.3.3",
     "@types/node": "^25.7.0",
     "@types/react": "~19.2.10",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~56.0.3",
+    "msw": "^2.14.6",
+    "react-test-renderer": "^19.2.3",
     "ts-node": "^10.9.2",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "v8-to-istanbul": "^9.3.0"
   },
   "expo": {
     "install": {

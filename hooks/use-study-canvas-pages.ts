@@ -182,7 +182,7 @@ export const useStudyCanvasPages = ({
       onInteractionReset?.();
       saveCanvasPagesNow(updatedPages);
 
-      return page.id;
+      return page;
     },
     [
       activatePage,

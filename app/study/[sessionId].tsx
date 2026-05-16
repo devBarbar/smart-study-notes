@@ -48,6 +48,11 @@ import {
   shuffleStudyWarmupOptions,
 } from "@/lib/study/study-flow";
 import {
+  buildListeningNotesQuestion,
+  getListeningNotesAudioText,
+  shouldUseListeningNotesFlow,
+} from "@/lib/study/listening-notes-flow";
+import {
   CHAT_ITEM_HEIGHT,
   FINAL_QUIZ_QUESTION_COUNT,
   MEMORIZATION_SECONDS,
@@ -780,10 +785,20 @@ export default function StudySessionScreen() {
       >,
       messageId: string,
       customBaseY?: number,
+      targetPageId = activePageId,
+      targetPageOverride?: CanvasPage,
     ) => {
-      if (!activePage) return null;
+      const targetPage =
+        targetPageOverride ??
+        canvasPages.find((page) => page.id === targetPageId) ??
+        activePage;
+      if (!targetPage) return null;
 
-      const existingBlock = activeVisualBlocks.find(
+      const targetVisualBlocks = dedupeVisualBlocks(
+        targetPage.visualBlocks || [],
+      );
+
+      const existingBlock = targetVisualBlocks.find(
         (block) =>
           block.messageId === messageId &&
           getVisualBlockSignature(block) === getVisualBlockSignature(partialBlock),
@@ -793,7 +808,7 @@ export default function StudySessionScreen() {
       }
 
       const insertKey = getVisualBlockInsertKey(
-        activePageId,
+        targetPage.id,
         messageId,
         partialBlock,
       );
@@ -803,12 +818,15 @@ export default function StudySessionScreen() {
       insertedVisualBlockKeysRef.current.add(insertKey);
 
       // Get current strokes directly from canvas ref (more reliable than state)
-      const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
+      const currentStrokes =
+        targetPage.id === activePageId
+          ? canvasRef.current?.getStrokes() || canvasStrokes
+          : targetPage.strokes;
 
       // Calculate position - place below existing content
       const currentMaxY = customBaseY ?? getMaxYWithVisualBlocks(
         currentStrokes,
-        activeVisualBlocks,
+        targetVisualBlocks,
       );
       const padding = customBaseY !== undefined ? 16 : 60;
       const position = { x: 40, y: currentMaxY + padding };
@@ -827,7 +845,7 @@ export default function StudySessionScreen() {
       // Update canvas pages with the new visual block
       setCanvasPages((prev) => {
         const updatedPages = prev.map((page) => {
-          if (page.id !== activePageId) return page;
+          if (page.id !== targetPage.id) return page;
 
           const existingBlocks = page.visualBlocks || [];
           if (
@@ -895,8 +913,8 @@ export default function StudySessionScreen() {
     [
       activePage,
       activePageId,
-      activeVisualBlocks,
       canvasStrokes,
+      canvasPages,
       getMaxYWithVisualBlocks,
       sessionId,
       saveCanvasDebounceRef,
@@ -1246,9 +1264,9 @@ export default function StudySessionScreen() {
 
     messages.forEach((msg) => {
       if (msg.role !== "ai") return;
-      if (msg.tutorQuestion?.assessmentKind === "guided_notes") return;
       if (streamingAiMessageIdsRef.current.has(msg.id)) return;
       if (writtenQuestionIdsRef.current.has(msg.id)) return;
+      if (shouldUseListeningNotesFlow(msg.tutorQuestion)) return;
 
       const questionText = getQuestionTextForMessage(msg);
       if (!questionText) return;
@@ -1408,6 +1426,11 @@ export default function StudySessionScreen() {
     pendingTtsMessageIdRef.current = null;
   }, []);
 
+  const stopGuidedAudioAndRevealAnswer = useCallback(async () => {
+    await stopSpeaking();
+    finishGuidedNotesStageRef.current();
+  }, [stopSpeaking]);
+
   const replayGuidedAudio = useCallback(async () => {
     if (!guidedAudioReplay?.text) return;
     if (!ttsEnabled) {
@@ -1416,6 +1439,46 @@ export default function StudySessionScreen() {
     pendingTtsMessageIdRef.current = guidedAudioReplay.messageId;
     await ttsPlayerRef.current?.speak(guidedAudioReplay.text);
   }, [guidedAudioReplay, ttsEnabled]);
+
+  const beginListeningNotesStage = useCallback(
+    ({
+      messageId,
+      questionText,
+      tutorQuestion,
+      tutorText,
+    }: {
+      messageId: string;
+      questionText: string;
+      tutorQuestion: NonNullable<StudyChatMessage["tutorQuestion"]>;
+      tutorText: string;
+    }) => {
+      const listeningQuestion = buildListeningNotesQuestion(tutorQuestion);
+      const guidedQuestion = {
+        messageId,
+        questionText,
+        tutorQuestion: listeningQuestion,
+      };
+      const audioText = getListeningNotesAudioText(tutorText, questionText);
+
+      setGuidedAudioReplay({
+        messageId,
+        text: audioText,
+      });
+      guidedQuestionReadyRef.current = false;
+      pendingGuidedQuestionRef.current = guidedQuestion;
+      setPendingGuidedQuestion(guidedQuestion);
+      setMemorizationMessageId(messageId);
+      setMemorizationSecondsRemaining(null);
+      setTutorCollapsed(true);
+      setStudyPhase("guided_notes");
+      writtenQuestionIdsRef.current.add(messageId);
+      const page = ensureCanvasStagePage("guided_notes", messageId);
+      pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+
+      return { audioText, page, pageId: page.id };
+    },
+    [ensureCanvasStagePage],
+  );
 
   const finishGuidedNotesStage = useCallback(() => {
     const guidedQuestion =
@@ -1440,9 +1503,9 @@ export default function StudySessionScreen() {
         guidedQuestion.tutorQuestion.checkType ||
         nextDepthCheckType ||
         "recall",
-      requiredForPass: false,
+      requiredForPass: guidedQuestion.tutorQuestion.requiredForPass ?? true,
       difficulty: guidedQuestion.tutorQuestion.difficulty || "basic",
-      assessmentKind: "guided_notes",
+      assessmentKind: guidedQuestion.tutorQuestion.assessmentKind || "depth",
     });
     pendingGuidedQuestionRef.current = null;
     setPendingGuidedQuestion(null);
@@ -1598,14 +1661,25 @@ export default function StudySessionScreen() {
     const questionText = getQuestionTextForMessage(
       latestUnansweredTutorQuestionMessage,
     );
+    const resumeDirectlyToAnswer =
+      shouldOpenCanvasOnResumeRef.current ||
+      restoredMessageIdsRef.current.has(latestUnansweredTutorQuestionMessage.id);
     if (
       questionText &&
-      !writtenQuestionIdsRef.current.has(latestUnansweredTutorQuestionMessage.id)
+      (resumeDirectlyToAnswer ||
+        !writtenQuestionIdsRef.current.has(
+          latestUnansweredTutorQuestionMessage.id,
+        ))
     ) {
       writtenQuestionIdsRef.current.add(latestUnansweredTutorQuestionMessage.id);
       const stageKind =
-        latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
-        "final_quiz"
+        resumeDirectlyToAnswer &&
+        shouldUseListeningNotesFlow(
+          latestUnansweredTutorQuestionMessage.tutorQuestion,
+        )
+          ? "answer"
+          : latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
+              "final_quiz"
           ? "final_quiz"
           : "recall";
       const existingStagePage = canvasPages.find(
@@ -1626,10 +1700,7 @@ export default function StudySessionScreen() {
 
     setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
     setRecallHintRevealed(false);
-    if (
-      shouldOpenCanvasOnResumeRef.current ||
-      restoredMessageIdsRef.current.has(latestUnansweredTutorQuestionMessage.id)
-    ) {
+    if (resumeDirectlyToAnswer) {
       shouldOpenCanvasOnResumeRef.current = false;
       setMemorizationSecondsRemaining(null);
       setTutorCollapsed(true);
@@ -1952,58 +2023,47 @@ export default function StudySessionScreen() {
               const questionText =
                 learningParsed.tutorQuestion?.question ||
                 getQuestionTextForMessage(tempMsg);
-              const shouldUseGuidedNotes =
-                studyMode === "beginner" &&
+              const shouldUseListeningNotes =
                 Boolean(questionText) &&
-                Boolean(learningParsed.tutorQuestion) &&
-                learningParsed.tutorQuestion?.assessmentKind !== "final_quiz" &&
-                learningParsed.tutorQuestion?.assessmentKind !== "diagnostic";
+                shouldUseListeningNotesFlow(learningParsed.tutorQuestion);
               const tutorQuestionForMessage =
-                shouldUseGuidedNotes && learningParsed.tutorQuestion
-                  ? {
-                      ...learningParsed.tutorQuestion,
-                      requiredForPass: false,
-                      assessmentKind: "guided_notes" as const,
-                    }
+                shouldUseListeningNotes && learningParsed.tutorQuestion
+                  ? buildListeningNotesQuestion(learningParsed.tutorQuestion)
                   : learningParsed.tutorQuestion;
               const explanationOnlyText =
-                shouldUseGuidedNotes && questionText
-                  ? visibleTutorText
-                      .replace(questionText, "")
-                      .replace(/\n{3,}/g, "\n\n")
-                      .trim() || visibleTutorText
+                shouldUseListeningNotes && questionText
+                  ? getListeningNotesAudioText(visibleTutorText, questionText)
                   : visibleTutorText;
+              let listeningNotesPage: CanvasPage | undefined;
+              let listeningNotesPageId: string | undefined;
 
-              if (shouldUseGuidedNotes && questionText && tutorQuestionForMessage) {
-                const guidedQuestion = {
+              if (shouldUseListeningNotes && questionText && tutorQuestionForMessage) {
+                const listeningStage = beginListeningNotesStage({
                   messageId: aiMsgId,
                   questionText,
                   tutorQuestion: tutorQuestionForMessage,
-                };
-                setGuidedAudioReplay({
-                  messageId: aiMsgId,
-                  text: explanationOnlyText,
+                  tutorText: visibleTutorText,
                 });
-                guidedQuestionReadyRef.current = false;
-                pendingGuidedQuestionRef.current = guidedQuestion;
-                setPendingGuidedQuestion(guidedQuestion);
-                setMemorizationMessageId(aiMsgId);
-                setMemorizationSecondsRemaining(null);
-                setTutorCollapsed(true);
-                setStudyPhase("guided_notes");
-                ensureCanvasStagePage("guided_notes", aiMsgId);
-                pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+                listeningNotesPage = listeningStage.page;
+                listeningNotesPageId = listeningStage.pageId;
+                currentBatchY =
+                  getMaxYWithVisualBlocks(
+                    listeningNotesPage.strokes,
+                    dedupeVisualBlocks(listeningNotesPage.visualBlocks || []),
+                  ) + 40;
               } else {
                 setGuidedAudioReplay(null);
               }
 
               // 1. Add visual blocks first, stacked below existing content
-              if (parsed.hasVisuals && !shouldUseGuidedNotes) {
+              if (parsed.hasVisuals) {
                 for (const partialBlock of parsed.visualBlocks) {
                   const result = addVisualBlockToCanvas(
                     partialBlock,
                     aiMsgId,
                     currentBatchY,
+                    listeningNotesPageId,
+                    listeningNotesPage,
                   );
                   if (result) {
                     visualBlockIds.push(result.id);
@@ -2021,7 +2081,7 @@ export default function StudySessionScreen() {
               // 2. Place the question after the last inserted element
               if (
                 questionText &&
-                !shouldUseGuidedNotes &&
+                !shouldUseListeningNotes &&
                 !writtenQuestionIdsRef.current.has(aiMsgId)
               ) {
                 writtenQuestionIdsRef.current.add(aiMsgId);
@@ -2061,8 +2121,13 @@ export default function StudySessionScreen() {
               updateMessage(aiMsgId, finalMessage);
 
               // Speak the cleaned message (without visual block JSON)
-              speakMessage(explanationOnlyText, aiMsgId);
-              if (shouldUseGuidedNotes && !ttsEnabled) {
+              speakMessage(explanationOnlyText, aiMsgId).catch((err) => {
+                console.warn("[study] Failed to play listening notes audio:", err);
+                if (shouldUseListeningNotes) {
+                  finishGuidedNotesStageRef.current();
+                }
+              });
+              if (shouldUseListeningNotes && !ttsEnabled) {
                 setTimeout(() => finishGuidedNotesStageRef.current(), 0);
               }
 
@@ -2118,13 +2183,12 @@ export default function StudySessionScreen() {
       selectCitedChunks,
       updateMessage,
       speakMessage,
-      studyMode,
       t,
       ttsEnabled,
       sessionId,
       addVisualBlockToCanvas,
+      beginListeningNotesStage,
       createStageAnswerPageWithQuestion,
-      ensureCanvasStagePage,
     ],
   );
 
@@ -3397,10 +3461,27 @@ export default function StudySessionScreen() {
               })}`
             : "";
 
-      const feedbackText = `${correctnessText}\n\n${feedback.summary}${whatWentWrongText}${correctAnswerText}${rewriteExampleText}${improvementsText}${scoreText}${finalQuizText}${sourceNotesText}${followUpText}\n\n${t("study.feedback.askExplain")}${costText}`;
-
-      pushMessage({
-        id: uuid(),
+      const feedbackBaseText = `${correctnessText}\n\n${feedback.summary}${whatWentWrongText}${correctAnswerText}${rewriteExampleText}${improvementsText}${scoreText}${finalQuizText}${sourceNotesText}`;
+      const feedbackText = followUpQuestion
+        ? `${feedbackBaseText}\n\n${t("study.feedback.askExplain")}${costText}${followUpText}`
+        : `${feedbackBaseText}\n\n${t("study.feedback.askExplain")}${costText}`;
+      const followUpTutorQuestion = followUpQuestion
+        ? {
+            question: followUpQuestion.prompt,
+            targetConcepts: followUpQuestion.targetConcepts,
+            expectedAnswerPoints: followUpQuestion.expectedAnswerPoints,
+            checkType: followUpQuestion.checkType,
+            requiredForPass: followUpQuestion.requiredForPass,
+            difficulty: followUpQuestion.difficulty,
+            assessmentKind: followUpQuestion.assessmentKind,
+          }
+        : undefined;
+      const feedbackMessageId = uuid();
+      const shouldUseFeedbackListeningNotes =
+        Boolean(followUpTutorQuestion) &&
+        shouldUseListeningNotesFlow(followUpTutorQuestion);
+      const feedbackMessage: StudyChatMessage = {
+        id: feedbackMessageId,
         role: "ai",
         text: feedbackText,
         questionId: followUpQuestion?.id ?? questionToEvaluate.id,
@@ -3412,18 +3493,29 @@ export default function StudySessionScreen() {
           ...feedback.usage,
         },
         citations: gradingCitations,
-        tutorQuestion: followUpQuestion
-          ? {
-              question: followUpQuestion.prompt,
-              targetConcepts: followUpQuestion.targetConcepts,
-              expectedAnswerPoints: followUpQuestion.expectedAnswerPoints,
-              checkType: followUpQuestion.checkType,
-              requiredForPass: followUpQuestion.requiredForPass,
-              difficulty: followUpQuestion.difficulty,
-              assessmentKind: followUpQuestion.assessmentKind,
-            }
-          : undefined,
-      });
+        tutorQuestion: followUpTutorQuestion,
+      };
+      pushMessage(feedbackMessage, !shouldUseFeedbackListeningNotes);
+
+      if (
+        shouldUseFeedbackListeningNotes &&
+        followUpQuestion &&
+        followUpTutorQuestion
+      ) {
+        const { audioText } = beginListeningNotesStage({
+          messageId: feedbackMessageId,
+          questionText: followUpQuestion.prompt,
+          tutorQuestion: followUpTutorQuestion,
+          tutorText: feedbackText,
+        });
+        speakMessage(audioText, feedbackMessageId).catch((err) => {
+          console.warn("[study] Failed to play listening notes audio:", err);
+          finishGuidedNotesStageRef.current();
+        });
+        if (!ttsEnabled) {
+          setTimeout(() => finishGuidedNotesStageRef.current(), 0);
+        }
+      }
 
       if (isFinalQuizAnswer && finalQuizAnswer) {
         setFinalQuizState({
@@ -3932,7 +4024,7 @@ export default function StudySessionScreen() {
           recallHintRevealed={recallHintRevealed}
           onRevealRecallHint={() => setRecallHintRevealed(true)}
           onReplayGuidedAudio={replayGuidedAudio}
-          onStopGuidedAudio={stopSpeaking}
+          onStopGuidedAudio={stopGuidedAudioAndRevealAnswer}
         />
       ) : (
         <StudyChatPanel
