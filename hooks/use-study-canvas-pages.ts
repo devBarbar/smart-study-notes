@@ -86,6 +86,9 @@ export const useStudyCanvasPages = ({
   const saveCanvasPagesNow = useCallback(
     (pages: CanvasPage[]) => {
       if (!sessionId) return;
+      const pendingCanvasSave = saveCanvasDebounceRef.current;
+      saveCanvasDebounceRef.current = null;
+      pendingCanvasSave && clearTimeout(pendingCanvasSave);
       updateSession(sessionId, { canvasPages: pages }).catch((err) => {
         console.warn('[study] Failed to save canvas pages:', err);
       });

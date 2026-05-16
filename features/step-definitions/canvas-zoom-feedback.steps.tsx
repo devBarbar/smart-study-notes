@@ -3,8 +3,8 @@ import { join } from "node:path";
 import Module from "node:module";
 
 import { Given, Then, When } from "@cucumber/cucumber";
-import { fireEvent, render } from "@testing-library/react-native/pure";
-import React, { useState } from "react";
+import { fireEvent, render, waitFor } from "@testing-library/react-native/pure";
+import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
@@ -22,7 +22,12 @@ import {
   insertCanvasFeedbackBlockBelowAnswer,
 } from "../../lib/study/canvas-feedback";
 import { buildInitialCanvasPage } from "../../lib/study/study-canvas-pages";
-import { StudyFeedback } from "../../types";
+import { useStudyCanvasPages } from "../../hooks/use-study-canvas-pages";
+import {
+  resetSupabaseRequests,
+  supabaseRequests,
+} from "../../tests/utils/supabase-msw";
+import { CanvasFeedbackBlockData, StudyFeedback } from "../../types";
 import { AppWorld } from "../support/world";
 
 type FakeGesture = {
@@ -340,6 +345,80 @@ const InlineFeedbackHarness = ({
   );
 };
 
+const InlineFeedbackPersistenceHarness = () => {
+  const {
+    activePageId,
+    activeVisualBlocks,
+    saveCanvasPagesNow,
+    setCanvasPages,
+    setInitialBlankPage,
+    updateActivePageStrokes,
+  } = useStudyCanvasPages({ sessionId: "feedback-persistence-session" });
+  const [seededStrokeSave, setSeededStrokeSave] = useState(false);
+  const feedback = gradingPresets.failed.feedback;
+
+  useEffect(() => {
+    setInitialBlankPage();
+  }, [setInitialBlankPage]);
+
+  useEffect(() => {
+    if (!activePageId || seededStrokeSave) return;
+    updateActivePageStrokes([
+      {
+        points: [
+          { x: 40, y: 620 },
+          { x: 280, y: 690 },
+        ],
+        color: "#0f172a",
+        width: 3,
+      },
+    ]);
+    setSeededStrokeSave(true);
+  }, [activePageId, seededStrokeSave, updateActivePageStrokes]);
+
+  const visibleFeedback = activeVisualBlocks.find(
+    (block) => block.type === "feedback",
+  );
+  const visibleFeedbackData = visibleFeedback?.data as
+    | CanvasFeedbackBlockData
+    | undefined;
+
+  return (
+    <View>
+      {seededStrokeSave && <Text testID="feedback-page-ready">ready</Text>}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Write feedback"
+        onPress={() => {
+          setCanvasPages((prev) => {
+            const inserted = insertCanvasFeedbackBlockBelowAnswer({
+              pages: prev,
+              pageId: activePageId,
+              messageId: "feedback-message-1",
+              feedback,
+              isPassed: false,
+              answerBounds: { x: 40, y: 620, width: 280, height: 90 },
+              id: "feedback-block-persistent",
+              createdAt: "2026-05-16T00:00:00.000Z",
+            });
+            saveCanvasPagesNow(inserted.pages);
+            return inserted.pages;
+          });
+        }}
+      >
+        <Text>Write feedback</Text>
+      </Pressable>
+      {visibleFeedback?.type === "feedback" && (
+        <View testID="canvas-feedback">
+          {visibleFeedbackData?.whatWentWrong.map((item) => (
+            <Text key={`wrong-${item}`}>{item}</Text>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
 Given("the study canvas zoom harness is open", function (this: AppWorld) {
   this.screen = render(<CanvasZoomHarness />);
 });
@@ -349,6 +428,17 @@ Given(
   function (this: AppWorld, preset: keyof typeof gradingPresets) {
     assert.ok(gradingPresets[preset], `Unknown grading preset: ${preset}`);
     this.screen = render(<InlineFeedbackHarness preset={preset} />);
+  },
+);
+
+Given(
+  "the inline grading harness has a failed answer with a pending stroke save",
+  async function (this: AppWorld) {
+    resetSupabaseRequests();
+    this.screen = render(<InlineFeedbackPersistenceHarness />);
+    await waitFor(() => {
+      assert.ok(this.screen!.getByTestId("feedback-page-ready"));
+    });
   },
 );
 
@@ -447,6 +537,12 @@ When("the tutor writes feedback below the answer", function (this: AppWorld) {
   fireEvent.press(this.screen!.getByText("Write feedback"));
 });
 
+When("the pending canvas save settles", async function () {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+  });
+});
+
 When("the student writes a short stylus stroke", async function () {
   assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
   const pan = nativeCanvasHarness.getLastPanGesture();
@@ -537,6 +633,18 @@ Then(
     assert.ok(this.screen!.getByText(text));
   },
 );
+
+Then("only the feedback canvas save is sent", function () {
+  assert.equal(supabaseRequests.length, 1);
+  assert.equal(
+    (
+      supabaseRequests[0].body as {
+        canvas_pages: { visualBlocks?: unknown[] }[];
+      }
+    ).canvas_pages[0].visualBlocks?.length,
+    1,
+  );
+});
 
 Then("the live ink uses a copied Skia path snapshot", async function () {
   assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");

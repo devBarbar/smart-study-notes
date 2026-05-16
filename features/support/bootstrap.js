@@ -5,9 +5,11 @@ process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'unit-test-anon-key';
 
 const Module = require('module');
+const path = require('path');
 const React = require('react');
 
 const originalLoad = Module._load;
+const projectRoot = path.resolve(__dirname, '..', '..');
 const hostComponent = (name) =>
   React.forwardRef(({ children, ...props }, ref) =>
     React.createElement(name, { ...props, ref }, children),
@@ -47,6 +49,14 @@ Module._load = function load(request, parent, isMain) {
     };
   }
 
+  if (request === 'expo-secure-store') {
+    return {
+      getItemAsync: async () => null,
+      setItemAsync: async () => undefined,
+      deleteItemAsync: async () => undefined,
+    };
+  }
+
   if (request === '@sentry/react-native') {
     return {
       init: () => undefined,
@@ -58,6 +68,15 @@ Module._load = function load(request, parent, isMain) {
       supabaseIntegration: () => ({}),
       wrap: (component) => component,
     };
+  }
+
+  if (request.startsWith('@/')) {
+    return originalLoad.call(
+      this,
+      path.join(projectRoot, request.slice(2)),
+      parent,
+      isMain,
+    );
   }
 
   return originalLoad.apply(this, arguments);

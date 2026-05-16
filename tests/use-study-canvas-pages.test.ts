@@ -6,6 +6,7 @@ import test, { after, afterEach, before } from 'node:test';
 import { act, renderHook, waitFor } from '@testing-library/react-native/pure';
 
 import { useStudyCanvasPages } from '../hooks/use-study-canvas-pages';
+import { insertCanvasFeedbackBlockBelowAnswer } from '../lib/study/canvas-feedback';
 import {
   resetSupabaseRequests,
   supabaseRequests,
@@ -46,7 +47,7 @@ test('ensureCanvasStagePage returns the activated canvas page and persists it ov
 
   await waitFor(() => {
     assert.equal(supabaseRequests.length, 1);
-  });
+  }, { timeout: 500 });
 
   assert.equal(supabaseRequests[0].method, 'PATCH');
   assert.match(supabaseRequests[0].url, /\/rest\/v1\/sessions\?/);
@@ -68,6 +69,75 @@ test('ensureCanvasStagePage returns the activated canvas page and persists it ov
     ).length,
     1,
   );
+
+  unmount();
+  await waitFor(() => {
+    assert.equal(supabaseRequests.length, 2);
+  });
+});
+
+test('immediate feedback saves cancel stale debounced stroke saves', async () => {
+  const { result, unmount } = renderHook(() =>
+    useStudyCanvasPages({ sessionId: 'session-feedback-race' }),
+  );
+
+  await act(async () => {
+    result.current.setInitialBlankPage();
+  });
+
+  await act(async () => {
+    result.current.updateActivePageStrokes([
+      {
+        points: [
+          { x: 80, y: 120 },
+          { x: 180, y: 168 },
+        ],
+        color: '#0f172a',
+        width: 3,
+      },
+    ]);
+  });
+
+  const inserted = insertCanvasFeedbackBlockBelowAnswer({
+    pages: result.current.canvasPages,
+    pageId: result.current.activePageId,
+    messageId: 'feedback-message-1',
+    feedback: {
+      summary: 'Keep the causal explanation visible.',
+      correctness: 'partially correct',
+      score: 68,
+      whatWentWrong: ['Missing the key cause'],
+    },
+    isPassed: false,
+    answerBounds: { x: 80, y: 120, width: 220, height: 80 },
+    id: 'feedback-block-1',
+    createdAt: '2026-05-16T00:00:00.000Z',
+  });
+
+  await act(async () => {
+    result.current.saveCanvasPagesNow(inserted.pages);
+    result.current.setCanvasPages(inserted.pages);
+  });
+
+  await waitFor(() => {
+    assert.equal(supabaseRequests.length, 1);
+  });
+
+  assert.equal(
+    (
+      supabaseRequests[0].body as {
+        canvas_pages: { visualBlocks?: unknown[]; visual_blocks?: unknown[] }[];
+      }
+    ).canvas_pages[0].visualBlocks?.length,
+    1,
+  );
+
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+  });
+
+  assert.equal(supabaseRequests.length, 1);
+  assert.equal(result.current.activeVisualBlocks.length, 1);
 
   unmount();
 });

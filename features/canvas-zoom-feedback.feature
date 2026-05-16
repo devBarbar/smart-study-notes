@@ -47,6 +47,13 @@ Feature: Canvas zoom and inline grading feedback
     Then the canvas feedback is red
     And the canvas feedback includes "Missing the key cause"
 
+  Scenario: Failed grading feedback remains after pending canvas saves settle
+    Given the inline grading harness has a failed answer with a pending stroke save
+    When the tutor writes feedback below the answer
+    And the pending canvas save settles
+    Then the canvas feedback includes "Missing the key cause"
+    And only the feedback canvas save is sent
+
   Scenario: Passing grading appears below the answer in green
     Given the inline grading harness has a passed answer
     When the tutor writes feedback below the answer
