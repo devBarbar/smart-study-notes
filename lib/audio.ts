@@ -18,8 +18,6 @@ console.log('[StreamingTTS] Module loaded', {
   hasDocDir: Boolean(FileSystem.documentDirectory),
 });
 
-// Maximum text length for TTS (OpenAI limit is 4096)
-const MAX_TTS_LENGTH = 4096;
 const FIRST_TTS_CHUNK_TARGET = 650;
 const FOLLOW_UP_TTS_CHUNK_TARGET = 1100;
 const MIN_SENTENCE_SPLIT_LENGTH = 240;
@@ -159,11 +157,7 @@ export class StreamingTTSPlayer {
     });
 
     try {
-      // Truncate text if too long
-      const truncatedText = text.length > MAX_TTS_LENGTH 
-        ? text.slice(0, MAX_TTS_LENGTH - 3) + '...'
-        : text;
-      const chunks = splitTextForFastTTSStart(truncatedText);
+      const chunks = splitTextForFastTTSStart(text);
 
       console.log('[StreamingTTS] Attempting OpenAI TTS via edge function...', {
         chunks: chunks.length,
@@ -194,10 +188,9 @@ export class StreamingTTSPlayer {
             : null;
 
         if (!audioUri) {
-          if (!playedAnyChunk) {
-            console.log('[StreamingTTS] No audio URI returned, falling back to expo-speech');
-            await this.fallbackToNativeSpeech(truncatedText);
-          }
+          const remainingText = chunks.slice(index).join(' ');
+          console.log('[StreamingTTS] No audio URI returned, falling back to expo-speech');
+          await this.fallbackToNativeSpeech(playedAnyChunk ? remainingText : text);
           return;
         }
 
@@ -224,7 +217,7 @@ export class StreamingTTSPlayer {
       // Fallback to native speech on error
       try {
         console.log('[StreamingTTS] Attempting expo-speech fallback after error...');
-        await this.fallbackToNativeSpeech(text.slice(0, MAX_TTS_LENGTH));
+        await this.fallbackToNativeSpeech(text);
       } catch (fallbackError) {
         console.error('[StreamingTTS] Even fallback failed:', fallbackError);
         this.updateState({ 
@@ -438,34 +431,38 @@ export class StreamingTTSPlayer {
     const speechLocale = speechLocaleMap[this.language] || 'en-US';
     console.log('[StreamingTTS] expo-speech locale:', speechLocale);
 
+    const generation = this.playbackGeneration;
+    const chunks = splitTextForFastTTSStart(text);
     this.updateState({ isLoading: false, isPlaying: true });
     this.callbacks.onPlaybackStart?.();
 
-    return new Promise((resolve) => {
-      Speech.speak(text, {
-        language: speechLocale,
-        pitch: 1.0,
-        rate: 0.9,
-        onDone: () => {
-          console.log('[StreamingTTS] expo-speech finished');
-          this.updateState({ isPlaying: false, currentText: null });
-          this.callbacks.onPlaybackEnd?.();
-          resolve();
-        },
-        onError: (error) => {
-          console.error('[StreamingTTS] expo-speech error:', error);
-          this.updateState({ isPlaying: false, currentText: null, error: 'Speech synthesis failed' });
-          this.callbacks.onPlaybackEnd?.();
-          resolve();
-        },
-        onStopped: () => {
-          console.log('[StreamingTTS] expo-speech stopped');
-          this.updateState({ isPlaying: false, currentText: null });
-          this.callbacks.onPlaybackEnd?.();
-          resolve();
-        },
+    for (const chunk of chunks) {
+      if (generation !== this.playbackGeneration) return;
+      await new Promise<void>((resolve) => {
+        Speech.speak(chunk, {
+          language: speechLocale,
+          pitch: 1.0,
+          rate: 0.9,
+          onDone: () => {
+            console.log('[StreamingTTS] expo-speech chunk finished');
+            resolve();
+          },
+          onError: (error) => {
+            console.error('[StreamingTTS] expo-speech error:', error);
+            this.updateState({ error: 'Speech synthesis failed' });
+            resolve();
+          },
+          onStopped: () => {
+            console.log('[StreamingTTS] expo-speech stopped');
+            resolve();
+          },
+        });
       });
-    });
+    }
+
+    if (generation !== this.playbackGeneration) return;
+    this.updateState({ isPlaying: false, currentText: null });
+    this.callbacks.onPlaybackEnd?.();
   }
 
   /**

@@ -49,6 +49,8 @@ type StudyCanvasPanelProps = {
   tutorCollapsed: boolean;
   lockedAnswerMode?: boolean;
   guidedNotesMode?: boolean;
+  guidedAudioAvailable?: boolean;
+  guidedAudioPlaying?: boolean;
   canSubmitAnswer?: boolean;
   toggleTutor: () => void;
   studyTitle: string;
@@ -103,6 +105,8 @@ type StudyCanvasPanelProps = {
   recallHintText?: string | null;
   recallHintRevealed?: boolean;
   onRevealRecallHint: () => void;
+  onReplayGuidedAudio: () => void;
+  onStopGuidedAudio: () => void;
 };
 
 export function StudyCanvasPanel({
@@ -112,6 +116,8 @@ export function StudyCanvasPanel({
   tutorCollapsed,
   lockedAnswerMode = false,
   guidedNotesMode = false,
+  guidedAudioAvailable = false,
+  guidedAudioPlaying = false,
   canSubmitAnswer = true,
   toggleTutor,
   studyTitle,
@@ -161,6 +167,8 @@ export function StudyCanvasPanel({
   recallHintText = null,
   recallHintRevealed = false,
   onRevealRecallHint,
+  onReplayGuidedAudio,
+  onStopGuidedAudio,
 }: StudyCanvasPanelProps) {
   const [referencesOpen, setReferencesOpen] = useState(false);
   const visibleReferences = useMemo(() => references.slice(0, 4), [references]);
@@ -226,6 +234,31 @@ export function StudyCanvasPanel({
                 ? t("study.guidedNotesMode")
                 : t("study.answerModeLocked")}
             </ThemedText>
+            {guidedAudioAvailable && (
+              <Pressable
+                style={styles.guidedAudioButton}
+                onPress={
+                  guidedAudioPlaying ? onStopGuidedAudio : onReplayGuidedAudio
+                }
+                accessibilityRole="button"
+                accessibilityLabel={
+                  guidedAudioPlaying
+                    ? t("study.stopGuidedAudio")
+                    : t("study.replayGuidedAudio")
+                }
+              >
+                <Ionicons
+                  name={guidedAudioPlaying ? "stop-circle" : "play-circle"}
+                  size={16}
+                  color={palette.primary}
+                />
+                <ThemedText style={styles.guidedAudioButtonText}>
+                  {guidedAudioPlaying
+                    ? t("study.stopGuidedAudio")
+                    : t("study.replayGuidedAudio")}
+                </ThemedText>
+              </Pressable>
+            )}
             <Pressable
               style={styles.referenceSummaryButton}
               onPress={() => setReferencesOpen(true)}

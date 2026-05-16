@@ -1283,6 +1283,22 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
             fontWeight: "700",
             flex: 1,
         },
+        guidedAudioButton: {
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 5,
+            borderRadius: Radii.pill,
+            borderWidth: 1,
+            borderColor: `${palette.primary}33`,
+            backgroundColor: palette.surface,
+            paddingVertical: 7,
+            paddingHorizontal: 10,
+        },
+        guidedAudioButtonText: {
+            color: palette.primary,
+            fontSize: 12,
+            fontWeight: "800",
+        },
         referenceSummaryButton: {
             flexDirection: "row",
             alignItems: "center",

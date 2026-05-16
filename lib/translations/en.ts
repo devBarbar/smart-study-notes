@@ -397,6 +397,8 @@ const en = {
   'study.recallTimer': 'Read, understand, and memorize. Tutor hides in {{seconds}}s.',
   'study.answerModeLocked': 'Answer from memory. The tutor will return after you submit.',
   'study.guidedNotesMode': 'Write listening notes. The question appears on a clean answer page when the explanation ends.',
+  'study.replayGuidedAudio': 'Replay audio',
+  'study.stopGuidedAudio': 'Stop audio',
   'study.setupTitle': 'Before we test',
   'study.setupSubtitle': 'Choose the tutoring style, review the basics, then start with recognition questions.',
   'study.modeBeginner': 'Beginner',

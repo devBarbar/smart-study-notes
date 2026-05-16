@@ -18,7 +18,11 @@ import React, {
   useState,
 } from "react";
 import { StyleSheet, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  Gesture,
+  GestureDetector,
+  PointerType,
+} from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
 
 import {
@@ -178,6 +182,14 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const onDrawingEndRef = useRef(onDrawingEnd);
     const onStrokesChangeRef = useRef(onStrokesChange);
 
+    const isStylusEvent = useCallback(
+      (event: { pointerType?: PointerType; stylusData?: unknown }) =>
+        isStylusActiveRef.current ||
+        event.pointerType === PointerType.STYLUS ||
+        event.stylusData !== undefined,
+      [],
+    );
+
     modeRef.current = currentMode;
     colorRef.current = currentColor;
     strokeWidthRef.current = currentStrokeWidth;
@@ -281,17 +293,20 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     const panGesture = Gesture.Pan()
       .enabled(!readOnly)
+      .manualActivation(true)
       .minDistance(0)
       .minPointers(1)
       .maxPointers(1)
-      .onBegin((event) => {
-        const evt = event as any;
-        const isLikelyStylus =
-          isStylusActiveRef.current ||
-          evt.stylusData !== undefined ||
-          (typeof evt.force === "number" && evt.force > 0);
+      .onTouchesDown((event, state) => {
+        if (event.numberOfTouches === 1 && isStylusEvent(event)) {
+          state.activate();
+          return;
+        }
 
-        if (!isLikelyStylus) return;
+        state.fail();
+      })
+      .onBegin((event) => {
+        if (!isStylusEvent(event)) return;
 
         const point = { x: event.x, y: event.y };
         isDrawingRef.current = true;

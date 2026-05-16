@@ -397,6 +397,8 @@ const de = {
   'study.recallTimer': 'Lies, verstehe und merke es dir. Der Tutor wird in {{seconds}}s ausgeblendet.',
   'study.answerModeLocked': 'Antworte aus dem Gedächtnis. Der Tutor kommt nach dem Absenden zurück.',
   'study.guidedNotesMode': 'Schreibe Hörnotizen. Die Frage erscheint nach der Erklärung auf einer leeren Antwortseite.',
+  'study.replayGuidedAudio': 'Audio erneut abspielen',
+  'study.stopGuidedAudio': 'Audio stoppen',
   'study.setupTitle': 'Bevor wir testen',
   'study.setupSubtitle': 'Wähle den Tutor-Modus, lies die Grundlagen und starte dann mit Erkennungsfragen.',
   'study.modeBeginner': 'Einsteiger',

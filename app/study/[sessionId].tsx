@@ -214,6 +214,11 @@ type PendingGuidedQuestion = {
   tutorQuestion: NonNullable<StudyChatMessage["tutorQuestion"]>;
 };
 
+type GuidedAudioReplay = {
+  messageId: string;
+  text: string;
+};
+
 type FinalQuizAnswer = {
   questionId: string;
   prompt: string;
@@ -875,6 +880,8 @@ export default function StudySessionScreen() {
   const pendingTtsMessageIdRef = useRef<string | null>(null);
   const guidedQuestionReadyRef = useRef(false);
   const pendingGuidedQuestionRef = useRef<PendingGuidedQuestion | null>(null);
+  const [guidedAudioReplay, setGuidedAudioReplay] =
+    useState<GuidedAudioReplay | null>(null);
   const finishGuidedNotesStageRef = useRef<() => void>(() => undefined);
 
   // Scroll control for stylus drawing
@@ -2172,10 +2179,16 @@ export default function StudySessionScreen() {
     setIsSpeaking(false);
     setActiveTtsMessageId(null);
     pendingTtsMessageIdRef.current = null;
-    if (pendingGuidedQuestionRef.current) {
-      setTimeout(() => finishGuidedNotesStageRef.current(), 0);
-    }
   }, []);
+
+  const replayGuidedAudio = useCallback(async () => {
+    if (!guidedAudioReplay?.text) return;
+    if (!ttsEnabled) {
+      setTtsEnabled(true);
+    }
+    pendingTtsMessageIdRef.current = guidedAudioReplay.messageId;
+    await ttsPlayerRef.current?.speak(guidedAudioReplay.text);
+  }, [guidedAudioReplay, ttsEnabled]);
 
   const finishGuidedNotesStage = useCallback(() => {
     const guidedQuestion =
@@ -2743,6 +2756,10 @@ export default function StudySessionScreen() {
                   questionText,
                   tutorQuestion: tutorQuestionForMessage,
                 };
+                setGuidedAudioReplay({
+                  messageId: aiMsgId,
+                  text: explanationOnlyText,
+                });
                 guidedQuestionReadyRef.current = false;
                 pendingGuidedQuestionRef.current = guidedQuestion;
                 setPendingGuidedQuestion(guidedQuestion);
@@ -2752,6 +2769,8 @@ export default function StudySessionScreen() {
                 setStudyPhase("guided_notes");
                 ensureCanvasStagePage("guided_notes", aiMsgId);
                 pageScrollRef.current?.scrollTo({ y: 0, animated: true });
+              } else {
+                setGuidedAudioReplay(null);
               }
 
               // 1. Add visual blocks first, stacked below existing content
@@ -4633,6 +4652,12 @@ export default function StudySessionScreen() {
           tutorCollapsed
           lockedAnswerMode
           guidedNotesMode={studyPhase === "guided_notes"}
+          guidedAudioAvailable={Boolean(guidedAudioReplay?.text)}
+          guidedAudioPlaying={
+            Boolean(guidedAudioReplay?.messageId) &&
+            activeTtsMessageId === guidedAudioReplay?.messageId &&
+            isSpeaking
+          }
           canSubmitAnswer={studyPhase !== "guided_notes"}
           toggleTutor={toggleTutor}
           studyTitle={studyTitle}
@@ -4682,6 +4707,8 @@ export default function StudySessionScreen() {
           recallHintText={recallHintText}
           recallHintRevealed={recallHintRevealed}
           onRevealRecallHint={() => setRecallHintRevealed(true)}
+          onReplayGuidedAudio={replayGuidedAudio}
+          onStopGuidedAudio={stopSpeaking}
         />
       ) : (
         <StudyChatPanel
