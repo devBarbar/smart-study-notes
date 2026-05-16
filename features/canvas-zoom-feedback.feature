@@ -1,0 +1,30 @@
+Feature: Canvas zoom and inline grading feedback
+  Students can resize the answer canvas and see tutor grading directly below their answer.
+
+  Scenario: Zoom controls make the canvas smaller and larger
+    Given the study canvas zoom harness is open
+    When the student zooms out
+    Then the canvas zoom reads "75%"
+    When the student zooms in
+    And the student zooms in
+    Then the canvas zoom reads "125%"
+    When the student resets zoom
+    Then the canvas zoom reads "100%"
+
+  Scenario: Pinch zoom resizes without drawing
+    Given the study canvas zoom harness is open
+    When the student pinches the canvas larger
+    Then the canvas zoom reads "150%"
+    And no handwriting stroke is created
+
+  Scenario: Failed grading appears below the answer in red
+    Given the inline grading harness has a failed answer
+    When the tutor writes feedback below the answer
+    Then the canvas feedback is red
+    And the canvas feedback includes "Missing the key cause"
+
+  Scenario: Passing grading appears below the answer in green
+    Given the inline grading harness has a passed answer
+    When the tutor writes feedback below the answer
+    Then the canvas feedback is green
+    And the canvas feedback includes "Named the key idea"

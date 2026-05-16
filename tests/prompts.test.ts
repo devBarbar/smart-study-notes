@@ -25,6 +25,7 @@ test('gradingPrompt mentions question text', () => {
   assert.match(prompt, /canCountForPass/);
   assert.match(prompt, /scores at least 90/i);
   assert.match(prompt, /whatWentWrong/);
+  assert.match(prompt, /whatWentRight/);
   assert.match(prompt, /correctAnswer/);
   assert.match(prompt, /rewriteExample/);
   assert.match(prompt, /sourceCitationIds/);

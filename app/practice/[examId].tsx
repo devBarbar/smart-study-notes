@@ -69,6 +69,7 @@ const normalizeFeedback = (raw: unknown): StudyFeedback | undefined => {
     ...merged,
     summary: typeof merged.summary === 'string' ? stripFeedbackCodeFence(merged.summary) : '',
     correctness: typeof merged.correctness === 'string' ? merged.correctness : 'unknown',
+    whatWentRight: Array.isArray(merged.whatWentRight) ? merged.whatWentRight : [],
     whatWentWrong: Array.isArray(merged.whatWentWrong) ? merged.whatWentWrong : [],
     improvements: Array.isArray(merged.improvements) ? merged.improvements : [],
     misconceptions: Array.isArray(merged.misconceptions) ? merged.misconceptions : [],

@@ -120,6 +120,7 @@ Return JSON only:
   "summary": "focused teaching summary; for scores below 90, plainly name the main gap before anything else",
   "correctness": "correct | partially correct | incorrect",
   "score": 0-100,
+  "whatWentRight": ["1-3 concrete bullets naming what the student did correctly; use [] when nothing meaningful was correct"],
   "whatWentWrong": ["2-4 concrete bullets explaining exactly what was missing, wrong, or not readable"],
   "correctAnswer": "For scores below 90, give the correct source-consistent answer with enough detail to teach the gap. Use a short paragraph when enough, or several short paragraphs when the concept needs it.",
   "rewriteExample": "For scores below 90, provide an answer the student could have written to score 90+. It may be multi-sentence when needed.",
@@ -149,6 +150,7 @@ Depth grading rules:
 
 Feedback quality rules:
 - If score is below 90, be a tutor first and a grader second: make "whatWentWrong", "correctAnswer", and "rewriteExample" specific enough that the student knows exactly what to fix.
+- Always fill "whatWentRight" with specific strengths for correct or partially correct work. For incorrect or unreadable work, use [] unless there is a real strength to reinforce.
 - Do not hide the correct answer inside sourceNotes or generic improvements.
 - If the student wrote a request for help instead of answering, say that in "whatWentWrong" and still provide the correct answer.
 - If the handwriting image is present but unreadable, say "I could not read enough of the handwriting" instead of claiming no answer was provided.

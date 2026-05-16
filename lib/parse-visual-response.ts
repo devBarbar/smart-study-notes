@@ -1,5 +1,6 @@
 import {
   BulletData,
+  CanvasFeedbackBlockData,
   CanvasVisualBlock,
   DefinitionData,
   DiagramData,
@@ -313,6 +314,16 @@ export const estimateVisualBlockSize = (
       const width = 400;
       
       return { width, height };
+    }
+
+    case 'feedback': {
+      const data = block.data as CanvasFeedbackBlockData;
+      const detailCount =
+        data.whatWentRight.length +
+        data.whatWentWrong.length +
+        (data.correctAnswer ? 2 : 0) +
+        (data.rewriteExample ? 2 : 0);
+      return { width: 520, height: Math.max(132, 118 + detailCount * 24) };
     }
     
     default:

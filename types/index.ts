@@ -241,9 +241,24 @@ export type StepData = {
   }[];
 };
 
-export type VisualBlockType = 'diagram' | 'bullets' | 'definition' | 'steps';
+export type CanvasFeedbackBlockData = {
+  status: 'passed' | 'failed';
+  score?: number;
+  summary: string;
+  whatWentRight: string[];
+  whatWentWrong: string[];
+  correctAnswer?: string;
+  rewriteExample?: string;
+};
 
-export type VisualBlockData = DiagramData | BulletData | DefinitionData | StepData;
+export type VisualBlockType = 'diagram' | 'bullets' | 'definition' | 'steps' | 'feedback';
+
+export type VisualBlockData =
+  | DiagramData
+  | BulletData
+  | DefinitionData
+  | StepData
+  | CanvasFeedbackBlockData;
 
 export type CanvasVisualBlock = {
   id: string;
@@ -332,6 +347,7 @@ export type StudyFeedback = {
   summary: string;
   correctness: string;
   score?: number;
+  whatWentRight?: string[];
   whatWentWrong?: string[];
   correctAnswer?: string;
   rewriteExample?: string;

@@ -262,7 +262,12 @@ export const createStudyStyles = (palette: typeof Colors.light) =>
         },
         canvasWrapper: {
             position: "relative",
+            transformOrigin: "top left",
             // width and height are set dynamically via inline style
+        },
+        canvasScaledWrapper: {
+            position: "relative",
+            overflow: "visible",
         },
         gradingCanvasOverlay: {
             position: "absolute",

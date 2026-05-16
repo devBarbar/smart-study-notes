@@ -11,6 +11,13 @@ type Props = {
   onColorChange: (color: string) => void;
   onClear: () => void;
   onUndo: () => void;
+  zoomLabel?: string;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
+  zoomInLabel?: string;
+  zoomOutLabel?: string;
+  zoomResetLabel?: string;
   variant?: 'inline' | 'floating';
 };
 
@@ -30,9 +37,17 @@ export const CanvasToolbar = ({
   onColorChange,
   onClear,
   onUndo,
+  zoomLabel,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
+  zoomInLabel = 'Zoom in',
+  zoomOutLabel = 'Zoom out',
+  zoomResetLabel = 'Reset zoom',
   variant = 'inline',
 }: Props) => {
   const floating = variant === 'floating';
+  const showZoomControls = Boolean(onZoomIn && onZoomOut && onZoomReset && zoomLabel);
 
   return (
     <View style={[styles.container, floating && styles.containerFloating]}>
@@ -84,6 +99,45 @@ export const CanvasToolbar = ({
           )}
         </Pressable>
       </View>
+
+      {showZoomControls && (
+        <View style={styles.section}>
+          <Pressable
+            style={[styles.actionButton, floating && styles.actionButtonFloating]}
+            onPress={onZoomOut}
+            accessibilityRole="button"
+            accessibilityLabel={zoomOutLabel}
+          >
+            <Ionicons
+              name="remove"
+              size={18}
+              color={floating ? '#cbd5e1' : '#64748b'}
+            />
+          </Pressable>
+          <Pressable
+            style={[styles.zoomValueButton, floating && styles.zoomValueFloating]}
+            onPress={onZoomReset}
+            accessibilityRole="button"
+            accessibilityLabel={zoomResetLabel}
+          >
+            <ThemedText style={[styles.zoomValueText, floating && styles.zoomValueTextFloating]}>
+              {zoomLabel}
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            style={[styles.actionButton, floating && styles.actionButtonFloating]}
+            onPress={onZoomIn}
+            accessibilityRole="button"
+            accessibilityLabel={zoomInLabel}
+          >
+            <Ionicons
+              name="add"
+              size={18}
+              color={floating ? '#cbd5e1' : '#64748b'}
+            />
+          </Pressable>
+        </View>
+      )}
 
       <View style={styles.section}>
         {!floating && <ThemedText style={styles.sectionLabel}>Color</ThemedText>}
@@ -257,5 +311,25 @@ const styles = StyleSheet.create({
   clearLabel: {
     color: '#dc2626',
   },
+  zoomValueButton: {
+    minWidth: 58,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+  },
+  zoomValueFloating: {
+    height: 38,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  zoomValueText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#475569',
+  },
+  zoomValueTextFloating: {
+    color: '#e2e8f0',
+  },
 });
-

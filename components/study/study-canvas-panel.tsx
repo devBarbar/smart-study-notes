@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { RefObject, useMemo, useState } from "react";
+import { RefObject, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   LayoutChangeEvent,
@@ -9,6 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { AnimatedStyle } from "react-native-reanimated";
 
 import { CanvasToolbar } from "@/components/canvas-toolbar";
@@ -27,6 +28,13 @@ import {
 import { ThemedText } from "@/components/themed-text";
 import { NativeTextInput } from "@/components/ui/native-primitives";
 import { Colors } from "@/constants/theme";
+import {
+  CANVAS_ZOOM_DEFAULT,
+  getCanvasZoomPercentLabel,
+  getNextCanvasZoom,
+  getScaledCanvasSize,
+  scaleCanvasZoomByPinch,
+} from "@/lib/canvas-zoom";
 import {
   CanvasAnswerMarker,
   CanvasBounds,
@@ -171,7 +179,23 @@ export function StudyCanvasPanel({
   onStopGuidedAudio,
 }: StudyCanvasPanelProps) {
   const [referencesOpen, setReferencesOpen] = useState(false);
+  const [canvasZoom, setCanvasZoom] = useState(CANVAS_ZOOM_DEFAULT);
+  const pinchStartZoomRef = useRef(CANVAS_ZOOM_DEFAULT);
   const visibleReferences = useMemo(() => references.slice(0, 4), [references]);
+  const zoomLabel = getCanvasZoomPercentLabel(canvasZoom);
+  const scaledCanvasSize = getScaledCanvasSize(canvasSize, canvasZoom);
+  const pinchGesture = useMemo(
+    () =>
+      Gesture.Pinch()
+        .onBegin(() => {
+          pinchStartZoomRef.current = canvasZoom;
+        })
+        .onUpdate((event) => {
+          setCanvasZoom(scaleCanvasZoomByPinch(pinchStartZoomRef.current, event.scale));
+        })
+        .runOnJS(true),
+    [canvasZoom],
+  );
   const referenceCountLabel =
     references.length > 0
       ? t("study.referencesCount", { count: references.length })
@@ -481,99 +505,117 @@ export function StudyCanvasPanel({
               </View>
             </View>
           )}
-          <ScrollView
-            ref={canvasHScrollRef}
-            horizontal
-            scrollEnabled={scrollEnabled}
-            showsHorizontalScrollIndicator
-            contentContainerStyle={{ paddingBottom: 4 }}
-          >
+          <GestureDetector gesture={pinchGesture}>
             <ScrollView
-              ref={canvasScrollRef}
+              ref={canvasHScrollRef}
+              horizontal
               scrollEnabled={scrollEnabled}
-              showsVerticalScrollIndicator
-              contentContainerStyle={styles.canvasInnerVertical}
+              showsHorizontalScrollIndicator
+              contentContainerStyle={{ paddingBottom: 4 }}
             >
-              <View
-                style={[
-                  styles.canvasWrapper,
-                  { width: canvasSize.width, height: canvasSize.height },
-                ]}
-                onLayout={onCanvasLayout}
+              <ScrollView
+                ref={canvasScrollRef}
+                scrollEnabled={scrollEnabled}
+                showsVerticalScrollIndicator
+                contentContainerStyle={styles.canvasInnerVertical}
               >
-                {highlightedAnswerLinkId && (
+                <View
+                  style={[
+                    styles.canvasScaledWrapper,
+                    {
+                      width: scaledCanvasSize.width,
+                      height: scaledCanvasSize.height,
+                    },
+                  ]}
+                >
                   <View
                     style={[
-                      styles.canvasHighlight,
-                      highlightedBounds
-                        ? {
-                            top: highlightedBounds.y,
-                            left: highlightedBounds.x,
-                            width: highlightedBounds.width,
-                            height: highlightedBounds.height,
-                          }
-                        : styles.canvasHighlightFull,
-                      styles.canvasHighlightActive,
-                    ]}
-                    pointerEvents="none"
-                  />
-                )}
-                <HandwritingCanvas
-                  key={activePage?.id || "canvas-default"}
-                  ref={canvasRef}
-                  width={canvasSize.width}
-                  height={canvasSize.height}
-                  strokeColor={canvasColor}
-                  onDrawingStart={onDrawingStart}
-                  onDrawingEnd={onDrawingEnd}
-                  initialStrokes={initialCanvasStrokes}
-                  onStrokesChange={onCanvasStrokesChange}
-                />
-
-                {activeVisualBlocks.map((block) => (
-                  <CanvasVisualBlock
-                    key={block.id}
-                    block={block}
-                    highlighted={highlightedVisualBlockId === block.id}
-                    onPress={(blockId) => {
-                      onHighlightVisualBlock(blockId);
-                      setTimeout(() => onHighlightVisualBlock(null), 2000);
-                    }}
-                  />
-                ))}
-
-                {lastDrawingPosition && canSubmitAnswer && (
-                  <AnimatedPressable
-                    style={[
-                      styles.checkAnswerButton,
-                      checkButtonAnimatedStyle,
-                      checkButtonPosition && {
-                        top: checkButtonPosition.top,
-                        left: checkButtonPosition.left,
+                      styles.canvasWrapper,
+                      {
+                        width: canvasSize.width,
+                        height: canvasSize.height,
+                        transform: [{ scale: canvasZoom }],
                       },
                     ]}
-                    onPress={onSubmitAnswer}
-                    disabled={grading}
+                    onLayout={onCanvasLayout}
                   >
-                    {grading ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <>
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={20}
-                          color="#fff"
-                        />
-                        <ThemedText style={styles.checkAnswerButtonText}>
-                          {t("study.checkAnswer")}
-                        </ThemedText>
-                      </>
+                    {highlightedAnswerLinkId && (
+                      <View
+                        style={[
+                          styles.canvasHighlight,
+                          highlightedBounds
+                            ? {
+                                top: highlightedBounds.y,
+                                left: highlightedBounds.x,
+                                width: highlightedBounds.width,
+                                height: highlightedBounds.height,
+                              }
+                            : styles.canvasHighlightFull,
+                          styles.canvasHighlightActive,
+                        ]}
+                        pointerEvents="none"
+                      />
                     )}
-                  </AnimatedPressable>
-                )}
-              </View>
+                    <HandwritingCanvas
+                      key={activePage?.id || "canvas-default"}
+                      ref={canvasRef}
+                      width={canvasSize.width}
+                      height={canvasSize.height}
+                      strokeColor={canvasColor}
+                      coordinateScale={canvasZoom}
+                      onDrawingStart={onDrawingStart}
+                      onDrawingEnd={onDrawingEnd}
+                      initialStrokes={initialCanvasStrokes}
+                      onStrokesChange={onCanvasStrokesChange}
+                    />
+
+                    {activeVisualBlocks.map((block) => (
+                      <CanvasVisualBlock
+                        key={block.id}
+                        block={block}
+                        t={t}
+                        highlighted={highlightedVisualBlockId === block.id}
+                        onPress={(blockId) => {
+                          onHighlightVisualBlock(blockId);
+                          setTimeout(() => onHighlightVisualBlock(null), 2000);
+                        }}
+                      />
+                    ))}
+
+                    {lastDrawingPosition && canSubmitAnswer && (
+                      <AnimatedPressable
+                        style={[
+                          styles.checkAnswerButton,
+                          checkButtonAnimatedStyle,
+                          checkButtonPosition && {
+                            top: checkButtonPosition.top,
+                            left: checkButtonPosition.left,
+                          },
+                        ]}
+                        onPress={onSubmitAnswer}
+                        disabled={grading}
+                      >
+                        {grading ? (
+                          <ActivityIndicator color="#fff" size="small" />
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={20}
+                              color="#fff"
+                            />
+                            <ThemedText style={styles.checkAnswerButtonText}>
+                              {t("study.checkAnswer")}
+                            </ThemedText>
+                          </>
+                        )}
+                      </AnimatedPressable>
+                    )}
+                  </View>
+                </View>
+              </ScrollView>
             </ScrollView>
-          </ScrollView>
+          </GestureDetector>
         </View>
 
         {answerMarkers.length > 0 && (
@@ -626,6 +668,13 @@ export function StudyCanvasPanel({
           onColorChange={onCanvasColorChange}
           onClear={onClearCanvas}
           onUndo={onUndo}
+          zoomLabel={zoomLabel}
+          onZoomOut={() => setCanvasZoom((current) => getNextCanvasZoom(current, "out"))}
+          onZoomIn={() => setCanvasZoom((current) => getNextCanvasZoom(current, "in"))}
+          onZoomReset={() => setCanvasZoom((current) => getNextCanvasZoom(current, "reset"))}
+          zoomOutLabel={t("study.zoomOut")}
+          zoomInLabel={t("study.zoomIn")}
+          zoomResetLabel={t("study.zoomReset")}
           variant="floating"
         />
       </View>

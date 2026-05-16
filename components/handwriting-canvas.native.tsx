@@ -66,6 +66,7 @@ type Props = {
   onStrokesChange?: (strokes: CanvasStroke[]) => void;
   initialStrokes?: CanvasStroke[];
   readOnly?: boolean;
+  coordinateScale?: number;
 };
 
 type RenderStroke = CanvasStroke & {
@@ -130,6 +131,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       onStrokesChange,
       initialStrokes,
       readOnly = false,
+      coordinateScale = 1,
     },
     ref,
   ) => {
@@ -181,6 +183,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const onDrawingStartRef = useRef(onDrawingStart);
     const onDrawingEndRef = useRef(onDrawingEnd);
     const onStrokesChangeRef = useRef(onStrokesChange);
+    const coordinateScaleRef = useRef(coordinateScale);
 
     const isStylusEvent = useCallback(
       (event: { pointerType?: PointerType; stylusData?: unknown }) =>
@@ -196,6 +199,18 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     onDrawingStartRef.current = onDrawingStart;
     onDrawingEndRef.current = onDrawingEnd;
     onStrokesChangeRef.current = onStrokesChange;
+    coordinateScaleRef.current = coordinateScale;
+
+    const toCanvasPoint = useCallback(
+      (point: CanvasPoint): CanvasPoint => {
+        const scale = coordinateScaleRef.current || 1;
+        return {
+          x: point.x / scale,
+          y: point.y / scale,
+        };
+      },
+      [],
+    );
 
     const commitRenderStrokes = useCallback((strokes: RenderStroke[]) => {
       strokesRef.current = strokes;
@@ -308,7 +323,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       .onBegin((event) => {
         if (!isStylusEvent(event)) return;
 
-        const point = { x: event.x, y: event.y };
+        const point = toCanvasPoint({ x: event.x, y: event.y });
         isDrawingRef.current = true;
         lastDrawingPositionRef.current = point;
         onDrawingStartRef.current?.();
@@ -322,7 +337,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       .onUpdate((event) => {
         if (!isDrawingRef.current) return;
 
-        const point = { x: event.x, y: event.y };
+        const point = toCanvasPoint({ x: event.x, y: event.y });
         lastDrawingPositionRef.current = point;
 
         if (modeRef.current === "eraser") {

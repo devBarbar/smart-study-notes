@@ -47,6 +47,7 @@ import {
   getModeLabel,
   shuffleStudyWarmupOptions,
 } from "@/lib/study/study-flow";
+import { insertCanvasFeedbackBlockBelowAnswer } from "@/lib/study/canvas-feedback";
 import {
   buildListeningNotesQuestion,
   getListeningNotesAudioText,
@@ -3171,6 +3172,35 @@ export default function StudySessionScreen() {
       const nextMissingCheckType = studyPlanEntryId
         ? getNextTutorCheckType(latestDepthChecks)
         : null;
+      const feedbackMessageId = uuid();
+      let insertedFeedbackBlock: CanvasVisualBlockType | null = null;
+      setCanvasPages((prev) => {
+        const result = insertCanvasFeedbackBlockBelowAnswer({
+          pages: prev,
+          pageId: activePageId,
+          messageId: feedbackMessageId,
+          feedback: {
+            ...feedback,
+            score: normalizedScore,
+          },
+          isPassed: isCheckPassed,
+          answerBounds: canvasBounds ?? undefined,
+        });
+        insertedFeedbackBlock = result.block;
+        saveCanvasPagesNow(result.pages);
+        return result.pages;
+      });
+      setTimeout(() => {
+        if (!insertedFeedbackBlock) return;
+        canvasScrollRef.current?.scrollTo({
+          y: Math.max(insertedFeedbackBlock.position.y - 24, 0),
+          animated: true,
+        });
+        canvasHScrollRef.current?.scrollTo({
+          x: Math.max(insertedFeedbackBlock.position.x - 24, 0),
+          animated: true,
+        });
+      }, 150);
 
       if (!isCheckPassed && feedback.misconceptions?.length && lectureId) {
         const savedMisconceptions = feedback.misconceptions.map((item) => ({
@@ -3284,6 +3314,10 @@ export default function StudySessionScreen() {
       const scoreText = typeof feedback.score === "number"
         ? `\n\n${t("study.scoreLabel", { score: feedback.score })}`
         : "";
+      const whatWentRightText =
+        feedback.whatWentRight && feedback.whatWentRight.length
+          ? `\n\n${t("study.feedback.whatWentRightIntro")}\n${feedback.whatWentRight.map((i) => `• ${i}`).join("\n")}`
+          : "";
       const whatWentWrongText =
         !isCheckPassed && feedback.whatWentWrong?.length
           ? `\n\n${t("study.feedback.whatWentWrongIntro")}\n${feedback.whatWentWrong.map((i) => `• ${i}`).join("\n")}`
@@ -3461,7 +3495,7 @@ export default function StudySessionScreen() {
               })}`
             : "";
 
-      const feedbackBaseText = `${correctnessText}\n\n${feedback.summary}${whatWentWrongText}${correctAnswerText}${rewriteExampleText}${improvementsText}${scoreText}${finalQuizText}${sourceNotesText}`;
+      const feedbackBaseText = `${correctnessText}\n\n${feedback.summary}${whatWentRightText}${whatWentWrongText}${correctAnswerText}${rewriteExampleText}${improvementsText}${scoreText}${finalQuizText}${sourceNotesText}`;
       const feedbackText = followUpQuestion
         ? `${feedbackBaseText}\n\n${t("study.feedback.askExplain")}${costText}${followUpText}`
         : `${feedbackBaseText}\n\n${t("study.feedback.askExplain")}${costText}`;
@@ -3476,7 +3510,6 @@ export default function StudySessionScreen() {
             assessmentKind: followUpQuestion.assessmentKind,
           }
         : undefined;
-      const feedbackMessageId = uuid();
       const shouldUseFeedbackListeningNotes =
         Boolean(followUpTutorQuestion) &&
         shouldUseListeningNotesFlow(followUpTutorQuestion);

@@ -7,6 +7,7 @@ import { Colors, Radii, Shadows } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   BulletData,
+  CanvasFeedbackBlockData,
   CanvasVisualBlock as CanvasVisualBlockType,
   DefinitionData,
   DiagramData,
@@ -14,6 +15,7 @@ import {
 } from '@/types';
 
 import { CanvasDiagram } from './canvas-diagram';
+import { getCanvasFeedbackToneColor } from '@/lib/study/canvas-feedback';
 
 // Constants for rendering
 const BULLET_LINE_HEIGHT = 28;
@@ -24,6 +26,7 @@ type Props = {
   block: CanvasVisualBlockType;
   onPress?: (blockId: string) => void;
   highlighted?: boolean;
+  t?: (key: string, params?: Record<string, any>) => string;
 };
 
 /**
@@ -340,10 +343,87 @@ const StepsRenderer: React.FC<{
   );
 };
 
+const FeedbackRenderer: React.FC<{
+  data: CanvasFeedbackBlockData;
+  width?: number;
+  t?: (key: string, params?: Record<string, any>) => string;
+}> = ({ data, width = 520, t }) => {
+  const toneColor = getCanvasFeedbackToneColor(data.status);
+  const softColor = data.status === 'passed' ? '#dcfce7' : '#fee2e2';
+  const title =
+    data.status === 'passed'
+      ? t?.('study.feedback.canvasPassed') ?? 'Tutor feedback: passed'
+      : t?.('study.feedback.canvasFailed') ?? 'Tutor feedback: needs work';
+  const scoreLabel = typeof data.score === 'number' ? `${Math.round(data.score)}/100` : null;
+  const sections = [
+    {
+      title: t?.('study.feedback.canvasWhatWentRight') ?? 'What you did right',
+      items: data.whatWentRight,
+      color: '#16a34a',
+    },
+    {
+      title: t?.('study.feedback.canvasWhatToFix') ?? 'What to fix',
+      items: data.whatWentWrong,
+      color: '#dc2626',
+    },
+  ].filter((section) => section.items.length > 0);
+
+  return (
+    <View
+      testID={`canvas-feedback-${data.status}`}
+      style={[
+        styles.feedbackCard,
+        { width, borderColor: toneColor, backgroundColor: softColor },
+      ]}
+    >
+      <View style={styles.feedbackHeader}>
+        <View style={[styles.feedbackStatusDot, { backgroundColor: toneColor }]} />
+        <ThemedText style={[styles.feedbackTitle, { color: toneColor }]}>
+          {title}
+        </ThemedText>
+        {scoreLabel && (
+          <ThemedText style={[styles.feedbackScore, { color: toneColor }]}>
+            {scoreLabel}
+          </ThemedText>
+        )}
+      </View>
+      <ThemedText style={styles.feedbackSummary}>{data.summary}</ThemedText>
+      {sections.map((section) => (
+        <View key={section.title} style={styles.feedbackSection}>
+          <ThemedText style={[styles.feedbackSectionTitle, { color: section.color }]}>
+            {section.title}
+          </ThemedText>
+          {section.items.map((item) => (
+            <ThemedText key={item} style={styles.feedbackBullet}>
+              {`\u2022 ${item}`}
+            </ThemedText>
+          ))}
+        </View>
+      ))}
+      {data.correctAnswer && (
+        <View style={styles.feedbackSection}>
+          <ThemedText style={styles.feedbackSectionTitle}>
+            {t?.('study.feedback.canvasCorrectAnswer') ?? 'Correct answer'}
+          </ThemedText>
+          <ThemedText style={styles.feedbackBody}>{data.correctAnswer}</ThemedText>
+        </View>
+      )}
+      {data.rewriteExample && (
+        <View style={styles.feedbackSection}>
+          <ThemedText style={styles.feedbackSectionTitle}>
+            {t?.('study.feedback.canvasRewriteExample') ?? 'A stronger answer'}
+          </ThemedText>
+          <ThemedText style={styles.feedbackBody}>{data.rewriteExample}</ThemedText>
+        </View>
+      )}
+    </View>
+  );
+};
+
 /**
  * Main container component that renders any type of visual block
  */
-export const CanvasVisualBlock: React.FC<Props> = ({ block, onPress, highlighted }) => {
+export const CanvasVisualBlock: React.FC<Props> = ({ block, onPress, highlighted, t }) => {
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
 
@@ -379,6 +459,14 @@ export const CanvasVisualBlock: React.FC<Props> = ({ block, onPress, highlighted
           <StepsRenderer
             data={block.data as StepData}
             position={{ x: 0, y: 0 }}
+          />
+        );
+      case 'feedback':
+        return (
+          <FeedbackRenderer
+            data={block.data as CanvasFeedbackBlockData}
+            width={block.size?.width}
+            t={t}
           />
         );
       default:
@@ -427,6 +515,56 @@ const styles = StyleSheet.create({
     borderRadius: Radii.md,
     borderWidth: 1,
     borderColor: '#fecaca',
+  },
+  feedbackCard: {
+    padding: 18,
+    borderRadius: Radii.md,
+    borderWidth: 2,
+    gap: 10,
+    ...Shadows.sm,
+  },
+  feedbackHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  feedbackStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  feedbackTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  feedbackScore: {
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  feedbackSummary: {
+    color: '#0f172a',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  feedbackSection: {
+    gap: 4,
+  },
+  feedbackSectionTitle: {
+    color: '#334155',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  feedbackBullet: {
+    color: '#1e293b',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  feedbackBody: {
+    color: '#1e293b',
+    fontSize: 13,
+    lineHeight: 19,
   },
 });
 

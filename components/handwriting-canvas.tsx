@@ -52,6 +52,7 @@ type Props = {
   onStrokesChange?: (strokes: CanvasStroke[]) => void;
   initialStrokes?: CanvasStroke[];
   readOnly?: boolean;
+  coordinateScale?: number;
 };
 
 const MIN_POINT_DISTANCE = 1.25;
@@ -178,6 +179,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       onStrokesChange,
       initialStrokes,
       readOnly = false,
+      coordinateScale = 1,
     },
     ref,
   ) => {
@@ -258,6 +260,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const onDrawingEndRef = useRef(onDrawingEnd);
 
     const onStrokesChangeRef = useRef(onStrokesChange);
+    const coordinateScaleRef = useRef(coordinateScale);
 
     modeRef.current = currentMode;
     colorRef.current = currentColor;
@@ -265,6 +268,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     onDrawingStartRef.current = onDrawingStart;
     onDrawingEndRef.current = onDrawingEnd;
     onStrokesChangeRef.current = onStrokesChange;
+    coordinateScaleRef.current = coordinateScale;
 
     const eraseAtPoint = useCallback(
       (point: Point) => {
@@ -309,13 +313,18 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       onStrokesChangeRef.current?.(serializeStrokes(strokesRef.current));
     }, [flushRender]);
 
+    const scalePoint = useCallback((point: Point): Point => {
+      const scale = coordinateScaleRef.current || 1;
+      return { x: point.x / scale, y: point.y / scale };
+    }, []);
+
     const getWebPoint = useCallback((event: any): Point => {
       const nativeEvent = event.nativeEvent ?? event;
       if (
         typeof nativeEvent.locationX === "number" &&
         typeof nativeEvent.locationY === "number"
       ) {
-        return { x: nativeEvent.locationX, y: nativeEvent.locationY };
+        return scalePoint({ x: nativeEvent.locationX, y: nativeEvent.locationY });
       }
 
       const target = nativeEvent.currentTarget ?? event.currentTarget;
@@ -325,14 +334,14 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         typeof nativeEvent.clientX === "number" &&
         typeof nativeEvent.clientY === "number"
       ) {
-        return {
+        return scalePoint({
           x: nativeEvent.clientX - bounds.left,
           y: nativeEvent.clientY - bounds.top,
-        };
+        });
       }
 
       return { x: 0, y: 0 };
-    }, []);
+    }, [scalePoint]);
 
     const beginWebDrawing = useCallback(
       (event: any) => {
@@ -412,7 +421,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         if (isLikelyStylus) {
           isDrawingRef.current = true;
           onDrawingStartRef.current?.();
-          const point = { x: event.x, y: event.y };
+          const point = scalePoint({ x: event.x, y: event.y });
           lastDrawingPositionRef.current = point; // Track position from start
           if (modeRef.current === "eraser") {
             eraseAtPoint(point);
@@ -429,7 +438,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           (typeof evt.force === "number" && evt.force > 0);
 
         if (isLikelyStylus) {
-          const point = { x: event.x, y: event.y };
+          const point = scalePoint({ x: event.x, y: event.y });
           lastDrawingPositionRef.current = point; // Track last position
           if (modeRef.current === "eraser") {
             eraseAtPoint(point);

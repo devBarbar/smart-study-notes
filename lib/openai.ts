@@ -176,6 +176,7 @@ export const evaluateAnswer = async (
       summary: data.feedback.summary ?? 'No summary',
       correctness: data.feedback.correctness ?? 'unknown',
       score: data.feedback.score ?? undefined,
+      whatWentRight: data.feedback.whatWentRight ?? [],
       whatWentWrong: data.feedback.whatWentWrong ?? [],
       correctAnswer: data.feedback.correctAnswer ?? undefined,
       rewriteExample: data.feedback.rewriteExample ?? undefined,
