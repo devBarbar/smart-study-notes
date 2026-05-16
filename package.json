@@ -18,7 +18,10 @@
     "test:cucumber": "cucumber-js",
     "test:cucumber:coverage": "node scripts/check-cucumber-coverage.js",
     "test:unit:coverage": "node scripts/check-unit-coverage.js",
-    "test:coverage": "npm run test:unit:coverage && npm run test:cucumber:coverage"
+    "test:coverage": "npm run test:unit:coverage && npm run test:cucumber:coverage",
+    "test:performance": "TEST_RUNNER_ARGS='--runInBand --config jest.reassure.config.js' node scripts/reassure-measure.js",
+    "test:performance:precommit": "REASSURE_RUNS=2 REASSURE_WARMUP_RUNS=0 npm run test:performance -- --silent",
+    "test:performance:compare": "bash ./scripts/reassure-tests.sh"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.36",
@@ -83,15 +86,20 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@babel/core": "7.29.0",
     "@babel/register": "^7.29.3",
     "@cucumber/cucumber": "^12.9.0",
     "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "30.0.0",
     "@types/node": "^25.7.0",
     "@types/react": "~19.2.10",
+    "babel-jest": "30.4.1",
     "eslint": "^9.39.4",
     "eslint-config-expo": "~56.0.3",
+    "jest": "30.4.2",
     "msw": "^2.14.6",
     "react-test-renderer": "^19.2.3",
+    "reassure": "1.4.1",
     "ts-node": "^10.9.2",
     "typescript": "~6.0.3",
     "v8-to-istanbul": "^9.3.0"

@@ -39,6 +39,7 @@ yarn-error.*
 # coverage
 .coverage/
 .coverage-tmp/
+.reassure/
 
 app-example
 
