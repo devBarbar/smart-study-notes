@@ -23,6 +23,12 @@ import { useLectures } from '@/hooks/use-lectures';
 import { usePracticeExams } from '@/hooks/use-practice-exams';
 import { useSessions } from '@/hooks/use-sessions';
 import { exportCheatSheetPdf } from '@/lib/cheat-sheet-export';
+import {
+  getMostRecentSession,
+  pickMoreRecentSession,
+  selectOverviewSessionAction,
+  sortSessionsByRecency,
+} from '@/lib/lecture-session-routing';
 import { enqueueCheatSheetRefresh, generateCheatSheet, generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
 import { createSession, deleteLecture, enqueueLecturePlanGeneration, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, markLectureCheatSheetPending, saveLectureCheatSheetSettings, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
 import { PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
@@ -33,35 +39,6 @@ const stripCodeFences = (text: string) => {
 };
 
 type TabKey = 'overview' | 'studyPlan' | 'flashcards' | 'practice' | 'cheatSheet' | 'materials';
-
-const getSessionTime = (session: StudySession) => {
-  const time = Date.parse(session.createdAt);
-  return Number.isNaN(time) ? 0 : time;
-};
-
-const pickMoreRecentSession = (
-  current: StudySession | null,
-  candidate: StudySession
-) => {
-  if (!current) return candidate;
-  return getSessionTime(candidate) > getSessionTime(current) ? candidate : current;
-};
-
-const getMostRecentSession = (
-  sessions: StudySession[],
-  matches: (session: StudySession) => boolean
-) =>
-  sessions.reduce<StudySession | null>(
-    (latest, session) => (matches(session) ? pickMoreRecentSession(latest, session) : latest),
-    null
-  );
-
-const sortSessionsByRecency = (sessions: StudySession[]) =>
-  [...sessions].sort((a, b) => {
-    const timeDifference = getSessionTime(b) - getSessionTime(a);
-    if (timeDifference !== 0) return timeDifference;
-    return b.id.localeCompare(a.id);
-  });
 
 export default function LectureDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -731,31 +708,28 @@ export default function LectureDetailScreen() {
 
   // Smart Next Action CTA logic
   const getSmartAction = useCallback(() => {
-    if (!hasStudyPlan) {
-      return { type: 'generate' as const, label: t('lectureDetail.generatePlan'), icon: 'flash' as const };
+    const action = selectOverviewSessionAction({
+      hasStudyPlan,
+      orderedPlan,
+      passedCount: sectionStatusCounts.passed,
+      existingFullSession,
+      existingEntrySessions,
+    });
+
+    switch (action.type) {
+      case 'generate':
+        return { ...action, label: t('lectureDetail.generatePlan'), icon: 'flash' as const };
+      case 'practice':
+        return { ...action, label: t('practiceExam.generate'), icon: 'clipboard' as const };
+      case 'continue':
+        return { ...action, label: t('lectureDetail.continueSession'), icon: 'play' as const };
+      case 'continueTopic':
+        return { ...action, label: t('lectureDetail.continue'), icon: 'play' as const };
+      case 'startTopic':
+        return { ...action, label: t('lectureDetail.startSession'), icon: 'play' as const };
+      case 'study':
+        return { ...action, label: t('lectureDetail.studyAll'), icon: 'school' as const };
     }
-    
-    const allPassed = sectionStatusCounts.passed === orderedPlan.length && orderedPlan.length > 0;
-    
-    if (allPassed) {
-      return { type: 'practice' as const, label: t('practiceExam.generate'), icon: 'clipboard' as const };
-    }
-    
-    if (existingFullSession) {
-      return { type: 'continue' as const, label: t('lectureDetail.continueSession'), icon: 'play' as const };
-    }
-    
-    // Find the first incomplete topic as suggested next
-    const suggestedEntry = orderedPlan.find(e => e.status !== 'passed');
-    if (suggestedEntry) {
-      const session = existingEntrySessions[suggestedEntry.id];
-      if (session) {
-        return { type: 'continueTopic' as const, label: t('lectureDetail.continue'), icon: 'play' as const, entry: suggestedEntry };
-      }
-      return { type: 'startTopic' as const, label: t('lectureDetail.startSession'), icon: 'play' as const, entry: suggestedEntry };
-    }
-    
-    return { type: 'study' as const, label: t('lectureDetail.studyAll'), icon: 'school' as const };
   }, [hasStudyPlan, sectionStatusCounts.passed, orderedPlan, existingFullSession, existingEntrySessions, t]);
 
   const smartAction = getSmartAction();
@@ -769,13 +743,10 @@ export default function LectureDetailScreen() {
         setActiveTab('practice');
         break;
       case 'continue':
-        if (existingFullSession) continueSession(existingFullSession);
+        continueSession(smartAction.session);
         break;
       case 'continueTopic':
-        if (smartAction.entry) {
-          const session = existingEntrySessions[smartAction.entry.id];
-          if (session) continueSession(session);
-        }
+        continueSession(smartAction.session);
         break;
       case 'startTopic':
         if (smartAction.entry) startSession(smartAction.entry);
@@ -784,7 +755,7 @@ export default function LectureDetailScreen() {
         startSession();
         break;
     }
-  }, [continueSession, existingEntrySessions, existingFullSession, generatePlan, smartAction, startSession]);
+  }, [continueSession, generatePlan, smartAction, startSession]);
 
   // Find suggested next topic for the roadmap integration
   const suggestedNextEntry = useMemo(() => {
@@ -899,7 +870,7 @@ export default function LectureDetailScreen() {
               <ThemedText type="defaultSemiBold" style={styles.smartActionText}>
                 {smartAction.label}
               </ThemedText>
-              {smartAction.entry && (
+              {'entry' in smartAction && (
                 <ThemedText style={styles.smartActionSubtext}>
                   {smartAction.entry.title}
                 </ThemedText>
