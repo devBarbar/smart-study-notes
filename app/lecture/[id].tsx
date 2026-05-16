@@ -30,7 +30,9 @@ import {
   sortSessionsByRecency,
 } from '@/lib/lecture-session-routing';
 import { enqueueCheatSheetRefresh, generateCheatSheet, generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
-import { createSession, deleteLecture, enqueueLecturePlanGeneration, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, markLectureCheatSheetPending, saveLectureCheatSheetSettings, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
+import { getLectureProgressResetInvalidationKeys } from '@/lib/lecture-progress-reset';
+import { resetLectureProgress } from '@/lib/lecture-progress-reset-service';
+import { createSession, deleteLecture, enqueueLecturePlanGeneration, getCurrentUser, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, markLectureCheatSheetPending, saveLectureCheatSheetSettings, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
 import { PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 
 const stripCodeFences = (text: string) => {
@@ -81,6 +83,7 @@ export default function LectureDetailScreen() {
   const [creatingPracticeExam, setCreatingPracticeExam] = useState(false);
   const [questionCount, setQuestionCount] = useState('5');
   const [deletingLecture, setDeletingLecture] = useState(false);
+  const [resettingProgress, setResettingProgress] = useState(false);
   const [creatingClusterQuiz, setCreatingClusterQuiz] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedEntries, setExpandedEntries] = useState<Record<string, boolean>>({});
@@ -356,6 +359,56 @@ export default function LectureDetailScreen() {
       ]
     );
   }, [deletingLecture, lecture, performDeleteLecture, t]);
+
+  const performResetProgress = useCallback(async () => {
+    if (!lecture) return;
+    setResettingProgress(true);
+    try {
+      const counts = await resetLectureProgress(lecture.id, {
+        client: getSupabase(),
+        requireUser: getCurrentUser,
+      });
+      setReadiness(undefined);
+      setRoadmap(undefined);
+      await Promise.all(
+        getLectureProgressResetInvalidationKeys(lecture.id).map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey })
+        )
+      );
+      await Promise.all([
+        refetch(),
+        refetchSessions(),
+        refetchPracticeExams(),
+        refetchFlashcardCount(),
+      ]);
+      Alert.alert(
+        t('lectureDetail.resetProgressSuccessTitle'),
+        t('lectureDetail.resetProgressSuccessBody', {
+          sessions: counts.sessions,
+          flashcards: counts.flashcards,
+          practiceExams: counts.practiceExams,
+        })
+      );
+    } catch (err) {
+      console.warn('[lecture] reset progress failed', err);
+      Alert.alert(t('common.errorGeneric'), t('lectureDetail.resetProgressError'));
+    } finally {
+      setResettingProgress(false);
+    }
+  }, [lecture, queryClient, refetch, refetchFlashcardCount, refetchPracticeExams, refetchSessions, t]);
+
+  const confirmResetProgress = useCallback(() => {
+    if (!lecture || resettingProgress) return;
+    setShowMoreMenu(false);
+    Alert.alert(
+      t('lectureDetail.resetProgressTitle'),
+      t('lectureDetail.resetProgressConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('lectureDetail.resetProgressConfirmCta'), style: 'destructive', onPress: performResetProgress },
+      ]
+    );
+  }, [lecture, performResetProgress, resettingProgress, t]);
 
   const buildPlanSettingsDraft = useCallback((): PlanSettings => {
     const settings: PlanSettings = {
@@ -1627,6 +1680,18 @@ export default function LectureDetailScreen() {
             <Pressable style={styles.moreMenuItem} onPress={generatePlan} disabled={generatingPlan}>
               <Ionicons name="refresh" size={18} color={palette.text} />
               <ThemedText>{t('lectureDetail.regenerate')}</ThemedText>
+            </Pressable>
+            <Pressable
+              style={[styles.moreMenuItem, resettingProgress && styles.buttonDisabled]}
+              onPress={confirmResetProgress}
+              disabled={resettingProgress}
+            >
+              {resettingProgress ? (
+                <ActivityIndicator color={palette.text} size="small" />
+              ) : (
+                <Ionicons name="reload-circle" size={18} color={palette.text} />
+              )}
+              <ThemedText>{t('lectureDetail.resetProgressButton')}</ThemedText>
             </Pressable>
             <Pressable
               style={[styles.moreMenuItem, styles.moreMenuItemDanger]}
