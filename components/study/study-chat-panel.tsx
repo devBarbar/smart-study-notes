@@ -73,6 +73,8 @@ type StudyChatPanelProps = {
     index: number;
   };
   onToggleTutor: () => void;
+  canvasViewAvailable?: boolean;
+  onShowCanvas?: () => void;
   onToggleTts: () => void;
   onToggleListening: () => void;
   onStopSpeaking: () => void;
@@ -139,6 +141,8 @@ export function StudyChatPanel({
   chatListRef,
   getItemLayout,
   onToggleTutor,
+  canvasViewAvailable = false,
+  onShowCanvas,
   onToggleTts,
   onToggleListening,
   onStopSpeaking,
@@ -194,6 +198,20 @@ export function StudyChatPanel({
         onToggleListening={onToggleListening}
         onRestartSession={onRestartSession}
       />
+      {canvasViewAvailable && onShowCanvas && (
+        <Pressable
+          testID="study-chat-canvas-toggle"
+          style={styles.chatCanvasReturnButton}
+          onPress={onShowCanvas}
+          accessibilityRole="button"
+          accessibilityLabel={t("study.showCanvas")}
+        >
+          <Ionicons name="create-outline" size={17} color={palette.primary} />
+          <ThemedText style={styles.chatCanvasReturnText}>
+            {t("study.showCanvas")}
+          </ThemedText>
+        </Pressable>
+      )}
       <View style={styles.tutorFocusCard}>
         <View style={styles.tutorFocusIcon}>
           <Ionicons name="book-outline" size={15} color="#06b6d4" />

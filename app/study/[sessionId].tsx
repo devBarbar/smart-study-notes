@@ -73,6 +73,12 @@ import {
   WarmupState,
 } from "@/lib/study/study-session-types";
 import {
+  hasCanvasStudySurface,
+  resolveStudySessionSurface,
+  toggleStudySessionSurface,
+  type StudySessionSurfacePreference,
+} from "@/lib/study/study-view-toggle";
+import {
   dedupeVisualBlocks,
   estimateTokenCount,
   getVisualBlockBottom,
@@ -375,6 +381,8 @@ export default function StudySessionScreen() {
   const [grading, setGrading] = useState(false);
   const [isChatting, setIsChatting] = useState(false);
   const [answerLinks, setAnswerLinks] = useState<StudyAnswerLink[]>([]);
+  const [studySurfacePreference, setStudySurfacePreference] =
+    useState<StudySessionSurfacePreference>(null);
 
   // Canvas state
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("pen");
@@ -3984,6 +3992,31 @@ export default function StudySessionScreen() {
     setTutorCollapsed((prev) => !prev);
   }, []);
 
+  const canvasSurfaceAvailable = hasCanvasStudySurface(studyPhase, grading);
+  const activeStudySurface = resolveStudySessionSurface({
+    studyPhase,
+    grading,
+    preferredSurface: studySurfacePreference,
+  });
+
+  useEffect(() => {
+    if (!canvasSurfaceAvailable && studySurfacePreference !== null) {
+      setStudySurfacePreference(null);
+    }
+  }, [canvasSurfaceAvailable, studySurfacePreference]);
+
+  const toggleStudyView = useCallback(() => {
+    setStudySurfacePreference((currentPreference) => {
+      const currentSurface = resolveStudySessionSurface({
+        studyPhase,
+        grading,
+        preferredSurface: currentPreference,
+      });
+
+      return toggleStudySessionSurface(currentSurface, canvasSurfaceAvailable);
+    });
+  }, [canvasSurfaceAvailable, grading, studyPhase]);
+
   const handleToggleTts = useCallback(() => {
     if (isSpeaking) {
       stopSpeaking();
@@ -4061,8 +4094,7 @@ export default function StudySessionScreen() {
     );
   }
 
-  const showCanvasSurface =
-    studyPhase === "guided_notes" || studyPhase === "answer" || grading;
+  const showCanvasSurface = activeStudySurface === "canvas";
   const finalQuizProgressLabel =
     finalQuizState.status === "generating"
       ? t("study.finalQuizGenerating")
@@ -4137,7 +4169,7 @@ export default function StudySessionScreen() {
             isSpeaking
           }
           canSubmitAnswer={studyPhase !== "guided_notes"}
-          toggleTutor={toggleTutor}
+          toggleTutor={toggleStudyView}
           studyTitle={studyTitle}
           studyOutline={studyOutline}
           studyPlanEntry={studyPlanEntry}
@@ -4235,6 +4267,8 @@ export default function StudySessionScreen() {
           chatListRef={chatListRef}
           getItemLayout={getItemLayout}
           onToggleTutor={toggleTutor}
+          canvasViewAvailable={canvasSurfaceAvailable}
+          onShowCanvas={toggleStudyView}
           onToggleTts={handleToggleTts}
           onToggleListening={handleToggleListening}
           onStopSpeaking={stopSpeaking}

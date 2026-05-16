@@ -518,6 +518,7 @@ const de = {
   'study.stagePageLabel': '{{label}} {{number}}',
   'study.pageTitleLabel': 'Seitentitel:',
   'study.addPage': 'Seite hinzufügen',
+  'study.showCanvas': 'Antwortbereich anzeigen',
   'study.showTutor': 'KI-Tutor anzeigen',
   'study.hideTutor': 'KI-Tutor ausblenden',
   'study.restartSession': 'Sitzung neu starten',

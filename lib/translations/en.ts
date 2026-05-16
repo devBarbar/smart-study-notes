@@ -525,6 +525,7 @@ const en = {
   'study.stagePageLabel': '{{label}} {{number}}',
   'study.pageTitleLabel': 'Page title:',
   'study.addPage': 'Add page',
+  'study.showCanvas': 'Show answer canvas',
   'study.showTutor': 'Show AI Tutor',
   'study.hideTutor': 'Hide AI Tutor',
   'study.restartSession': 'Restart session',

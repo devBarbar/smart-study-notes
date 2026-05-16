@@ -230,6 +230,20 @@ export function StudyCanvasPanel({
         tutorCollapsed && styles.canvasColumnFullscreen,
       ]}
     >
+      <View pointerEvents="box-none" style={styles.studyViewToggleDock}>
+        <Pressable
+          testID="study-canvas-chat-toggle"
+          style={styles.studyViewToggleButton}
+          onPress={toggleTutor}
+          accessibilityRole="button"
+          accessibilityLabel={t("study.showTutor")}
+        >
+          <Ionicons name="chatbubbles" size={18} color={palette.success} />
+          <ThemedText style={styles.studyViewToggleText}>
+            {t("study.showTutor")}
+          </ThemedText>
+        </Pressable>
+      </View>
       <ScrollView
         ref={pageScrollRef}
         contentContainerStyle={styles.canvasArea}
