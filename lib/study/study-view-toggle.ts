@@ -17,6 +17,10 @@ export const resolveStudySessionSurface = ({
   grading: boolean;
   preferredSurface: StudySessionSurfacePreference;
 }): StudySessionSurface => {
+  if (grading) {
+    return "canvas";
+  }
+
   if (!hasCanvasStudySurface(studyPhase, grading)) {
     return "chat";
   }

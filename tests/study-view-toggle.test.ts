@@ -53,3 +53,14 @@ test("study session surface toggle switches between chat and canvas without chan
     "canvas",
   );
 });
+
+test("grading forces the canvas surface even when chat was previously selected", () => {
+  assert.equal(
+    resolveStudySessionSurface({
+      studyPhase: "grading",
+      grading: true,
+      preferredSurface: "chat",
+    }),
+    "canvas",
+  );
+});

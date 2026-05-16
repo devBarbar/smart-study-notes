@@ -27,7 +27,7 @@ import {
   resetSupabaseRequests,
   supabaseRequests,
 } from "../../tests/utils/supabase-msw";
-import { CanvasFeedbackBlockData, StudyFeedback } from "../../types";
+import { CanvasFeedbackBlockData, CanvasPage, StudyFeedback } from "../../types";
 import { AppWorld } from "../support/world";
 
 type FakeGesture = {
@@ -419,6 +419,47 @@ const InlineFeedbackPersistenceHarness = () => {
   );
 };
 
+const EmptyCanvasFeedbackHarness = () => {
+  const [pages, setPages] = useState<CanvasPage[]>([]);
+  const visibleFeedback = pages
+    .flatMap((page) => page.visualBlocks || [])
+    .find((block) => block.type === "feedback");
+  const visibleFeedbackData = visibleFeedback?.data as
+    | CanvasFeedbackBlockData
+    | undefined;
+
+  return (
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Write feedback"
+        onPress={() => {
+          const inserted = insertCanvasFeedbackBlockBelowAnswer({
+            pages,
+            pageId: "page-chat-only-answer",
+            messageId: "feedback-message-empty-canvas",
+            feedback: gradingPresets.failed.feedback,
+            isPassed: false,
+            id: "feedback-block-empty-canvas",
+            createdAt: "2026-05-16T00:00:00.000Z",
+          });
+          setPages(inserted.pages);
+        }}
+      >
+        <Text>Write feedback</Text>
+      </Pressable>
+      <Text testID="feedback-page-count">{pages.length}</Text>
+      {visibleFeedback?.type === "feedback" && (
+        <View testID="canvas-feedback">
+          {visibleFeedbackData?.whatWentWrong.map((item) => (
+            <Text key={`wrong-${item}`}>{item}</Text>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+};
+
 Given("the study canvas zoom harness is open", function (this: AppWorld) {
   this.screen = render(<CanvasZoomHarness />);
 });
@@ -441,6 +482,10 @@ Given(
     });
   },
 );
+
+Given("the inline grading harness has no canvas pages", function (this: AppWorld) {
+  this.screen = render(<EmptyCanvasFeedbackHarness />);
+});
 
 Given("the native Skia handwriting canvas is open", async function () {
   const mocks = installNativeCanvasMocks();
@@ -636,6 +681,10 @@ Then("only the feedback canvas save is sent", function () {
     ).canvas_pages[0].visualBlocks?.length,
     1,
   );
+});
+
+Then("the feedback canvas has one page", function (this: AppWorld) {
+  assert.equal(this.screen!.getByTestId("feedback-page-count").props.children, 1);
 });
 
 Then("the live ink uses a copied Skia path snapshot", async function () {

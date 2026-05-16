@@ -15,8 +15,8 @@ import {
 import { AppWorld } from "../support/world";
 
 const StudyViewToggleHarness = () => {
-  const studyPhase = "answer";
-  const grading = false;
+  const [studyPhase, setStudyPhase] = useState<"answer" | "grading">("answer");
+  const [grading, setGrading] = useState(false);
   const [preferredSurface, setPreferredSurface] =
     useState<StudySessionSurfacePreference>(null);
   const activeSurface = resolveStudySessionSurface({
@@ -32,10 +32,15 @@ const StudyViewToggleHarness = () => {
       ),
     );
   };
+  const submitAnswer = () => {
+    setStudyPhase("grading");
+    setGrading(true);
+  };
 
   return (
     <View>
       <Text testID="study-phase">{studyPhase}</Text>
+      {grading && <Text testID="canvas-grading-state">grading</Text>}
       {activeSurface === "canvas" ? (
         <View testID="answer-canvas-view">
           <Pressable
@@ -55,6 +60,13 @@ const StudyViewToggleHarness = () => {
           >
             <Text>Return to canvas</Text>
           </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Submit answer"
+            onPress={submitAnswer}
+          >
+            <Text>Submit answer</Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -69,12 +81,25 @@ Given(
   },
 );
 
+Given(
+  "the study session view toggle harness is on the tutor chat during answer mode",
+  function (this: AppWorld) {
+    this.screen = render(<StudyViewToggleHarness />);
+    fireEvent.press(this.screen.getByText("Open tutor chat"));
+    assert.ok(this.screen.getByTestId("tutor-chat-view"));
+  },
+);
+
 When("the student opens the tutor chat from the canvas", function (this: AppWorld) {
   fireEvent.press(this.screen!.getByText("Open tutor chat"));
 });
 
 When("the student returns to the answer canvas", function (this: AppWorld) {
   fireEvent.press(this.screen!.getByText("Return to canvas"));
+});
+
+When("the student submits an answer from the chat", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Submit answer"));
 });
 
 Then("the tutor chat view is visible", function (this: AppWorld) {
@@ -87,4 +112,11 @@ Then("the answer canvas view is visible", function (this: AppWorld) {
 
 Then("the answer phase is still active", function (this: AppWorld) {
   assert.equal(this.screen!.getByTestId("study-phase").props.children, "answer");
+});
+
+Then("the canvas grading state is visible", function (this: AppWorld) {
+  assert.equal(
+    this.screen!.getByTestId("canvas-grading-state").props.children,
+    "grading",
+  );
 });

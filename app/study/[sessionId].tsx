@@ -2976,6 +2976,7 @@ export default function StudySessionScreen() {
     setMemorizationSecondsRemaining(null);
     setTutorCollapsed(false);
     setStudyPhase("grading");
+    setStudySurfacePreference("canvas");
     stopSpeaking().catch((err) =>
       console.warn("[study] Failed to stop tutor audio before grading:", err),
     );
@@ -3308,7 +3309,14 @@ export default function StudySessionScreen() {
         answerBounds: canvasBounds ?? undefined,
       });
       setCanvasPages(feedbackInsertResult.pages);
+      const feedbackPage =
+        feedbackInsertResult.pages.find((page) => page.id === activePageId) ??
+        feedbackInsertResult.pages[0];
+      if (feedbackPage) {
+        activatePage(feedbackPage);
+      }
       saveCanvasPagesNow(feedbackInsertResult.pages);
+      setStudySurfacePreference("canvas");
       setTimeout(() => {
         canvasScrollRef.current?.scrollTo({
           y: Math.max(feedbackInsertResult.block.position.y - 24, 0),
@@ -3732,7 +3740,7 @@ export default function StudySessionScreen() {
         await startFinalQuiz();
       } else if (!followUpQuestion && !nextFinalQuizQuestion) {
         setStudyPhase(
-          finalQuizState.status === "active" ? "final_quiz" : "tutor",
+          finalQuizState.status === "active" ? "final_quiz" : "grading",
         );
       }
       setAnswerDraft("");

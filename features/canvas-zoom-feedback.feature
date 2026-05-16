@@ -60,3 +60,9 @@ Feature: Canvas zoom and inline grading feedback
     When the tutor writes feedback below the answer
     Then the canvas feedback is green
     And the canvas feedback includes "Named the key idea"
+
+  Scenario: Grading feedback creates a canvas page for chat-only answers
+    Given the inline grading harness has no canvas pages
+    When the tutor writes feedback below the answer
+    Then the canvas feedback includes "Missing the key cause"
+    And the feedback canvas has one page

@@ -8,7 +8,7 @@ import {
   insertCanvasFeedbackBlockBelowAnswer,
 } from '../lib/study/canvas-feedback';
 import { buildInitialCanvasPage } from '../lib/study/study-canvas-pages';
-import { CanvasBounds, StudyFeedback } from '../types';
+import { CanvasBounds, CanvasFeedbackBlockData, StudyFeedback } from '../types';
 
 const answerBounds: CanvasBounds = { x: 120, y: 220, width: 360, height: 140 };
 
@@ -129,4 +129,29 @@ test('canvas feedback block is inserted below the answer and grows only the acti
   assert.equal(result.pages[0].visualBlocks?.[0], result.block);
   assert.ok(result.pages[0].height > pages[0].height);
   assert.equal(result.pages[1], pages[1]);
+});
+
+test('canvas feedback insertion creates a visible page when no canvas page exists', () => {
+  const feedback: StudyFeedback = {
+    summary: 'The typed answer needs a concrete example.',
+    correctness: 'partially correct',
+    score: 64,
+    whatWentWrong: ['Missing example'],
+  };
+
+  const result = insertCanvasFeedbackBlockBelowAnswer({
+    pages: [],
+    pageId: 'page-typed-answer',
+    messageId: 'feedback-empty-canvas',
+    feedback,
+    isPassed: false,
+    id: 'feedback-block-empty-canvas',
+    createdAt: '2026-05-16T00:00:00.000Z',
+  });
+
+  assert.equal(result.pages.length, 1);
+  assert.equal(result.pages[0].id, 'page-typed-answer');
+  assert.equal(result.pages[0].visualBlocks?.[0], result.block);
+  const blockData = result.block.data as CanvasFeedbackBlockData;
+  assert.equal(blockData.summary, 'The typed answer needs a concrete example.');
 });

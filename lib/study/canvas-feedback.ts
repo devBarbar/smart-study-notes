@@ -7,6 +7,7 @@ import {
   CanvasVisualBlock,
   StudyFeedback,
 } from '../../types';
+import { buildInitialCanvasPage } from './study-canvas-pages';
 
 const FEEDBACK_WIDTH = 520;
 const FEEDBACK_PADDING = 24;
@@ -77,7 +78,11 @@ export const insertCanvasFeedbackBlockBelowAnswer = ({
   id?: string;
   createdAt?: string;
 }) => {
-  const targetPage = pages.find((page) => page.id === pageId) ?? pages[0];
+  const targetPage =
+    pages.find((page) => page.id === pageId) ??
+    pages[0] ??
+    buildInitialCanvasPage(pageId || 'page-1');
+  const sourcePages = pages.length > 0 ? pages : [targetPage];
   const fallbackY = targetPage ? Math.max(0, targetPage.height - 220) : 0;
   const data = buildCanvasFeedbackData(feedback, isPassed);
   const size = estimateCanvasFeedbackBlockSize(data);
@@ -101,7 +106,7 @@ export const insertCanvasFeedbackBlockBelowAnswer = ({
 
   return {
     block,
-    pages: pages.map((page) => {
+    pages: sourcePages.map((page) => {
       if (page.id !== targetPage?.id) return page;
       const visualBlocks = [
         ...(page.visualBlocks ?? []).filter(
