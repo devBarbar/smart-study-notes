@@ -59,7 +59,9 @@ export function StudyChatMessageItem({
   const reasoning = item.role === "ai" ? item.reasoning : undefined;
   const showReasoningBadge =
     item.role === "ai" &&
-    Boolean(reasoning?.reasoningTokens || reasoning?.effort || reasoning?.completionTokens);
+    (typeof reasoning?.reasoningTokens === "number" ||
+      Boolean(reasoning?.effort) ||
+      typeof reasoning?.completionTokens === "number");
 
   return (
     <ThemedView

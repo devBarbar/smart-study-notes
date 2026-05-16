@@ -1,4 +1,4 @@
-import { RefObject } from "react";
+import { RefObject, useCallback, useEffect } from "react";
 import { FlatList } from "react-native";
 
 import { StudyChatMessageItem } from "@/components/study/study-chat-message";
@@ -52,6 +52,22 @@ export function StudyChatList({
   onViewDiagram,
 }: StudyChatListProps) {
   const latestAiMessageId = [...messages].reverse().find((message) => message.role === "ai")?.id;
+  const latestMessageId = messages[messages.length - 1]?.id;
+
+  const scrollToLatestMessage = useCallback(
+    (animated = true) => {
+      if (messages.length === 0) return;
+      requestAnimationFrame(() => {
+        chatListRef.current?.scrollToEnd({ animated });
+      });
+    },
+    [chatListRef, messages.length],
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => scrollToLatestMessage(), 80);
+    return () => clearTimeout(timer);
+  }, [isChatting, latestAiMessageId, latestMessageId, scrollToLatestMessage]);
 
   return (
     <FlatList
@@ -86,6 +102,8 @@ export function StudyChatList({
       }}
       style={styles.chatList}
       contentContainerStyle={{ gap: 8, paddingBottom: 8 }}
+      onLayout={() => scrollToLatestMessage(false)}
+      onContentSizeChange={() => scrollToLatestMessage(isChatting)}
       onScrollToIndexFailed={(info) => {
         setTimeout(() => {
           chatListRef.current?.scrollToIndex({

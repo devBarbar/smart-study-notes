@@ -156,7 +156,14 @@ export const evaluateAnswer = async (
   language: LanguageCode = 'en'
 ): Promise<AIActionResult<StudyFeedback>> => {
   const jobId = await enqueueJob('grade', { question, answerText, answerImageDataUrl, language, lectureId, gradingContext });
-  const data = await waitForJobResult<{ feedback?: StudyFeedback; costUsd?: number }>(jobId);
+  const data = await waitForJobResult<{
+    feedback?: StudyFeedback;
+    costUsd?: number;
+    model?: string;
+    platform?: AIPlatform;
+    reasoningEffort?: string | null;
+    usage?: AIUsageSummary;
+  }>(jobId);
 
   if (data?.feedback) {
     return {
@@ -177,6 +184,10 @@ export const evaluateAnswer = async (
       understandingLevel: data.feedback.understandingLevel ?? undefined,
       rubric: data.feedback.rubric ?? undefined,
       costUsd: data?.costUsd,
+      model: data?.model,
+      aiPlatform: data?.platform,
+      reasoningEffort: data?.reasoningEffort ?? null,
+      usage: data?.usage,
     };
   }
 
@@ -184,6 +195,10 @@ export const evaluateAnswer = async (
     summary: 'Evaluation failed',
     correctness: 'unknown',
     costUsd: data?.costUsd,
+    model: data?.model,
+    aiPlatform: data?.platform,
+    reasoningEffort: data?.reasoningEffort ?? null,
+    usage: data?.usage,
   };
 };
 

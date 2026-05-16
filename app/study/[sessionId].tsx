@@ -3876,6 +3876,12 @@ export default function StudySessionScreen() {
         text: feedbackText,
         questionId: followUpQuestion?.id ?? questionToEvaluate.id,
         answerLinkId: linkId,
+        aiModel: feedback.model,
+        aiPlatform: feedback.aiPlatform,
+        reasoning: {
+          effort: feedback.reasoningEffort ?? null,
+          ...feedback.usage,
+        },
         citations: gradingCitations,
         tutorQuestion: followUpQuestion
           ? {

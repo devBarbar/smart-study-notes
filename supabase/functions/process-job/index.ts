@@ -2148,7 +2148,11 @@ const handleGrade = async (
 
   return {
     result: {
-        feedback: {
+      model: chat.model,
+      platform: chat.platform,
+      reasoningEffort: chat.reasoningEffort ?? null,
+      usage: chat.usage,
+      feedback: {
           summary: feedback.summary ?? "No summary",
           correctness: feedback.correctness ?? "unknown",
           score: feedback.score ?? undefined,
