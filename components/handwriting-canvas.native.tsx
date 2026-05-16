@@ -23,7 +23,6 @@ import {
   GestureDetector,
   PointerType,
 } from "react-native-gesture-handler";
-import { useSharedValue } from "react-native-reanimated";
 
 import {
   appendPoint,
@@ -167,7 +166,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const strokesRef = useRef<RenderStroke[]>(initialRenderStrokes);
     const activeStrokeRef = useRef<CanvasStroke | null>(null);
     const activeMutablePathRef = useRef<SkPath>(makeEmptyPath());
-    const activePath = useSharedValue<SkPath>(makeEmptyPath());
+    const activePathRenderFrameRef = useRef<number | null>(null);
+    const [activePathSnapshot, setActivePathSnapshot] =
+      useState<SkPath | null>(null);
     const lineCount = Math.floor(height / 28);
     const lineWidth = width ?? 4096;
     const isStylusActiveRef = useRef(false);
@@ -217,6 +218,28 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       setRenderStrokes(strokes);
     }, []);
 
+    const cancelActivePathRender = useCallback(() => {
+      if (activePathRenderFrameRef.current !== null) {
+        cancelAnimationFrame(activePathRenderFrameRef.current);
+        activePathRenderFrameRef.current = null;
+      }
+    }, []);
+
+    const scheduleActivePathRender = useCallback(() => {
+      if (activePathRenderFrameRef.current !== null) return;
+
+      activePathRenderFrameRef.current = requestAnimationFrame(() => {
+        activePathRenderFrameRef.current = null;
+        setActivePathSnapshot(activeMutablePathRef.current.copy());
+      });
+    }, []);
+
+    const resetActivePath = useCallback(() => {
+      cancelActivePathRender();
+      activeMutablePathRef.current = makeEmptyPath();
+      setActivePathSnapshot(null);
+    }, [cancelActivePathRender]);
+
     const setCanvasStrokes = useCallback(
       (nextStrokes: CanvasStroke[]) => {
         const normalized = normalizeCanvasStrokes(nextStrokes).map((stroke) =>
@@ -224,12 +247,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         );
         commitRenderStrokes(normalized);
         activeStrokeRef.current = null;
-        activeMutablePathRef.current = makeEmptyPath();
-        activePath.value = makeEmptyPath();
+        resetActivePath();
         setActiveStrokeStyle(null);
       },
-      [activePath, commitRenderStrokes, renderStroke],
-    );
+      /* c8 ignore next */
+      [commitRenderStrokes, renderStroke, resetActivePath]);
 
     useEffect(() => {
       if (
@@ -240,7 +262,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         hasLoadedInitialRef.current = true;
         setCanvasStrokes(initialStrokes);
       }
-    }, [initialStrokes, setCanvasStrokes]);
+      return cancelActivePathRender;
+    }, [cancelActivePathRender, initialStrokes, setCanvasStrokes]);
 
     const eraseAtPoint = useCallback(
       (point: CanvasPoint) => {
@@ -261,9 +284,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       const path = makePathFromPoints(stroke.points, false);
       activeStrokeRef.current = stroke;
       activeMutablePathRef.current = path;
-      activePath.value = path;
+      setActivePathSnapshot(path.copy());
       setActiveStrokeStyle({ color: stroke.color, width: stroke.width });
-    }, [activePath]);
+    }, []);
 
     const appendPointToCurrentStroke = useCallback(
       (point: CanvasPoint) => {
@@ -271,9 +294,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         if (!current || !appendPoint(current.points, point)) return;
 
         activeMutablePathRef.current.lineTo(point.x, point.y);
-        activePath.modify(undefined, true);
+        scheduleActivePathRender();
       },
-      [activePath],
+      [scheduleActivePathRender],
     );
 
     const notifyDrawingEnd = useCallback(() => {
@@ -288,12 +311,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         activeStrokeRef.current = null;
       }
 
-      activeMutablePathRef.current = makeEmptyPath();
-      activePath.value = makeEmptyPath();
+      resetActivePath();
       setActiveStrokeStyle(null);
       onDrawingEndRef.current?.(lastDrawingPositionRef.current || undefined);
       onStrokesChangeRef.current?.(serializeStrokes(strokesRef.current));
-    }, [activePath, commitRenderStrokes, renderStroke]);
+    }, [commitRenderStrokes, renderStroke, resetActivePath]);
 
     const hoverGesture = Gesture.Hover()
       .onBegin(() => {
@@ -420,9 +442,9 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
             strokeJoin="round"
           />
         ))}
-        {activeStrokeStyle && (
+        {activeStrokeStyle && activePathSnapshot && (
           <Path
-            path={activePath}
+            path={activePathSnapshot}
             color={activeStrokeStyle.color}
             style="stroke"
             strokeWidth={activeStrokeStyle.width}

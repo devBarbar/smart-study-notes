@@ -18,6 +18,11 @@ Feature: Canvas zoom and inline grading feedback
     Then the canvas zoom reads "150%"
     And no handwriting stroke is created
 
+  Scenario: Native Skia canvas draws live ink safely
+    Given the native Skia handwriting canvas is open
+    When the student writes a short stylus stroke
+    Then the live ink uses a copied Skia path snapshot
+
   Scenario: Study details collapse so the canvas stays primary
     Given the study canvas zoom harness is open
     Then the study details are hidden
