@@ -23,8 +23,9 @@ const StartupTelemetryHarness = ({
     platformOS: 'ios',
   });
   const replayEnabled =
-    'replaysOnErrorSampleRate' in options || 'replaysSessionSampleRate' in options;
-  const profilingEnabled = 'profilesSampleRate' in options;
+    (options.replaysOnErrorSampleRate ?? 0) > 0 ||
+    (options.replaysSessionSampleRate ?? 0) > 0;
+  const profilingEnabled = (options.profilesSampleRate ?? 0) > 0;
 
   return (
     <View>
@@ -33,6 +34,9 @@ const StartupTelemetryHarness = ({
       </Text>
       <Text testID="startup-profiling-status">
         {profilingEnabled ? 'enabled' : 'disabled'}
+      </Text>
+      <Text testID="startup-sentry-status">
+        {options.enabled ? 'enabled' : 'disabled'}
       </Text>
     </View>
   );
@@ -73,3 +77,7 @@ Then(
   assert.equal(this.screen!.getByTestId('startup-profiling-status').props.children, 'disabled');
   },
 );
+
+Then('startup telemetry reports Sentry enabled', function (this: StartupTelemetryWorld) {
+  assert.equal(this.screen!.getByTestId('startup-sentry-status').props.children, 'enabled');
+});

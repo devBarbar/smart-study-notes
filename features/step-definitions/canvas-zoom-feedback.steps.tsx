@@ -549,10 +549,6 @@ When("the student writes a short stylus stroke", async function () {
   assert.ok(pan, "Skia canvas did not register a pan gesture");
 
   await act(async () => {
-    pan.handlers.onTouchesDown(
-      { numberOfTouches: 1, pointerType: "stylus" },
-      { activate: () => undefined, fail: () => undefined },
-    );
     pan.handlers.onBegin({ pointerType: "stylus", x: 10, y: 20 });
     pan.handlers.onUpdate({ pointerType: "stylus", x: 14, y: 22 });
   });
@@ -564,10 +560,6 @@ When("the student writes a transformed stylus stroke", async function () {
   assert.ok(pan, "Skia canvas did not register a pan gesture");
 
   await act(async () => {
-    pan.handlers.onTouchesDown(
-      { numberOfTouches: 1, pointerType: "stylus" },
-      { activate: () => undefined, fail: () => undefined },
-    );
     pan.handlers.onBegin({
       pointerType: "stylus",
       x: 10,
@@ -669,6 +661,16 @@ Then("the live ink uses a copied Skia path snapshot", async function () {
   nativeCanvasHarness.restore();
   nativeCanvasHarness = null;
 });
+
+Then(
+  "the native drawing gesture does not switch gesture state from JavaScript",
+  function () {
+    assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
+    const pan = nativeCanvasHarness.getLastPanGesture();
+    assert.ok(pan, "Skia canvas did not register a pan gesture");
+    assert.equal(pan.handlers.onTouchesDown, undefined);
+  },
+);
 
 Then("the live ink follows the visible pen location", async function () {
   assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");

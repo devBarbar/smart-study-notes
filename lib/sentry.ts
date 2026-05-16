@@ -63,6 +63,7 @@ export const buildSentryInitOptions = (params: BuildSentryInitOptionsParams = {}
   if (!nativeTelemetryRiskDisabled && profilingEnabled && profilesSampleRate !== undefined && profilesSampleRate > 0) options.profilesSampleRate = profilesSampleRate;
   if (!nativeTelemetryRiskDisabled && replayOnErrorSampleRate !== undefined && replayOnErrorSampleRate > 0) options.replaysOnErrorSampleRate = replayOnErrorSampleRate;
   if (!nativeTelemetryRiskDisabled && replaySessionSampleRate !== undefined && replaySessionSampleRate > 0) options.replaysSessionSampleRate = replaySessionSampleRate;
+  if (nativeTelemetryRiskDisabled) Object.assign(options, { profilesSampleRate: 0, replaysOnErrorSampleRate: 0, replaysSessionSampleRate: 0 });
   return options; };
 
 Sentry.init(buildSentryInitOptions());

@@ -373,20 +373,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       })
       .runOnJS(true);
 
+    // Keep gesture state transitions native; JS callbacks only decide whether to draw.
     const panGesture = Gesture.Pan()
       .enabled(!readOnly)
-      .manualActivation(true)
       .minDistance(0)
       .minPointers(1)
       .maxPointers(1)
-      .onTouchesDown((event, state) => {
-        if (event.numberOfTouches === 1 && isStylusEvent(event)) {
-          state.activate();
-          return;
-        }
-
-        state.fail();
-      })
       .onBegin((event) => {
         if (!isStylusEvent(event)) return;
 

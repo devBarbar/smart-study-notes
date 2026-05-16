@@ -192,6 +192,8 @@ describe("Skia handwriting renderer", () => {
     assert.match(source, /@shopify\/react-native-skia/);
     assert.doesNotMatch(source, /useSharedValue/);
     assert.doesNotMatch(source, /path=\{activePath\}/);
+    assert.doesNotMatch(source, /manualActivation\(true\)/);
+    assert.doesNotMatch(source, /\.onTouchesDown\(/);
     assert.match(source, /activePathSnapshot/);
   });
 
@@ -219,10 +221,6 @@ describe("Skia handwriting renderer", () => {
     assert.ok(pan);
 
     await act(async () => {
-      pan.handlers.onTouchesDown(
-        { numberOfTouches: 1, pointerType: "stylus" },
-        { activate: () => undefined, fail: () => undefined },
-      );
       pan.handlers.onBegin({ pointerType: "stylus", x: 10, y: 20 });
       pan.handlers.onUpdate({ pointerType: "stylus", x: 14, y: 22 });
     });
@@ -277,10 +275,6 @@ describe("Skia handwriting renderer", () => {
     assert.ok(pan);
 
     await act(async () => {
-      pan.handlers.onTouchesDown(
-        { numberOfTouches: 1, pointerType: "stylus" },
-        { activate: () => undefined, fail: () => undefined },
-      );
       pan.handlers.onBegin({
         pointerType: "stylus",
         x: 10,
@@ -309,6 +303,47 @@ describe("Skia handwriting renderer", () => {
 
     await act(async () => {
       pan.handlers.onEnd();
+      renderer.unmount();
+    });
+    mocks.restore();
+  });
+
+  it("ignores non-stylus pan events without creating ink", async () => {
+    const mocks = installNativeCanvasMocks();
+    const { HandwritingCanvas } = loadNativeCanvas();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        React.createElement(HandwritingCanvas, { width: 320, height: 240 }),
+        {
+          createNodeMock: createMeasuredNodeMock({
+            x: 0,
+            y: 0,
+            width: 320,
+            height: 240,
+          }),
+        },
+      );
+    });
+    await measureCanvasLayout(renderer);
+
+    const pan = mocks.getLastPanGesture();
+    assert.ok(pan);
+
+    await act(async () => {
+      pan.handlers.onBegin({ pointerType: "touch", x: 10, y: 20 });
+      pan.handlers.onUpdate({ pointerType: "touch", x: 14, y: 22 });
+      pan.handlers.onEnd();
+    });
+
+    assert.equal(
+      renderer.root.findAll((node) => (node.type as unknown) === "SkiaPath")
+        .length,
+      0,
+    );
+
+    await act(async () => {
       renderer.unmount();
     });
     mocks.restore();

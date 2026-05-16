@@ -25,8 +25,8 @@ test('sentry launch config does not enable mobile replay by default', () => {
     platformOS: 'ios',
   });
 
-  assert.equal('replaysSessionSampleRate' in options, false);
-  assert.equal('replaysOnErrorSampleRate' in options, false);
+  assert.equal(options.replaysSessionSampleRate, 0);
+  assert.equal(options.replaysOnErrorSampleRate, 0);
 });
 
 test('sentry launch config does not enable Hermes profiling by default', () => {
@@ -36,7 +36,7 @@ test('sentry launch config does not enable Hermes profiling by default', () => {
     platformOS: 'ios',
   });
 
-  assert.equal('profilesSampleRate' in options, false);
+  assert.equal(options.profilesSampleRate, 0);
 });
 
 test('sentry native replay stays disabled even with positive replay sample rates', () => {
@@ -50,8 +50,8 @@ test('sentry native replay stays disabled even with positive replay sample rates
     platformOS: 'ios',
   });
 
-  assert.equal('replaysSessionSampleRate' in options, false);
-  assert.equal('replaysOnErrorSampleRate' in options, false);
+  assert.equal(options.replaysSessionSampleRate, 0);
+  assert.equal(options.replaysOnErrorSampleRate, 0);
 });
 
 test('sentry web replay is opt-in through positive replay sample rates', () => {
@@ -79,7 +79,7 @@ test('sentry Hermes profiling stays disabled when only a positive profile sample
     platformOS: 'ios',
   });
 
-  assert.equal('profilesSampleRate' in options, false);
+  assert.equal(options.profilesSampleRate, 0);
 });
 
 test('sentry native profiling stays disabled with an explicit enable flag and positive profile sample rate', () => {
@@ -93,7 +93,7 @@ test('sentry native profiling stays disabled with an explicit enable flag and po
     platformOS: 'ios',
   });
 
-  assert.equal('profilesSampleRate' in options, false);
+  assert.equal(options.profilesSampleRate, 0);
 });
 
 test('sentry web profiling requires an explicit enable flag and positive profile sample rate', () => {
@@ -162,6 +162,16 @@ test('sentry replay sample rates of zero or invalid values keep replay disabled'
     platformOS: 'ios',
   });
 
-  assert.equal('replaysSessionSampleRate' in options, false);
-  assert.equal('replaysOnErrorSampleRate' in options, false);
+  assert.equal(options.replaysSessionSampleRate, 0);
+  assert.equal(options.replaysOnErrorSampleRate, 0);
+});
+
+test('sentry runtime reporting is enabled when a DSN is configured', () => {
+  const options = buildSentryInitOptions({
+    env: baseEnv,
+    expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
+    platformOS: 'ios',
+  });
+
+  assert.equal(options.enabled, true);
 });
