@@ -17,7 +17,6 @@ import { v4 as uuid } from "uuid";
 
 import { StreamingTTSPlayer, TTSPlayerState } from "@/lib/audio";
 import {
-  DEPTH_PASS_SCORE,
   DepthProgressState,
   buildDepthCheckProgressLine,
   buildDepthQuestion,
@@ -26,6 +25,7 @@ import {
   findDepthProgressInText,
   getNextTutorCheckType,
   getPassedDepthCheckTypes,
+  getTargetPassScore,
   REQUIRED_TUTOR_CHECK_TYPES,
   stripDepthProgressFromText,
   TUTOR_CHECK_DESCRIPTIONS,
@@ -168,8 +168,6 @@ import {
   TutorCheckType,
 } from "@/types";
 
-const FINAL_QUIZ_PASS_SCORE = DEPTH_PASS_SCORE;
-
 export default function StudySessionScreen() {
   const { sessionId, materialId, lectureId, studyPlanEntryId } =
     useLocalSearchParams<{
@@ -250,6 +248,11 @@ export default function StudySessionScreen() {
     setDepthChecks(studyQueries.depthChecksQuery.data ?? []);
   }, [studyQueries.depthChecksQuery.data]);
 
+  const targetPassScore = useMemo(
+    () => getTargetPassScore(lecture?.planSettings?.targetGrade ?? "pass"),
+    [lecture?.planSettings?.targetGrade],
+  );
+
   // Build the study title based on context
   const studyTitle = useMemo(() => {
     if (studyPlanEntry) {
@@ -259,13 +262,13 @@ export default function StudySessionScreen() {
   }, [lecture, material, studyPlanEntry, t]);
 
   const nextDepthCheckType = useMemo(
-    () => getNextTutorCheckType(depthChecks),
-    [depthChecks],
+    () => getNextTutorCheckType(depthChecks, targetPassScore),
+    [depthChecks, targetPassScore],
   );
 
   const depthProgressLine = useMemo(
-    () => buildDepthCheckProgressLine(depthChecks),
-    [depthChecks],
+    () => buildDepthCheckProgressLine(depthChecks, targetPassScore),
+    [depthChecks, targetPassScore],
   );
 
   // Build comprehensive material context for the AI
@@ -320,7 +323,7 @@ export default function StudySessionScreen() {
           nextDepthCheckType
             ? `Next required checkType: ${nextDepthCheckType} (${TUTOR_CHECK_LABELS[nextDepthCheckType]})`
             : "All required depth checks are currently passed.",
-          "The topic should only be considered passed after recall, why, apply, transfer, and teach_back checks all score at least 90/100, followed by a final quiz.",
+          `The topic should only be considered passed after recall, why, apply, transfer, and teach_back checks all score at least ${targetPassScore}/100, followed by a final quiz.`,
         ].join("\n"),
       );
     }
@@ -342,6 +345,7 @@ export default function StudySessionScreen() {
     recentMisconceptions,
     depthProgressLine,
     nextDepthCheckType,
+    targetPassScore,
   ]);
 
   // Simple outline for display (not for AI context)
@@ -516,7 +520,7 @@ export default function StudySessionScreen() {
   }, [messages, responseDepthProgress]);
 
   const depthProgressItems = useMemo(() => {
-    const passed = getPassedDepthCheckTypes(depthChecks);
+    const passed = getPassedDepthCheckTypes(depthChecks, targetPassScore);
     const passedTypes = new Set<TutorCheckType>(passed);
 
     if (latestDepthProgressFromMessages) {
@@ -547,7 +551,7 @@ export default function StudySessionScreen() {
         bestScore: scores.length > 0 ? Math.max(...scores) : undefined,
       };
     });
-  }, [depthChecks, latestDepthProgressFromMessages]);
+  }, [depthChecks, latestDepthProgressFromMessages, targetPassScore]);
 
   const studyPrepContent = useMemo(
     () =>
@@ -2996,6 +3000,7 @@ export default function StudySessionScreen() {
           answerCanvasBounds: canvasBounds ?? undefined,
           lectureId,
           gradingContext,
+          passScoreThreshold: targetPassScore,
         },
         agentLanguage,
       );
@@ -3070,14 +3075,17 @@ export default function StudySessionScreen() {
       const depthCheckPassed =
         !isFinalQuizAnswer &&
         !isGuidedNotesAnswer &&
-        feedbackPassesDepthCheck({
-          ...feedback,
-          score: normalizedScore,
-        });
+        feedbackPassesDepthCheck(
+          {
+            ...feedback,
+            score: normalizedScore,
+          },
+          targetPassScore,
+        );
       const canCountForPass =
         !isFinalQuizAnswer &&
         !isGuidedNotesAnswer &&
-        depthCheckPassed &&
+        feedback.canCountForPass !== false &&
         questionToEvaluate.requiredForPass !== false;
       const localDepthCheck: StudyDepthCheck | null =
         !isFinalQuizAnswer && !isGuidedNotesAnswer && studyPlanEntryId
@@ -3118,10 +3126,10 @@ export default function StudySessionScreen() {
         correctness: string,
         checks: StudyDepthCheck[],
       ): SectionStatus => {
-        if (canPassStudyPlanEntry(checks)) {
+        if (canPassStudyPlanEntry(checks, targetPassScore)) {
           return finalQuizPassedRef.current ? "passed" : "in_progress";
         }
-        const passedDepthCount = getPassedDepthCheckTypes(checks).size;
+        const passedDepthCount = getPassedDepthCheckTypes(checks, targetPassScore).size;
         if (
           typeof score === "number" &&
           score <= 40 &&
@@ -3264,16 +3272,16 @@ export default function StudySessionScreen() {
       // still requires the full depth ladder before it becomes passed.
       const isCheckPassed = isFinalQuizAnswer
         ? typeof normalizedScore === "number" &&
-          normalizedScore >= FINAL_QUIZ_PASS_SCORE
+          normalizedScore >= targetPassScore
         : isGuidedNotesAnswer
           ? typeof normalizedScore === "number" &&
-            normalizedScore >= DEPTH_PASS_SCORE
+            normalizedScore >= targetPassScore
           : depthCheckPassed;
       const isTopicDepthPassed = studyPlanEntryId
-        ? canPassStudyPlanEntry(latestDepthChecks)
+        ? canPassStudyPlanEntry(latestDepthChecks, targetPassScore)
         : isCheckPassed;
       const nextMissingCheckType = studyPlanEntryId
-        ? getNextTutorCheckType(latestDepthChecks)
+        ? getNextTutorCheckType(latestDepthChecks, targetPassScore)
         : null;
       const feedbackMessageId = uuid();
       let insertedFeedbackBlock: CanvasVisualBlockType | null = null;
@@ -3476,7 +3484,7 @@ export default function StudySessionScreen() {
         : undefined;
       const finalQuizPassed =
         finalQuizAverage !== undefined &&
-        finalQuizAverage >= FINAL_QUIZ_PASS_SCORE;
+        finalQuizAverage >= targetPassScore;
       const nextFinalQuizIndex = finalQuizState.currentIndex + 1;
       const nextFinalQuizQuestion =
         isFinalQuizAnswer && !finalQuizComplete
@@ -3754,7 +3762,7 @@ export default function StudySessionScreen() {
           .join("\n");
 
     const nextCheckInstruction = nextDepthCheckType
-      ? `The next required pass-gate checkType is "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}). The hidden learning_question must use that checkType, and the student needs 90+/100 for it to count.`
+      ? `The next required pass-gate checkType is "${nextDepthCheckType}" (${TUTOR_CHECK_LABELS[nextDepthCheckType]}). The hidden learning_question must use that checkType, and the student needs ${targetPassScore}+/100 for it to count.`
       : "All depth checks are already passed; ask a focused retention or exam-style review question.";
     const modeInstruction =
       studyMode === "beginner"
@@ -3766,7 +3774,7 @@ export default function StudySessionScreen() {
       ? `Give me a focused explanation of the next key idea from "${studyPlanEntry.title}". ${modeInstruction} Focus on ${studyPlanEntry.keyConcepts?.join(", ") || "the main ideas"}, cover one step only, and use enough detail for real understanding without dumping the whole topic. ${nextCheckInstruction} ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Then stop and wait for my reply - I will answer on the canvas.`
       : `Give me a focused explanation of the first key idea in this topic. ${modeInstruction} Cover one step only, and use enough detail for real understanding without dumping the whole topic. ${visualInstruction} End with exactly one check-in question asking me to explain it back or apply it. Stop and wait for my reply—I will answer on the canvas.`;
     sendToFeynmanAI(topicFocus, undefined, retrievalFocus || topicFocus);
-  }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyMode, studyPlanEntry]);
+  }, [lecture, nextDepthCheckType, sendToFeynmanAI, studyMode, studyPlanEntry, targetPassScore]);
 
   // Auto-trigger a recognition warm-up before recall when starting a new session
   useEffect(() => {
@@ -4175,6 +4183,7 @@ export default function StudySessionScreen() {
           references={canvasReferences}
           onOpenCitation={openCitationSource}
           depthProgressItems={depthProgressItems}
+          passScoreThreshold={targetPassScore}
           recallHintText={recallHintText}
           recallHintRevealed={recallHintRevealed}
           onRevealRecallHint={() => setRecallHintRevealed(true)}
@@ -4211,6 +4220,7 @@ export default function StudySessionScreen() {
           onContinueWarmup={continueWarmup}
           finalQuizProgressLabel={finalQuizProgressLabel}
           depthProgressItems={depthProgressItems}
+          passScoreThreshold={targetPassScore}
           studyMode={studyMode}
           studyPrepContent={studyPrepContent}
           setupActive={studyPhase === "setup"}

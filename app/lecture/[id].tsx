@@ -1046,7 +1046,7 @@ export default function LectureDetailScreen() {
           />
         </View>
         <View style={styles.segmentRow}>
-          {(['pass', '2.0', '1.3'] as const).map((grade) => (
+          {(['pass', '2.0', '1.7', '1.3', '1.0'] as const).map((grade) => (
             <Pressable
               key={grade}
               style={[styles.segmentButton, targetGradeDraft === grade && styles.segmentButtonActive]}

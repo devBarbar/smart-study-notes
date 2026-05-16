@@ -34,6 +34,22 @@ test('gradingPrompt mentions question text', () => {
   assert.doesNotMatch(prompt, /2-4 clear sentences/i);
 });
 
+test('gradingPrompt uses the selected pass threshold', () => {
+  const prompt = gradingPrompt(
+    { id: 'q1', prompt: 'Explain photosynthesis', checkType: 'why' },
+    undefined,
+    'en',
+    undefined,
+    undefined,
+    72,
+  );
+
+  assert.match(prompt, /scores at least 72/i);
+  assert.match(prompt, /scores below 72/i);
+  assert.match(prompt, /score 72\+/i);
+  assert.doesNotMatch(prompt, /scores at least 90/i);
+});
+
 test('gradingPrompt can constrain grading to answer canvas bounds', () => {
   const prompt = gradingPrompt(
     { id: 'q1', prompt: 'Explain photosynthesis', checkType: 'recall' },

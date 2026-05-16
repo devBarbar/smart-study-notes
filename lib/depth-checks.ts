@@ -2,6 +2,7 @@ import type {
   StudyDepthCheck,
   StudyFeedback,
   StudyPlanEntry,
+  PlanSettings,
   TutorCheckType,
   TutorQuestionDifficulty,
 } from '@/types';
@@ -15,6 +16,33 @@ export const REQUIRED_TUTOR_CHECK_TYPES: TutorCheckType[] = [
 ];
 
 export const DEPTH_PASS_SCORE = 90;
+
+export const TARGET_PASS_SCORES: Record<string, number> = {
+  pass: 70,
+  '1.0': 86,
+  '1.3': 81,
+  '1.7': 77,
+  '2.0': 72,
+  '2.3': 68,
+  '2.7': 63,
+  '3.0': 59,
+  '3.3': 54,
+  '3.7': 50,
+  '4.0': 45,
+};
+
+type TargetPassScoreInput = PlanSettings['targetGrade'] | string | number | null | undefined;
+
+export const getTargetPassScore = (targetGrade?: TargetPassScoreInput): number => {
+  if (typeof targetGrade === 'number' && Number.isFinite(targetGrade)) {
+    return Math.max(0, Math.min(100, Math.round(targetGrade)));
+  }
+
+  const normalized = String(targetGrade ?? '')
+    .trim()
+    .toLowerCase();
+  return TARGET_PASS_SCORES[normalized] ?? DEPTH_PASS_SCORE;
+};
 
 export const TUTOR_CHECK_LABELS: Record<TutorCheckType, string> = {
   recall: 'Recall',
@@ -150,43 +178,39 @@ export const normalizeTutorQuestionDifficulty = (
   return undefined;
 };
 
-export const getPassedDepthCheckTypes = (
-  checks: StudyDepthCheck[],
-): Set<TutorCheckType> =>
-  new Set(
+export const getPassedDepthCheckTypes = (checks: StudyDepthCheck[], targetGrade?: TargetPassScoreInput): Set<TutorCheckType> => {
+  const passScore = getTargetPassScore(targetGrade);
+  return new Set(
     checks
       .filter(
         (check) =>
-          check.passed &&
           check.canCountForPass &&
           typeof check.score === 'number' &&
-          check.score >= DEPTH_PASS_SCORE,
+          check.score >= passScore,
       )
       .map((check) => normalizeTutorCheckType(check.checkType)),
   );
-
-export const getNextTutorCheckType = (
-  checks: StudyDepthCheck[],
-): TutorCheckType | null => {
-  const passedTypes = getPassedDepthCheckTypes(checks);
-  return REQUIRED_TUTOR_CHECK_TYPES.find((type) => !passedTypes.has(type)) ?? null;
 };
 
-export const canPassStudyPlanEntry = (checks: StudyDepthCheck[]): boolean => {
-  const passedTypes = getPassedDepthCheckTypes(checks);
+export const getNextTutorCheckType = (checks: StudyDepthCheck[], targetGrade?: TargetPassScoreInput): TutorCheckType | null => {
+  return REQUIRED_TUTOR_CHECK_TYPES.find((type) => !getPassedDepthCheckTypes(checks, targetGrade).has(type)) ?? null;
+};
+
+export const canPassStudyPlanEntry = (checks: StudyDepthCheck[], targetGrade?: TargetPassScoreInput): boolean => {
+  const passedTypes = getPassedDepthCheckTypes(checks, targetGrade);
   return REQUIRED_TUTOR_CHECK_TYPES.every((type) => passedTypes.has(type));
 };
 
-export const getDepthProgressCount = (checks: StudyDepthCheck[]) =>
-  getPassedDepthCheckTypes(checks).size;
+export const getDepthProgressCount = (checks: StudyDepthCheck[], targetGrade?: TargetPassScoreInput) =>
+  getPassedDepthCheckTypes(checks, targetGrade).size;
 
-export const feedbackPassesDepthCheck = (feedback: StudyFeedback): boolean => {
-  const scorePassed = typeof feedback.score === 'number' && feedback.score >= DEPTH_PASS_SCORE;
+export const feedbackPassesDepthCheck = (feedback: StudyFeedback, targetGrade?: TargetPassScoreInput): boolean => {
+  const scorePassed = typeof feedback.score === 'number' && feedback.score >= getTargetPassScore(targetGrade);
   return scorePassed && feedback.canCountForPass !== false;
 };
 
-export const buildDepthCheckProgressLine = (checks: StudyDepthCheck[]) => {
-  const passed = getPassedDepthCheckTypes(checks);
+export const buildDepthCheckProgressLine = (checks: StudyDepthCheck[], targetGrade?: TargetPassScoreInput) => {
+  const passed = getPassedDepthCheckTypes(checks, targetGrade);
   return REQUIRED_TUTOR_CHECK_TYPES
     .map((type) => `${TUTOR_CHECK_LABELS[type]} ${passed.has(type) ? 'done' : 'open'}`)
     .join(' | ');

@@ -5,7 +5,6 @@ import { Modal, Pressable, ScrollView, View } from "react-native";
 import { StudyStyles } from "@/components/study/study-styles";
 import { ThemedText } from "@/components/themed-text";
 import { Colors } from "@/constants/theme";
-import { DEPTH_PASS_SCORE } from "@/lib/depth-checks";
 import { TutorCheckType } from "@/types";
 
 export type StudyDepthProgressItem = {
@@ -22,6 +21,7 @@ type StudyDepthProgressProps = {
   palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
   items: StudyDepthProgressItem[];
+  passScoreThreshold: number;
 };
 
 const STAGE_ICONS: Record<TutorCheckType, keyof typeof Ionicons.glyphMap> = {
@@ -58,12 +58,15 @@ const STAGE_COPY_KEYS: Record<
   },
 };
 
-const getStageFillPercent = (item: StudyDepthProgressItem) => {
+const getStageFillPercent = (
+  item: StudyDepthProgressItem,
+  passScoreThreshold: number,
+) => {
   if (item.passed) return 100;
   if (typeof item.bestScore === "number") {
     return Math.min(
       88,
-      Math.max(18, Math.round((item.bestScore / DEPTH_PASS_SCORE) * 100)),
+      Math.max(18, Math.round((item.bestScore / passScoreThreshold) * 100)),
     );
   }
   return item.current ? 34 : 0;
@@ -74,6 +77,7 @@ export function StudyDepthProgress({
   palette,
   t,
   items,
+  passScoreThreshold,
 }: StudyDepthProgressProps) {
   const [selectedType, setSelectedType] = useState<TutorCheckType | null>(null);
   const selectedItem = useMemo(
@@ -99,7 +103,7 @@ export function StudyDepthProgress({
               {t("study.depthPathTitle")}
             </ThemedText>
             <ThemedText style={styles.depthProgressSubtitle}>
-              {t("study.depthPathSubtitle")}
+              {t("study.depthPathSubtitle", { score: passScoreThreshold })}
             </ThemedText>
           </View>
         </View>
@@ -135,6 +139,7 @@ export function StudyDepthProgress({
             t={t}
             item={item}
             index={index}
+            passScoreThreshold={passScoreThreshold}
             onPress={() => setSelectedType(item.type)}
           />
         ))}
@@ -145,6 +150,7 @@ export function StudyDepthProgress({
         palette={palette}
         t={t}
         item={selectedItem}
+        passScoreThreshold={passScoreThreshold}
         onClose={() => setSelectedType(null)}
       />
     </View>
@@ -157,6 +163,7 @@ function DepthStageButton({
   t,
   item,
   index,
+  passScoreThreshold,
   onPress,
 }: {
   styles: StudyStyles;
@@ -164,6 +171,7 @@ function DepthStageButton({
   t: (key: string, params?: Record<string, any>) => string;
   item: StudyDepthProgressItem;
   index: number;
+  passScoreThreshold: number;
   onPress: () => void;
 }) {
   const statusLabel = item.passed
@@ -176,7 +184,7 @@ function DepthStageButton({
     : item.current
       ? palette.warning
       : palette.textMuted;
-  const fillPercent = getStageFillPercent(item);
+  const fillPercent = getStageFillPercent(item, passScoreThreshold);
 
   return (
     <Pressable
@@ -240,12 +248,14 @@ function DepthStageModal({
   palette,
   t,
   item,
+  passScoreThreshold,
   onClose,
 }: {
   styles: StudyStyles;
   palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
   item: StudyDepthProgressItem | null;
+  passScoreThreshold: number;
   onClose: () => void;
 }) {
   if (!item) return null;
@@ -263,7 +273,7 @@ function DepthStageModal({
           count: Math.max(item.attempts, 1),
         })
       : item.passed
-        ? t("study.depthStageCompletedSignal")
+        ? t("study.depthStageCompletedSignal", { score: passScoreThreshold })
         : item.current
           ? t("study.depthStageCurrentSignal")
           : t("study.depthStageOpenSignal");
@@ -313,7 +323,7 @@ function DepthStageModal({
               {t("study.depthStageAdvanceCriteria")}
             </ThemedText>
             <ThemedText style={styles.depthStageDetailText}>
-              {t(copyKeys.criteria)}
+              {t(copyKeys.criteria, { score: passScoreThreshold })}
             </ThemedText>
           </View>
 

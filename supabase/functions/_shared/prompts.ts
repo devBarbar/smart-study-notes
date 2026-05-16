@@ -112,6 +112,7 @@ export const gradingPrompt = (
   language = "en",
   gradingContext?: string,
   answerCanvasBounds?: { x: number; y: number; width: number; height: number },
+  passScoreThreshold = 90,
 ) =>
   `You are grading a student's response for the question "${
     question.prompt
@@ -136,13 +137,13 @@ ${answerCanvasBounds ? `Grade only the handwritten answer inside this canvas reg
 
 Return JSON only:
 {
-  "summary": "focused teaching summary; for scores below 90, plainly name the main gap before anything else",
+  "summary": "focused teaching summary; for scores below ${passScoreThreshold}, plainly name the main gap before anything else",
   "correctness": "correct | partially correct | incorrect",
   "score": 0-100,
   "whatWentRight": ["1-3 concrete bullets naming what the student did correctly; use [] when nothing meaningful was correct"],
   "whatWentWrong": ["2-4 concrete bullets explaining exactly what was missing, wrong, or not readable"],
-  "correctAnswer": "For scores below 90, give the correct source-consistent answer with enough detail to teach the gap. Use a short paragraph when enough, or several short paragraphs when the concept needs it.",
-  "rewriteExample": "For scores below 90, provide an answer the student could have written to score 90+. It may be multi-sentence when needed.",
+  "correctAnswer": "For scores below ${passScoreThreshold}, give the correct source-consistent answer with enough detail to teach the gap. Use a short paragraph when enough, or several short paragraphs when the concept needs it.",
+  "rewriteExample": "For scores below ${passScoreThreshold}, provide an answer the student could have written to score ${passScoreThreshold}+. It may be multi-sentence when needed.",
   "improvements": ["2-4 short tips"],
   "misconceptions": ["specific missing or misunderstood concepts"],
   "followUpQuestion": "one smaller diagnostic question targeting the most important gap",
@@ -163,12 +164,12 @@ Return JSON only:
 
 Depth grading rules:
 - Infer "checkType" from question.checkType when available; otherwise infer from the question wording.
-- Set "canCountForPass" to true only when the response demonstrates source-consistent understanding for that check type and scores at least 90.
+- Set "canCountForPass" to true only when the response demonstrates source-consistent understanding for that check type and scores at least ${passScoreThreshold}.
 - Do not count memorized keyword lists as pass-worthy unless the student explains the relationship between ideas.
 - For "transfer", require a new or edge-case situation. For "teach_back", require clear simple language plus the important caveats.
 
 Feedback quality rules:
-- If score is below 90, be a tutor first and a grader second: make "whatWentWrong", "correctAnswer", and "rewriteExample" specific enough that the student knows exactly what to fix.
+- If score is below ${passScoreThreshold}, be a tutor first and a grader second: make "whatWentWrong", "correctAnswer", and "rewriteExample" specific enough that the student knows exactly what to fix.
 - Always fill "whatWentRight" with specific strengths for correct or partially correct work. For incorrect or unreadable work, use [] unless there is a real strength to reinforce.
 - Do not hide the correct answer inside sourceNotes or generic improvements.
 - If the student wrote a request for help instead of answering, say that in "whatWentWrong" and still provide the correct answer.

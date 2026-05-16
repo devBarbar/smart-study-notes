@@ -62,6 +62,7 @@ type StudyChatPanelProps = {
   mistakeNotebook: StudyMistakeNotebookItem[];
   diagnosticQuestion?: string | null;
   depthProgressItems: StudyDepthProgressItem[];
+  passScoreThreshold: number;
   chatListRef: RefObject<FlatList<StudyChatMessage> | null>;
   getItemLayout: (
     data: any,
@@ -134,6 +135,7 @@ export function StudyChatPanel({
   mistakeNotebook,
   diagnosticQuestion = null,
   depthProgressItems,
+  passScoreThreshold,
   chatListRef,
   getItemLayout,
   onToggleTutor,
@@ -211,6 +213,7 @@ export function StudyChatPanel({
           palette={palette}
           t={t}
           depthProgressItems={depthProgressItems}
+          passScoreThreshold={passScoreThreshold}
           mistakeNotebook={mistakeNotebook}
           activeTab={activeProgressTab}
           onTabChange={setActiveProgressTab}
@@ -277,6 +280,7 @@ export function StudyChatPanel({
           mode={studyMode}
           content={studyPrepContent}
           depthProgressItems={depthProgressItems}
+          passScoreThreshold={passScoreThreshold}
           mistakeNotebook={mistakeNotebook}
           onModeChange={onStudyModeChange}
           onStart={onStartWarmup}
@@ -356,6 +360,7 @@ function StudySetupCard({
   mode,
   content,
   depthProgressItems,
+  passScoreThreshold,
   mistakeNotebook,
   disabled,
   onModeChange,
@@ -367,6 +372,7 @@ function StudySetupCard({
   mode: StudyMode;
   content: StudyPrepContent;
   depthProgressItems: StudyDepthProgressItem[];
+  passScoreThreshold: number;
   mistakeNotebook: StudyMistakeNotebookItem[];
   disabled: boolean;
   onModeChange: (mode: StudyMode) => void;
@@ -543,6 +549,7 @@ function StudySetupCard({
           palette={palette}
           t={t}
           depthProgressItems={depthProgressItems}
+          passScoreThreshold={passScoreThreshold}
           mistakeNotebook={mistakeNotebook}
           compact
         />
@@ -569,6 +576,7 @@ function StudyProgressTabs({
   palette,
   t,
   depthProgressItems,
+  passScoreThreshold,
   mistakeNotebook,
   activeTab,
   onTabChange,
@@ -578,6 +586,7 @@ function StudyProgressTabs({
   palette: typeof Colors.light;
   t: (key: string, params?: Record<string, any>) => string;
   depthProgressItems: StudyDepthProgressItem[];
+  passScoreThreshold: number;
   mistakeNotebook: StudyMistakeNotebookItem[];
   activeTab?: StudyProgressTabKey;
   onTabChange?: (tab: StudyProgressTabKey) => void;
@@ -661,6 +670,7 @@ function StudyProgressTabs({
             palette={palette}
             t={t}
             items={depthProgressItems}
+            passScoreThreshold={passScoreThreshold}
           />
         )}
 

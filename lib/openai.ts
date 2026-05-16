@@ -155,13 +155,31 @@ type EvaluateAnswerParams = {
   };
   lectureId?: string;
   gradingContext?: string;
+  passScoreThreshold?: number;
 };
 
 export const evaluateAnswer = async (
-  { question, answerText, answerImageDataUrl, answerCanvasBounds, lectureId, gradingContext }: EvaluateAnswerParams,
+  {
+    question,
+    answerText,
+    answerImageDataUrl,
+    answerCanvasBounds,
+    lectureId,
+    gradingContext,
+    passScoreThreshold,
+  }: EvaluateAnswerParams,
   language: LanguageCode = 'en'
 ): Promise<AIActionResult<StudyFeedback>> => {
-  const jobId = await enqueueJob('grade', { question, answerText, answerImageDataUrl, answerCanvasBounds, language, lectureId, gradingContext });
+  const jobId = await enqueueJob('grade', {
+    question,
+    answerText,
+    answerImageDataUrl,
+    answerCanvasBounds,
+    language,
+    lectureId,
+    gradingContext,
+    passScoreThreshold,
+  });
   const data = await waitForJobResult<{
     feedback?: StudyFeedback;
     costUsd?: number;

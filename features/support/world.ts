@@ -3,6 +3,7 @@ import { cleanup, RenderAPI } from '@testing-library/react-native/pure';
 
 export class AppWorld {
   screen?: RenderAPI;
+  values: Record<string, unknown> = {};
 }
 
 setWorldConstructor(AppWorld);

@@ -2112,13 +2112,24 @@ const handleGrade = async (
     language = "en",
     lectureId,
     gradingContext,
+    passScoreThreshold,
   } = payload ?? {};
   if (!question || !question.prompt) {
     throw new Error("question.prompt is required");
   }
 
   const content: any[] = [
-    { type: "text", text: gradingPrompt(question, answerText, language, gradingContext, answerCanvasBounds) },
+    {
+      type: "text",
+      text: gradingPrompt(
+        question,
+        answerText,
+        language,
+        gradingContext,
+        answerCanvasBounds,
+        passScoreThreshold,
+      ),
+    },
   ];
 
   if (answerText) {

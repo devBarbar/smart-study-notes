@@ -295,7 +295,7 @@ export default function NewLectureScreen() {
           />
         </View>
         <View style={styles.segmentRow}>
-          {(['pass', '2.0', '1.3'] as const).map((grade) => (
+          {(['pass', '2.0', '1.7', '1.3', '1.0'] as const).map((grade) => (
             <NativeButton
               key={grade}
               label={grade === 'pass' ? 'Pass' : grade}

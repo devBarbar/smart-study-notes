@@ -19,7 +19,14 @@ Deno.serve(withSentry("evaluate-answer", async (req: Request) => {
   }
 
   try {
-    const { question, answerText, answerImageDataUrl, answerCanvasBounds, language = "en" } = await req.json();
+    const {
+      question,
+      answerText,
+      answerImageDataUrl,
+      answerCanvasBounds,
+      language = "en",
+      passScoreThreshold,
+    } = await req.json();
 
     if (!question || !question.prompt) {
       return new Response(
@@ -37,6 +44,7 @@ Deno.serve(withSentry("evaluate-answer", async (req: Request) => {
           language,
           undefined,
           answerCanvasBounds,
+          passScoreThreshold,
         ),
       },
     ];

@@ -113,6 +113,7 @@ type StudyCanvasPanelProps = {
   }[];
   onOpenCitation: (citation: StudyCitation) => void;
   depthProgressItems: StudyDepthProgressItem[];
+  passScoreThreshold: number;
   recallHintText?: string | null;
   recallHintRevealed?: boolean;
   onRevealRecallHint: () => void;
@@ -175,6 +176,7 @@ export function StudyCanvasPanel({
   references,
   onOpenCitation,
   depthProgressItems,
+  passScoreThreshold,
   recallHintText = null,
   recallHintRevealed = false,
   onRevealRecallHint,
@@ -460,6 +462,7 @@ export function StudyCanvasPanel({
                   palette={palette}
                   t={t}
                   items={depthProgressItems}
+                  passScoreThreshold={passScoreThreshold}
                 />
               )}
 
