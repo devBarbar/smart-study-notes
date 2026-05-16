@@ -44,6 +44,7 @@ export const getScaledCanvasSize = (size: Size, zoom: number): Size => ({
   height: size.height * clampCanvasZoom(zoom),
 });
 
+export const getCanvasDrawingCoordinateScale = (_zoom: number) => CANVAS_ZOOM_DEFAULT;
 export const getEndlessCanvasPaperSize = (
   size: Size,
   zoom: number,

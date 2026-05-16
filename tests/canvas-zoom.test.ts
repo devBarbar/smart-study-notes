@@ -8,6 +8,7 @@ import {
   CANVAS_ZOOM_STEP,
   clampCanvasZoom,
   getCanvasZoomPercentLabel,
+  getCanvasDrawingCoordinateScale,
   getEndlessCanvasPaperSize,
   getNextCanvasZoom,
   getScaledCanvasSize,
@@ -55,6 +56,12 @@ test("canvas zoom converts screen and logical canvas coordinates", () => {
     width: 2800,
     height: 1520,
   });
+});
+
+test("zoomed handwriting canvas keeps gesture coordinates aligned with the pen", () => {
+  assert.equal(getCanvasDrawingCoordinateScale(0.5), 1);
+  assert.equal(getCanvasDrawingCoordinateScale(1), 1);
+  assert.equal(getCanvasDrawingCoordinateScale(2), 1);
 });
 
 test("endless canvas paper keeps the zoomed page at least as tall as the viewport", () => {

@@ -31,6 +31,7 @@ import { NativeTextInput } from "@/components/ui/native-primitives";
 import { Colors } from "@/constants/theme";
 import {
   CANVAS_ZOOM_DEFAULT,
+  getCanvasDrawingCoordinateScale,
   getCanvasZoomPercentLabel,
   getEndlessCanvasPaperSize,
   getNextCanvasZoom,
@@ -693,7 +694,7 @@ export function StudyCanvasPanel({
                       width={canvasPaperSize.width}
                       height={canvasPaperSize.height}
                       strokeColor={canvasColor}
-                      coordinateScale={canvasZoom}
+                      coordinateScale={getCanvasDrawingCoordinateScale(canvasZoom)}
                       onDrawingStart={onDrawingStart}
                       onDrawingEnd={onDrawingEnd}
                       initialStrokes={initialCanvasStrokes}

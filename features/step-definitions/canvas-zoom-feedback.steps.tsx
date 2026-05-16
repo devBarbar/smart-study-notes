@@ -9,6 +9,7 @@ import { Pressable, Text, View } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import {
+  getCanvasDrawingCoordinateScale,
   getCanvasZoomPercentLabel,
   getEndlessCanvasPaperSize,
   getNextCanvasZoom,
@@ -194,6 +195,9 @@ const CanvasZoomHarness = () => {
     <View>
       <Text testID="zoom-label">{getCanvasZoomPercentLabel(zoom)}</Text>
       <Text testID="stroke-count">{strokeCount}</Text>
+      <Text testID="drawing-scale">
+        {getCanvasDrawingCoordinateScale(zoom)}
+      </Text>
       <Text testID="paper-width">{paperSize.width}</Text>
       <Text testID="paper-height">{paperSize.height}</Text>
       <Pressable
@@ -405,6 +409,10 @@ Then(
 
 Then("no handwriting stroke is created", function (this: AppWorld) {
   assert.equal(this.screen!.getByTestId("stroke-count").props.children, 0);
+});
+
+Then("drawing coordinates are not rescaled", function (this: AppWorld) {
+  assert.equal(this.screen!.getByTestId("drawing-scale").props.children, 1);
 });
 
 Then("the paper still fills the canvas viewport", function (this: AppWorld) {

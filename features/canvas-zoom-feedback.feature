@@ -18,6 +18,11 @@ Feature: Canvas zoom and inline grading feedback
     Then the canvas zoom reads "150%"
     And no handwriting stroke is created
 
+  Scenario: Zoomed drawing remains aligned with the pen
+    Given the study canvas zoom harness is open
+    When the student zooms out
+    Then drawing coordinates are not rescaled
+
   Scenario: Native Skia canvas draws live ink safely
     Given the native Skia handwriting canvas is open
     When the student writes a short stylus stroke
