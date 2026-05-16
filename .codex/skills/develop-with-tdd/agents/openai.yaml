@@ -1,0 +1,4 @@
+interface:
+  display_name: "Develop with TDD"
+  short_description: "Enforce TDD, coverage, and BDD acceptance tests"
+  default_prompt: "Use $develop-with-tdd while implementing this change."
