@@ -49,6 +49,7 @@ import {
 } from "@/lib/study/study-flow";
 import { insertCanvasFeedbackBlockBelowAnswer } from "@/lib/study/canvas-feedback";
 import {
+  buildGuidedAudioReplayFromMessage,
   buildListeningNotesQuestion,
   getListeningNotesAudioText,
   shouldUseListeningNotesFlow,
@@ -217,12 +218,16 @@ export default function StudySessionScreen() {
     });
     return names;
   }, [citationFileMetadata]);
-  const [activeCitation, setActiveCitation] = useState<StudyCitation | null>(null);
+  const [activeCitation, setActiveCitation] = useState<StudyCitation | null>(
+    null,
+  );
 
   const activeCitationFile = useMemo(
     () =>
       activeCitation?.lectureFileId
-        ? lecture?.files.find((file) => file.id === activeCitation.lectureFileId) ?? null
+        ? (lecture?.files.find(
+            (file) => file.id === activeCitation.lectureFileId,
+          ) ?? null)
         : null,
     [activeCitation, lecture?.files],
   );
@@ -232,7 +237,9 @@ export default function StudySessionScreen() {
     null,
   );
   const loadingEntry = studyQueries.studyPlanEntryQuery.isFetching;
-  const [recentMisconceptions, setRecentMisconceptions] = useState<string[]>([]);
+  const [recentMisconceptions, setRecentMisconceptions] = useState<string[]>(
+    [],
+  );
   const [depthChecks, setDepthChecks] = useState<StudyDepthCheck[]>([]);
 
   useEffect(() => {
@@ -328,7 +335,14 @@ export default function StudySessionScreen() {
     }
 
     return parts.join("\n\n");
-  }, [lecture, material, studyPlanEntry, recentMisconceptions, depthProgressLine, nextDepthCheckType]);
+  }, [
+    lecture,
+    material,
+    studyPlanEntry,
+    recentMisconceptions,
+    depthProgressLine,
+    nextDepthCheckType,
+  ]);
 
   // Simple outline for display (not for AI context)
   const studyOutline = useMemo(() => {
@@ -802,10 +816,14 @@ export default function StudySessionScreen() {
       const existingBlock = targetVisualBlocks.find(
         (block) =>
           block.messageId === messageId &&
-          getVisualBlockSignature(block) === getVisualBlockSignature(partialBlock),
+          getVisualBlockSignature(block) ===
+            getVisualBlockSignature(partialBlock),
       );
       if (existingBlock) {
-        return { id: existingBlock.id, bottom: getVisualBlockBottom(existingBlock) };
+        return {
+          id: existingBlock.id,
+          bottom: getVisualBlockBottom(existingBlock),
+        };
       }
 
       const insertKey = getVisualBlockInsertKey(
@@ -825,10 +843,9 @@ export default function StudySessionScreen() {
           : targetPage.strokes;
 
       // Calculate position - place below existing content
-      const currentMaxY = customBaseY ?? getMaxYWithVisualBlocks(
-        currentStrokes,
-        targetVisualBlocks,
-      );
+      const currentMaxY =
+        customBaseY ??
+        getMaxYWithVisualBlocks(currentStrokes, targetVisualBlocks);
       const padding = customBaseY !== undefined ? 16 : 60;
       const position = { x: 40, y: currentMaxY + padding };
 
@@ -884,13 +901,12 @@ export default function StudySessionScreen() {
             saveCanvasDebounceRef.current = null;
           }
           // Save immediately
-          updateSession(sessionId, { canvasPages: updatedPages })
-            .catch((err) =>
-              console.warn(
-                "[study] Failed to save canvas pages with visual block:",
-                err,
-              ),
-            );
+          updateSession(sessionId, { canvasPages: updatedPages }).catch((err) =>
+            console.warn(
+              "[study] Failed to save canvas pages with visual block:",
+              err,
+            ),
+          );
         }
 
         return updatedPages;
@@ -1095,15 +1111,18 @@ export default function StudySessionScreen() {
         }
 
         if (session.canvasPages && session.canvasPages.length > 0) {
-          const normalized = normalizeCanvasPageVisualBlocks(session.canvasPages);
+          const normalized = normalizeCanvasPageVisualBlocks(
+            session.canvasPages,
+          );
           restoreCanvasPages(normalized.pages);
           if (normalized.changed) {
-            updateSession(currentSessionId, { canvasPages: normalized.pages }).catch(
-              (err) =>
-                console.warn(
-                  "[study] Failed to save deduped visual blocks:",
-                  err,
-                ),
+            updateSession(currentSessionId, {
+              canvasPages: normalized.pages,
+            }).catch((err) =>
+              console.warn(
+                "[study] Failed to save deduped visual blocks:",
+                err,
+              ),
             );
           }
           console.log(
@@ -1141,7 +1160,9 @@ export default function StudySessionScreen() {
 
       if (savedMessages.length > 0) {
         setMessages(savedMessages);
-        messageIdsRef.current = new Set(savedMessages.map((message) => message.id));
+        messageIdsRef.current = new Set(
+          savedMessages.map((message) => message.id),
+        );
         restoredMessageIdsRef.current = new Set(
           savedMessages.map((message) => message.id),
         );
@@ -1153,6 +1174,13 @@ export default function StudySessionScreen() {
             content: m.text,
           }));
         setChatHistory(history);
+        const restoredGuidedAudioReplay = [...savedMessages]
+          .reverse()
+          .map((message) => buildGuidedAudioReplayFromMessage(message))
+          .find((replay): replay is GuidedAudioReplay => Boolean(replay));
+        if (restoredGuidedAudioReplay) {
+          setGuidedAudioReplay(restoredGuidedAudioReplay);
+        }
 
         console.log(
           "[study] Restored session with",
@@ -1498,8 +1526,7 @@ export default function StudySessionScreen() {
       id: questionId,
       prompt: guidedQuestion.questionText,
       targetConcepts: guidedQuestion.tutorQuestion.targetConcepts,
-      expectedAnswerPoints:
-        guidedQuestion.tutorQuestion.expectedAnswerPoints,
+      expectedAnswerPoints: guidedQuestion.tutorQuestion.expectedAnswerPoints,
       checkType:
         guidedQuestion.tutorQuestion.checkType ||
         nextDepthCheckType ||
@@ -1581,15 +1608,13 @@ export default function StudySessionScreen() {
   );
 
   const latestUnansweredTutorQuestionMessage = useMemo(() => {
-    return [...messages]
-      .reverse()
-      .find((message) => {
-        if (message.role !== "ai" || !message.tutorQuestion?.question) {
-          return false;
-        }
-        const questionKey = message.questionId ?? message.id;
-        return !answeredQuestionIds.has(questionKey);
-      });
+    return [...messages].reverse().find((message) => {
+      if (message.role !== "ai" || !message.tutorQuestion?.question) {
+        return false;
+      }
+      const questionKey = message.questionId ?? message.id;
+      return !answeredQuestionIds.has(questionKey);
+    });
   }, [answeredQuestionIds, messages]);
 
   const latestDiagnosticQuestionMessage = useMemo(() => {
@@ -1631,6 +1656,12 @@ export default function StudySessionScreen() {
       latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
       "guided_notes"
     ) {
+      const replay = buildGuidedAudioReplayFromMessage(
+        latestUnansweredTutorQuestionMessage,
+      );
+      if (replay) {
+        setGuidedAudioReplay(replay);
+      }
       const questionText = getQuestionTextForMessage(
         latestUnansweredTutorQuestionMessage,
       );
@@ -1649,7 +1680,9 @@ export default function StudySessionScreen() {
             questionText,
           );
         }
-        writtenQuestionIdsRef.current.add(latestUnansweredTutorQuestionMessage.id);
+        writtenQuestionIdsRef.current.add(
+          latestUnansweredTutorQuestionMessage.id,
+        );
       }
       setMemorizationMessageId(latestUnansweredTutorQuestionMessage.id);
       setRecallHintRevealed(false);
@@ -1664,7 +1697,15 @@ export default function StudySessionScreen() {
     );
     const resumeDirectlyToAnswer =
       shouldOpenCanvasOnResumeRef.current ||
-      restoredMessageIdsRef.current.has(latestUnansweredTutorQuestionMessage.id);
+      restoredMessageIdsRef.current.has(
+        latestUnansweredTutorQuestionMessage.id,
+      );
+    const restoredReplay = buildGuidedAudioReplayFromMessage(
+      latestUnansweredTutorQuestionMessage,
+    );
+    if (restoredReplay && resumeDirectlyToAnswer) {
+      setGuidedAudioReplay(restoredReplay);
+    }
     if (
       questionText &&
       (resumeDirectlyToAnswer ||
@@ -1672,17 +1713,19 @@ export default function StudySessionScreen() {
           latestUnansweredTutorQuestionMessage.id,
         ))
     ) {
-      writtenQuestionIdsRef.current.add(latestUnansweredTutorQuestionMessage.id);
+      writtenQuestionIdsRef.current.add(
+        latestUnansweredTutorQuestionMessage.id,
+      );
       const stageKind =
         resumeDirectlyToAnswer &&
         shouldUseListeningNotesFlow(
           latestUnansweredTutorQuestionMessage.tutorQuestion,
         )
           ? "answer"
-          : latestUnansweredTutorQuestionMessage.tutorQuestion?.assessmentKind ===
-              "final_quiz"
-          ? "final_quiz"
-          : "recall";
+          : latestUnansweredTutorQuestionMessage.tutorQuestion
+                ?.assessmentKind === "final_quiz"
+            ? "final_quiz"
+            : "recall";
       const existingStagePage = canvasPages.find(
         (page) =>
           page.stageKind === stageKind &&
@@ -1801,8 +1844,9 @@ export default function StudySessionScreen() {
           console.log("[study] retrieval matches", {
             matches: chunks.length,
             topSimilarity: chunks[0]?.similarity,
-            lectureMatches: chunks.filter((chunk) => chunk.sourceType === "lecture")
-              .length,
+            lectureMatches: chunks.filter(
+              (chunk) => chunk.sourceType === "lecture",
+            ).length,
             supportingMatches: chunks.filter(
               (chunk) =>
                 chunk.sourceType === "exercise" ||
@@ -1812,7 +1856,10 @@ export default function StudySessionScreen() {
         }
         return balanceCitationChunks(chunks, matchCount);
       } catch (err) {
-        console.warn("[study] retrieval failed, falling back to full context", err);
+        console.warn(
+          "[study] retrieval failed, falling back to full context",
+          err,
+        );
         return [];
       }
     },
@@ -1835,7 +1882,8 @@ export default function StudySessionScreen() {
           const sourceId = "sourceId" in chunk ? chunk.sourceId : `S${idx + 1}`;
           const source = citationFileMetadata.get(chunk.lectureFileId);
           const sourceName = source?.name ?? "Source";
-          const sourceType = source?.sourceType ?? chunk.sourceType ?? "lecture";
+          const sourceType =
+            source?.sourceType ?? chunk.sourceType ?? "lecture";
           const lineRange = chunk.startLine
             ? chunk.endLine && chunk.endLine !== chunk.startLine
               ? `, lines ${chunk.startLine}-${chunk.endLine}`
@@ -1916,7 +1964,10 @@ export default function StudySessionScreen() {
       const aiMsgId = uuid();
       streamingAiMessageIdsRef.current.add(aiMsgId);
       pushMessage({ id: aiMsgId, role: "ai", text: "" }, false);
-      let tutorModelInfo: Pick<StudyChatMessage, "aiModel" | "aiPlatform" | "reasoning"> = {};
+      let tutorModelInfo: Pick<
+        StudyChatMessage,
+        "aiModel" | "aiPlatform" | "reasoning"
+      > = {};
 
       try {
         try {
@@ -1940,7 +1991,8 @@ export default function StudySessionScreen() {
           retrievalQuery ?? userMessage,
           6,
         );
-        const citationSourceChunks = chunksToCitationSourceChunks(retrievedChunks);
+        const citationSourceChunks =
+          chunksToCitationSourceChunks(retrievedChunks);
 
         const contextBlock =
           citationSourceChunks.length > 0
@@ -1962,7 +2014,9 @@ export default function StudySessionScreen() {
               if (parsedDepthProgress) {
                 setResponseDepthProgress(parsedDepthProgress);
               }
-              const sourceCitationParsed = parseSourceCitations(learningParsed.text);
+              const sourceCitationParsed = parseSourceCitations(
+                learningParsed.text,
+              );
               const parsed = parseAIResponse(sourceCitationParsed.text);
               const visibleTutorText = stripDepthProgressFromText(
                 collapseRepeatedTutorText(parsed.text),
@@ -1989,7 +2043,9 @@ export default function StudySessionScreen() {
               if (parsedDepthProgress) {
                 setResponseDepthProgress(parsedDepthProgress);
               }
-              const sourceCitationParsed = parseSourceCitations(learningParsed.text);
+              const sourceCitationParsed = parseSourceCitations(
+                learningParsed.text,
+              );
               const parsed = parseAIResponse(sourceCitationParsed.text);
               const visibleTutorText = stripDepthProgressFromText(
                 collapseRepeatedTutorText(parsed.text),
@@ -2004,9 +2060,11 @@ export default function StudySessionScreen() {
               const visualBlockIds: string[] = [];
 
               // Determine starting position on canvas
-              const currentStrokes = canvasRef.current?.getStrokes() || canvasStrokes;
+              const currentStrokes =
+                canvasRef.current?.getStrokes() || canvasStrokes;
               let currentBatchY =
-                getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) + 40;
+                getMaxYWithVisualBlocks(currentStrokes, activeVisualBlocks) +
+                40;
 
               // Extract any question from the AI response
               const tempMsg: StudyChatMessage = {
@@ -2016,7 +2074,10 @@ export default function StudySessionScreen() {
                 ...tutorModelInfo,
                 reasoning: {
                   ...tutorModelInfo.reasoning,
-                  effort: result.reasoningEffort ?? tutorModelInfo.reasoning?.effort ?? null,
+                  effort:
+                    result.reasoningEffort ??
+                    tutorModelInfo.reasoning?.effort ??
+                    null,
                   ...result.usage,
                 },
                 tutorQuestion: learningParsed.tutorQuestion,
@@ -2038,7 +2099,11 @@ export default function StudySessionScreen() {
               let listeningNotesPage: CanvasPage | undefined;
               let listeningNotesPageId: string | undefined;
 
-              if (shouldUseListeningNotes && questionText && tutorQuestionForMessage) {
+              if (
+                shouldUseListeningNotes &&
+                questionText &&
+                tutorQuestionForMessage
+              ) {
                 const listeningStage = beginListeningNotesStage({
                   messageId: aiMsgId,
                   questionText,
@@ -2090,7 +2155,11 @@ export default function StudySessionScreen() {
                   tutorQuestionForMessage?.assessmentKind === "final_quiz"
                     ? "final_quiz"
                     : "recall";
-                createStageAnswerPageWithQuestion(stageKind, aiMsgId, questionText);
+                createStageAnswerPageWithQuestion(
+                  stageKind,
+                  aiMsgId,
+                  questionText,
+                );
               }
 
               // Final update with citations, cost, and visual block references
@@ -2111,7 +2180,10 @@ export default function StudySessionScreen() {
                 aiPlatform: result.aiPlatform ?? tutorModelInfo.aiPlatform,
                 reasoning: {
                   ...tutorModelInfo.reasoning,
-                  effort: result.reasoningEffort ?? tutorModelInfo.reasoning?.effort ?? null,
+                  effort:
+                    result.reasoningEffort ??
+                    tutorModelInfo.reasoning?.effort ??
+                    null,
                   ...result.usage,
                 },
                 citations,
@@ -2123,7 +2195,10 @@ export default function StudySessionScreen() {
 
               // Speak the cleaned message (without visual block JSON)
               speakMessage(explanationOnlyText, aiMsgId).catch((err) => {
-                console.warn("[study] Failed to play listening notes audio:", err);
+                console.warn(
+                  "[study] Failed to play listening notes audio:",
+                  err,
+                );
                 if (shouldUseListeningNotes) {
                   finishGuidedNotesStageRef.current();
                 }
@@ -2288,7 +2363,10 @@ export default function StudySessionScreen() {
           statusScore: averageScore,
         });
       } catch (err) {
-        console.warn("[study] Failed to mark topic passed after final quiz", err);
+        console.warn(
+          "[study] Failed to mark topic passed after final quiz",
+          err,
+        );
       }
 
       try {
@@ -2320,7 +2398,9 @@ export default function StudySessionScreen() {
         lecture.studyPlan.length > 0
       ) {
         const updatedPlan = lecture.studyPlan.map((entry) =>
-          entry.id === studyPlanEntryId ? { ...entry, status: "passed" } : entry,
+          entry.id === studyPlanEntryId
+            ? { ...entry, status: "passed" }
+            : entry,
         );
         if (updatedPlan.every((entry) => entry.status === "passed")) {
           hasShownLecturePassedToastRef.current = true;
@@ -2359,7 +2439,11 @@ export default function StudySessionScreen() {
   );
 
   const startFinalQuiz = useCallback(async () => {
-    if (finalQuizStartedRef.current || finalQuizPassedRef.current || !studyPlanEntry) {
+    if (
+      finalQuizStartedRef.current ||
+      finalQuizPassedRef.current ||
+      !studyPlanEntry
+    ) {
       return;
     }
 
@@ -2418,10 +2502,13 @@ export default function StudySessionScreen() {
         });
       }
 
-      const quizQuestions = generatedQuizQuestions.slice(0, FINAL_QUIZ_QUESTION_COUNT).map(
-        (question, index): StudyQuestion => {
+      const quizQuestions = generatedQuizQuestions
+        .slice(0, FINAL_QUIZ_QUESTION_COUNT)
+        .map((question, index): StudyQuestion => {
           const checkType =
-            REQUIRED_TUTOR_CHECK_TYPES[index % REQUIRED_TUTOR_CHECK_TYPES.length];
+            REQUIRED_TUTOR_CHECK_TYPES[
+              index % REQUIRED_TUTOR_CHECK_TYPES.length
+            ];
           return {
             ...question,
             id: `final-quiz-${uuid()}`,
@@ -2432,8 +2519,7 @@ export default function StudySessionScreen() {
             difficulty: checkType === "transfer" ? "edge_case" : "exam",
             assessmentKind: "final_quiz",
           };
-        },
-      );
+        });
 
       setFinalQuizState({
         status: "active",
@@ -2471,29 +2557,31 @@ export default function StudySessionScreen() {
     t,
   ]);
 
-  const buildFallbackWarmupQuestions = useCallback((): StudyWarmupQuestion[] => {
-    const concepts = studyPlanEntry?.keyConcepts?.length
-      ? studyPlanEntry.keyConcepts
-      : [studyPlanEntry?.title || studyTitle].filter(Boolean);
-    const sourceConcepts = concepts.length > 0 ? concepts : [studyTitle];
+  const buildFallbackWarmupQuestions =
+    useCallback((): StudyWarmupQuestion[] => {
+      const concepts = studyPlanEntry?.keyConcepts?.length
+        ? studyPlanEntry.keyConcepts
+        : [studyPlanEntry?.title || studyTitle].filter(Boolean);
+      const sourceConcepts = concepts.length > 0 ? concepts : [studyTitle];
 
-    return Array.from({ length: WARMUP_QUESTION_COUNT }, (_, index) => {
-      const concept = sourceConcepts[index % sourceConcepts.length] || studyTitle;
-      return shuffleStudyWarmupOptions({
-        id: `warmup-fallback-${index}`,
-        prompt: t("study.warmupFallbackPrompt", { concept }),
-        options: [
-          t("study.warmupFallbackCorrect", { concept }),
-          t("study.warmupFallbackDistractorDetail"),
-          t("study.warmupFallbackDistractorUnrelated"),
-          t("study.warmupFallbackDistractorMemorize"),
-        ],
-        correctOptionIndex: 0,
-        explanation: t("study.warmupFallbackExplanation", { concept }),
-        targetConcepts: [concept],
+      return Array.from({ length: WARMUP_QUESTION_COUNT }, (_, index) => {
+        const concept =
+          sourceConcepts[index % sourceConcepts.length] || studyTitle;
+        return shuffleStudyWarmupOptions({
+          id: `warmup-fallback-${index}`,
+          prompt: t("study.warmupFallbackPrompt", { concept }),
+          options: [
+            t("study.warmupFallbackCorrect", { concept }),
+            t("study.warmupFallbackDistractorDetail"),
+            t("study.warmupFallbackDistractorUnrelated"),
+            t("study.warmupFallbackDistractorMemorize"),
+          ],
+          correctOptionIndex: 0,
+          explanation: t("study.warmupFallbackExplanation", { concept }),
+          targetConcepts: [concept],
+        });
       });
-    });
-  }, [studyPlanEntry, studyTitle, t]);
+    }, [studyPlanEntry, studyTitle, t]);
 
   const finishWarmup = useCallback(
     (answers: WarmupAnswer[], questions: StudyWarmupQuestion[]) => {
@@ -2501,12 +2589,16 @@ export default function StudySessionScreen() {
       const missed = answers.filter((answer) => !answer.correct);
       const missedConcepts = Array.from(
         new Set(
-          missed.flatMap((answer) => answer.targetConcepts ?? []).filter(Boolean),
+          missed
+            .flatMap((answer) => answer.targetConcepts ?? [])
+            .filter(Boolean),
         ),
       );
       const selectedSummary = answers
         .map((answer, index) => {
-          const question = questions.find((item) => item.id === answer.questionId);
+          const question = questions.find(
+            (item) => item.id === answer.questionId,
+          );
           const selected = question?.options[answer.selectedOptionIndex] ?? "";
           const correct = question?.options[answer.correctOptionIndex] ?? "";
           return `${index + 1}. ${answer.correct ? "Correct" : "Missed"}: ${answer.prompt}\nSelected: ${selected}\nCorrect: ${correct}\nFeedback: ${answer.explanation}`;
@@ -2758,7 +2850,8 @@ export default function StudySessionScreen() {
         diagnosticMessage?.tutorQuestion?.question || buildDiagnosticQuestion();
       const questionId = diagnosticMessage?.questionId || diagnosticMessage?.id;
       const topic = studyPlanEntry?.title || studyTitle;
-      const concepts = studyPlanEntry?.keyConcepts?.join(", ") || "the key ideas";
+      const concepts =
+        studyPlanEntry?.keyConcepts?.join(", ") || "the key ideas";
       const displayText =
         noClue || !attemptText.trim()
           ? t("study.noClueYet")
@@ -2941,7 +3034,10 @@ export default function StudySessionScreen() {
       setAnswerLinks((prev) => [link, ...prev]);
 
       const evaluatedCheckType = normalizeTutorCheckType(
-        feedback.checkType || questionToEvaluate.checkType || nextDepthCheckType || "recall",
+        feedback.checkType ||
+          questionToEvaluate.checkType ||
+          nextDepthCheckType ||
+          "recall",
       );
       if (lectureId) {
         const currentLectureId = lectureId;
@@ -2983,28 +3079,32 @@ export default function StudySessionScreen() {
         !isGuidedNotesAnswer &&
         depthCheckPassed &&
         questionToEvaluate.requiredForPass !== false;
-      const localDepthCheck: StudyDepthCheck | null = !isFinalQuizAnswer && !isGuidedNotesAnswer && studyPlanEntryId
-        ? {
-            id: uuid(),
-            lectureId,
-            studyPlanEntryId,
-            sessionId: sessionId as string,
-            questionId: questionToEvaluate.id,
-            questionText: questionToEvaluate.prompt,
-            checkType: evaluatedCheckType,
-            score: normalizedScore,
-            correctness: feedback.correctness,
-            passed: depthCheckPassed,
-            canCountForPass,
-            feedbackSummary: feedback.summary,
-            createdAt: new Date().toISOString(),
-          }
-        : null;
+      const localDepthCheck: StudyDepthCheck | null =
+        !isFinalQuizAnswer && !isGuidedNotesAnswer && studyPlanEntryId
+          ? {
+              id: uuid(),
+              lectureId,
+              studyPlanEntryId,
+              sessionId: sessionId as string,
+              questionId: questionToEvaluate.id,
+              questionText: questionToEvaluate.prompt,
+              checkType: evaluatedCheckType,
+              score: normalizedScore,
+              correctness: feedback.correctness,
+              passed: depthCheckPassed,
+              canCountForPass,
+              feedbackSummary: feedback.summary,
+              createdAt: new Date().toISOString(),
+            }
+          : null;
       let latestDepthChecks = depthChecks;
       if (localDepthCheck) {
         try {
           const savedDepthCheck = await saveStudyDepthCheck(localDepthCheck);
-          latestDepthChecks = [savedDepthCheck ?? localDepthCheck, ...depthChecks];
+          latestDepthChecks = [
+            savedDepthCheck ?? localDepthCheck,
+            ...depthChecks,
+          ];
           setDepthChecks(latestDepthChecks);
         } catch (err) {
           console.warn("[study] Failed to save depth check", err);
@@ -3022,7 +3122,11 @@ export default function StudySessionScreen() {
           return finalQuizPassedRef.current ? "passed" : "in_progress";
         }
         const passedDepthCount = getPassedDepthCheckTypes(checks).size;
-        if (typeof score === "number" && score <= 40 && passedDepthCount === 0) {
+        if (
+          typeof score === "number" &&
+          score <= 40 &&
+          passedDepthCount === 0
+        ) {
           return "failed";
         }
         if (correctness === "incorrect" && passedDepthCount === 0) {
@@ -3158,13 +3262,12 @@ export default function StudySessionScreen() {
 
       // Create flashcard if this depth check was answered well. Topic status
       // still requires the full depth ladder before it becomes passed.
-      const isCheckPassed =
-        isFinalQuizAnswer
+      const isCheckPassed = isFinalQuizAnswer
+        ? typeof normalizedScore === "number" &&
+          normalizedScore >= FINAL_QUIZ_PASS_SCORE
+        : isGuidedNotesAnswer
           ? typeof normalizedScore === "number" &&
-            normalizedScore >= FINAL_QUIZ_PASS_SCORE
-          : isGuidedNotesAnswer
-            ? typeof normalizedScore === "number" &&
-              normalizedScore >= DEPTH_PASS_SCORE
+            normalizedScore >= DEPTH_PASS_SCORE
           : depthCheckPassed;
       const isTopicDepthPassed = studyPlanEntryId
         ? canPassStudyPlanEntry(latestDepthChecks)
@@ -3212,22 +3315,25 @@ export default function StudySessionScreen() {
         }));
         try {
           await saveStudyMisconceptions(savedMisconceptions);
-          setRecentMisconceptions((prev) => [
-            ...savedMisconceptions.map((item) => `${item.concept}: ${item.note}`),
-            ...prev,
-          ].slice(0, 8));
+          setRecentMisconceptions((prev) =>
+            [
+              ...savedMisconceptions.map(
+                (item) => `${item.concept}: ${item.note}`,
+              ),
+              ...prev,
+            ].slice(0, 8),
+          );
         } catch (err) {
           console.warn("[study] Failed to save misconceptions:", err);
         }
       }
 
       if (!isCheckPassed) {
-        const notebookConcepts =
-          feedback.misconceptions?.length
-            ? feedback.misconceptions
-            : questionToEvaluate.targetConcepts?.length
-              ? questionToEvaluate.targetConcepts
-              : [questionToEvaluate.prompt];
+        const notebookConcepts = feedback.misconceptions?.length
+          ? feedback.misconceptions
+          : questionToEvaluate.targetConcepts?.length
+            ? questionToEvaluate.targetConcepts
+            : [questionToEvaluate.prompt];
         addMistakeNotebookItems(
           notebookConcepts.slice(0, 4).map((concept) => ({
             concept,
@@ -3240,7 +3346,12 @@ export default function StudySessionScreen() {
         );
       }
 
-      if (!isFinalQuizAnswer && !isGuidedNotesAnswer && isCheckPassed && lectureId) {
+      if (
+        !isFinalQuizAnswer &&
+        !isGuidedNotesAnswer &&
+        isCheckPassed &&
+        lectureId
+      ) {
         try {
           // Collect AI explanation from previous messages (up to 3 messages before the question)
           const questionMsgIndex = messages.findIndex(
@@ -3311,9 +3422,10 @@ export default function StudySessionScreen() {
             ? t("study.feedback.partial")
             : t("study.feedback.incorrect");
 
-      const scoreText = typeof feedback.score === "number"
-        ? `\n\n${t("study.scoreLabel", { score: feedback.score })}`
-        : "";
+      const scoreText =
+        typeof feedback.score === "number"
+          ? `\n\n${t("study.scoreLabel", { score: feedback.score })}`
+          : "";
       const whatWentRightText =
         feedback.whatWentRight && feedback.whatWentRight.length
           ? `\n\n${t("study.feedback.whatWentRightIntro")}\n${feedback.whatWentRight.map((i) => `• ${i}`).join("\n")}`
@@ -3370,12 +3482,16 @@ export default function StudySessionScreen() {
         isFinalQuizAnswer && !finalQuizComplete
           ? finalQuizState.questions[nextFinalQuizIndex]
           : undefined;
-      const weakestFinalQuizAnswer = nextFinalQuizAnswers.reduce<
-        FinalQuizAnswer | null
-      >((weakest, answer) => {
-        if (!weakest) return answer;
-        return (answer.score ?? 0) < (weakest.score ?? 0) ? answer : weakest;
-      }, null);
+      const weakestFinalQuizAnswer =
+        nextFinalQuizAnswers.reduce<FinalQuizAnswer | null>(
+          (weakest, answer) => {
+            if (!weakest) return answer;
+            return (answer.score ?? 0) < (weakest.score ?? 0)
+              ? answer
+              : weakest;
+          },
+          null,
+        );
       const finalQuizRestartQuestion: StudyQuestion | null =
         finalQuizComplete &&
         !finalQuizPassed &&
@@ -3410,74 +3526,74 @@ export default function StudySessionScreen() {
         Boolean(studyPlanEntry) &&
         !finalQuizStartedRef.current &&
         !finalQuizPassedRef.current;
-      const followUpQuestion: StudyQuestion | null =
-        finalQuizRestartQuestion
-          ? finalQuizRestartQuestion
-          : isGuidedNotesAnswer
-            ? {
-                id: `guided-recall-${uuid()}`,
-                prompt:
-                  studyPlanEntry
-                    ? buildDepthQuestion(
-                        nextMissingCheckType || evaluatedCheckType || "recall",
-                        studyPlanEntry,
-                      )
-                    : feedback.followUpQuestion ||
-                      `Explain this again from memory: ${questionToEvaluate.prompt}`,
-                targetConcepts:
-                  studyPlanEntry?.keyConcepts ||
-                  questionToEvaluate.targetConcepts ||
-                  feedback.misconceptions,
-                expectedAnswerPoints:
-                  questionToEvaluate.expectedAnswerPoints ||
-                  (nextMissingCheckType
-                    ? [TUTOR_CHECK_DESCRIPTIONS[nextMissingCheckType]]
-                    : undefined),
-                checkType: nextMissingCheckType || evaluatedCheckType || "recall",
-                requiredForPass: true,
-                difficulty: "basic",
-                assessmentKind: "depth",
-              }
-          : !isFinalQuizAnswer && !isCheckPassed
+      const followUpQuestion: StudyQuestion | null = finalQuizRestartQuestion
+        ? finalQuizRestartQuestion
+        : isGuidedNotesAnswer
           ? {
-              id: `follow-up-${uuid()}`,
-              prompt:
-                feedback.followUpQuestion ||
-                (studyPlanEntry
-                  ? buildDepthQuestion(evaluatedCheckType, studyPlanEntry)
-                  : `Explain the missing part again, focusing on ${feedback.misconceptions?.[0] || questionToEvaluate.prompt}.`),
+              id: `guided-recall-${uuid()}`,
+              prompt: studyPlanEntry
+                ? buildDepthQuestion(
+                    nextMissingCheckType || evaluatedCheckType || "recall",
+                    studyPlanEntry,
+                  )
+                : feedback.followUpQuestion ||
+                  `Explain this again from memory: ${questionToEvaluate.prompt}`,
               targetConcepts:
-                questionToEvaluate.targetConcepts || feedback.misconceptions,
-              expectedAnswerPoints: questionToEvaluate.expectedAnswerPoints,
-              checkType: evaluatedCheckType,
-              requiredForPass: questionToEvaluate.requiredForPass ?? true,
-              difficulty: questionToEvaluate.difficulty,
+                studyPlanEntry?.keyConcepts ||
+                questionToEvaluate.targetConcepts ||
+                feedback.misconceptions,
+              expectedAnswerPoints:
+                questionToEvaluate.expectedAnswerPoints ||
+                (nextMissingCheckType
+                  ? [TUTOR_CHECK_DESCRIPTIONS[nextMissingCheckType]]
+                  : undefined),
+              checkType: nextMissingCheckType || evaluatedCheckType || "recall",
+              requiredForPass: true,
+              difficulty: "basic",
               assessmentKind: "depth",
             }
-          : !isFinalQuizAnswer &&
-              !isGuidedNotesAnswer &&
-              isCheckPassed &&
-              !isTopicDepthPassed &&
-              nextMissingCheckType &&
-              studyPlanEntry
+          : !isFinalQuizAnswer && !isCheckPassed
             ? {
-                id: `depth-${nextMissingCheckType}-${uuid()}`,
-                prompt: buildDepthQuestion(nextMissingCheckType, studyPlanEntry),
-                targetConcepts: studyPlanEntry.keyConcepts,
-                expectedAnswerPoints: [
-                  TUTOR_CHECK_DESCRIPTIONS[nextMissingCheckType],
-                ],
-                checkType: nextMissingCheckType,
-                requiredForPass: true,
-                difficulty:
-                  nextMissingCheckType === "transfer" ? "edge_case" : "basic",
+                id: `follow-up-${uuid()}`,
+                prompt:
+                  feedback.followUpQuestion ||
+                  (studyPlanEntry
+                    ? buildDepthQuestion(evaluatedCheckType, studyPlanEntry)
+                    : `Explain the missing part again, focusing on ${feedback.misconceptions?.[0] || questionToEvaluate.prompt}.`),
+                targetConcepts:
+                  questionToEvaluate.targetConcepts || feedback.misconceptions,
+                expectedAnswerPoints: questionToEvaluate.expectedAnswerPoints,
+                checkType: evaluatedCheckType,
+                requiredForPass: questionToEvaluate.requiredForPass ?? true,
+                difficulty: questionToEvaluate.difficulty,
                 assessmentKind: "depth",
               }
-            : null;
-      const followUpText =
-        followUpQuestion
-          ? `\n\n${t("study.feedback.followUpIntro")}\n${followUpQuestion.prompt}`
-          : "";
+            : !isFinalQuizAnswer &&
+                !isGuidedNotesAnswer &&
+                isCheckPassed &&
+                !isTopicDepthPassed &&
+                nextMissingCheckType &&
+                studyPlanEntry
+              ? {
+                  id: `depth-${nextMissingCheckType}-${uuid()}`,
+                  prompt: buildDepthQuestion(
+                    nextMissingCheckType,
+                    studyPlanEntry,
+                  ),
+                  targetConcepts: studyPlanEntry.keyConcepts,
+                  expectedAnswerPoints: [
+                    TUTOR_CHECK_DESCRIPTIONS[nextMissingCheckType],
+                  ],
+                  checkType: nextMissingCheckType,
+                  requiredForPass: true,
+                  difficulty:
+                    nextMissingCheckType === "transfer" ? "edge_case" : "basic",
+                  assessmentKind: "depth",
+                }
+              : null;
+      const followUpText = followUpQuestion
+        ? `\n\n${t("study.feedback.followUpIntro")}\n${followUpQuestion.prompt}`
+        : "";
       const costText = feedback.costUsd
         ? `\n\n_${t("cost.label", { value: feedback.costUsd.toFixed(4) })}_`
         : "";
@@ -3491,7 +3607,8 @@ export default function StudySessionScreen() {
           : isFinalQuizAnswer
             ? `\n\n${t("study.finalQuizProgress", {
                 current: nextFinalQuizAnswers.length,
-                total: finalQuizState.questions.length || FINAL_QUIZ_QUESTION_COUNT,
+                total:
+                  finalQuizState.questions.length || FINAL_QUIZ_QUESTION_COUNT,
               })}`
             : "";
 
@@ -3599,7 +3716,9 @@ export default function StudySessionScreen() {
       if (shouldStartFinalQuiz) {
         await startFinalQuiz();
       } else if (!followUpQuestion && !nextFinalQuizQuestion) {
-        setStudyPhase(finalQuizState.status === "active" ? "final_quiz" : "tutor");
+        setStudyPhase(
+          finalQuizState.status === "active" ? "final_quiz" : "tutor",
+        );
       }
       setAnswerDraft("");
     } catch (error) {
@@ -3781,7 +3900,9 @@ export default function StudySessionScreen() {
           : sourceName;
       }
 
-      return citation.pageNumber ? `Source p. ${citation.pageNumber}` : "Source";
+      return citation.pageNumber
+        ? `Source p. ${citation.pageNumber}`
+        : "Source";
     },
     [citationFileNames],
   );
@@ -3949,7 +4070,7 @@ export default function StudySessionScreen() {
         : null;
   const activeWarmupQuestion =
     studyPhase === "warmup" && warmupState.status === "active"
-      ? warmupState.questions[warmupState.currentIndex] ?? null
+      ? (warmupState.questions[warmupState.currentIndex] ?? null)
       : null;
   const activeRecallQuestion = latestUnansweredTutorQuestionMessage
     ? {
@@ -3963,7 +4084,8 @@ export default function StudySessionScreen() {
         targetConcepts:
           latestUnansweredTutorQuestionMessage.tutorQuestion?.targetConcepts,
         expectedAnswerPoints:
-          latestUnansweredTutorQuestionMessage.tutorQuestion?.expectedAnswerPoints,
+          latestUnansweredTutorQuestionMessage.tutorQuestion
+            ?.expectedAnswerPoints,
         checkType: normalizeTutorCheckType(
           latestUnansweredTutorQuestionMessage.tutorQuestion?.checkType ||
             currentQuestion?.checkType ||
@@ -4097,7 +4219,8 @@ export default function StudySessionScreen() {
           mistakeNotebook={mistakeNotebook}
           diagnosticQuestion={
             studyPhase === "diagnostic"
-              ? latestDiagnosticQuestionMessage?.tutorQuestion?.question ?? null
+              ? (latestDiagnosticQuestionMessage?.tutorQuestion?.question ??
+                null)
               : null
           }
           chatListRef={chatListRef}

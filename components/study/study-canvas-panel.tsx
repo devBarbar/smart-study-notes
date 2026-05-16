@@ -6,6 +6,7 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  useWindowDimensions,
   View,
   ViewStyle,
 } from "react-native";
@@ -31,6 +32,7 @@ import { Colors } from "@/constants/theme";
 import {
   CANVAS_ZOOM_DEFAULT,
   getCanvasZoomPercentLabel,
+  getEndlessCanvasPaperSize,
   getNextCanvasZoom,
   getScaledCanvasSize,
   scaleCanvasZoomByPinch,
@@ -179,11 +181,25 @@ export function StudyCanvasPanel({
   onStopGuidedAudio,
 }: StudyCanvasPanelProps) {
   const [referencesOpen, setReferencesOpen] = useState(false);
+  const [studyDetailsOpen, setStudyDetailsOpen] = useState(false);
   const [canvasZoom, setCanvasZoom] = useState(CANVAS_ZOOM_DEFAULT);
   const pinchStartZoomRef = useRef(CANVAS_ZOOM_DEFAULT);
+  const windowSize = useWindowDimensions();
   const visibleReferences = useMemo(() => references.slice(0, 4), [references]);
   const zoomLabel = getCanvasZoomPercentLabel(canvasZoom);
-  const scaledCanvasSize = getScaledCanvasSize(canvasSize, canvasZoom);
+  const canvasViewportSize = useMemo(
+    () => ({
+      width: Math.max(windowSize.width - 64, 320),
+      height: Math.max(windowSize.height - (studyDetailsOpen ? 280 : 190), 620),
+    }),
+    [studyDetailsOpen, windowSize.height, windowSize.width],
+  );
+  const canvasPaperSize = getEndlessCanvasPaperSize(
+    canvasSize,
+    canvasZoom,
+    canvasViewportSize,
+  );
+  const scaledCanvasSize = getScaledCanvasSize(canvasPaperSize, canvasZoom);
   const pinchGesture = useMemo(
     () =>
       Gesture.Pinch()
@@ -191,7 +207,9 @@ export function StudyCanvasPanel({
           pinchStartZoomRef.current = canvasZoom;
         })
         .onUpdate((event) => {
-          setCanvasZoom(scaleCanvasZoomByPinch(pinchStartZoomRef.current, event.scale));
+          setCanvasZoom(
+            scaleCanvasZoomByPinch(pinchStartZoomRef.current, event.scale),
+          );
         })
         .runOnJS(true),
     [canvasZoom],
@@ -215,50 +233,41 @@ export function StudyCanvasPanel({
         scrollEnabled={scrollEnabled}
         showsVerticalScrollIndicator
       >
-        <View style={styles.canvasHeader}>
-          <ThemedText type="title" style={styles.canvasTitle}>
-            {studyTitle}
-          </ThemedText>
-          {!lockedAnswerMode && (
-            <Pressable
-              style={[
-                styles.tutorToggleButton,
-                tutorCollapsed && styles.tutorToggleButtonCollapsed,
-              ]}
-              onPress={toggleTutor}
-              accessibilityLabel={
-                tutorCollapsed ? t("study.showTutor") : t("study.hideTutor")
-              }
-              accessibilityRole="button"
-            >
-              <Ionicons
-                name={tutorCollapsed ? "chatbubbles" : "chevron-forward"}
-                size={20}
-                color={tutorCollapsed ? "#10b981" : palette.textMuted}
-              />
-              {tutorCollapsed && (
-                <ThemedText style={styles.tutorToggleText}>
-                  {t("study.showTutor")}
-                </ThemedText>
-              )}
-            </Pressable>
-          )}
-        </View>
-
-        {lockedAnswerMode && (
-          <View style={styles.answerModeBanner}>
-            <View style={styles.answerModeBannerIcon}>
-              <Ionicons
-                name={guidedNotesMode ? "create-outline" : "eye-off-outline"}
-                size={16}
-                color="#ffffff"
-              />
+        <View style={styles.studyDetailsAccordion}>
+          <Pressable
+            testID="study-details-toggle"
+            style={styles.studyDetailsAccordionHeader}
+            onPress={() => setStudyDetailsOpen((current) => !current)}
+            accessibilityRole="button"
+            accessibilityLabel={
+              studyDetailsOpen
+                ? t("study.hideStudyDetails")
+                : t("study.showStudyDetails")
+            }
+          >
+            <View style={styles.studyDetailsHeaderCopy}>
+              <ThemedText
+                type="defaultSemiBold"
+                style={styles.studyDetailsTitle}
+              >
+                {studyTitle}
+              </ThemedText>
+              <ThemedText style={styles.studyDetailsSubtitle}>
+                {activePage
+                  ? activePage.stageLabel
+                    ? getStagePageLabel(
+                        activePage.stageLabel,
+                        activePage.stagePageNumber ?? 1,
+                      )
+                    : t("study.pageLabel", {
+                        number:
+                          canvasPages.findIndex(
+                            (page) => page.id === activePage.id,
+                          ) + 1,
+                      })
+                  : t("study.pageLabel", { number: 1 })}
+              </ThemedText>
             </View>
-            <ThemedText style={styles.answerModeBannerText}>
-              {guidedNotesMode
-                ? t("study.guidedNotesMode")
-                : t("study.answerModeLocked")}
-            </ThemedText>
             {guidedAudioAvailable && (
               <Pressable
                 style={styles.guidedAudioButton}
@@ -284,210 +293,332 @@ export function StudyCanvasPanel({
                 </ThemedText>
               </Pressable>
             )}
-            <Pressable
-              style={styles.referenceSummaryButton}
-              onPress={() => setReferencesOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t("study.referencesTitle")}
-            >
-              <Ionicons name="library-outline" size={15} color={palette.primary} />
-              <ThemedText style={styles.referenceSummaryText}>
-                {referenceCountLabel}
-              </ThemedText>
-            </Pressable>
-          </View>
-        )}
+            <Ionicons
+              name={studyDetailsOpen ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={palette.textMuted}
+            />
+          </Pressable>
 
-        {lockedAnswerMode && recallHintText && (
-          <View style={styles.socraticHintCard}>
-            <View style={styles.socraticHintHeader}>
-              <View style={styles.socraticHintIcon}>
-                <Ionicons name="bulb-outline" size={15} color="#ffffff" />
-              </View>
-              <View style={styles.socraticHintCopy}>
-                <ThemedText style={styles.socraticHintTitle}>
-                  {t("study.socraticHintTitle")}
+          {studyDetailsOpen && (
+            <View
+              testID="study-details-content"
+              style={styles.studyDetailsContent}
+            >
+              <View style={styles.canvasHeader}>
+                <ThemedText type="title" style={styles.canvasTitle}>
+                  {studyTitle}
                 </ThemedText>
-                <ThemedText style={styles.socraticHintSubtitle}>
-                  {t("study.socraticHintSubtitle")}
-                </ThemedText>
+                {!lockedAnswerMode && (
+                  <Pressable
+                    style={[
+                      styles.tutorToggleButton,
+                      tutorCollapsed && styles.tutorToggleButtonCollapsed,
+                    ]}
+                    onPress={toggleTutor}
+                    accessibilityLabel={
+                      tutorCollapsed
+                        ? t("study.showTutor")
+                        : t("study.hideTutor")
+                    }
+                    accessibilityRole="button"
+                  >
+                    <Ionicons
+                      name={tutorCollapsed ? "chatbubbles" : "chevron-forward"}
+                      size={20}
+                      color={tutorCollapsed ? "#10b981" : palette.textMuted}
+                    />
+                    {tutorCollapsed && (
+                      <ThemedText style={styles.tutorToggleText}>
+                        {t("study.showTutor")}
+                      </ThemedText>
+                    )}
+                  </Pressable>
+                )}
               </View>
-              {!recallHintRevealed && (
-                <Pressable
-                  style={styles.socraticHintButton}
-                  onPress={onRevealRecallHint}
-                  accessibilityRole="button"
-                  accessibilityLabel={t("study.showHint")}
-                >
-                  <Ionicons name="eye-outline" size={14} color={palette.warning} />
-                  <ThemedText style={styles.socraticHintButtonText}>
-                    {t("study.showHint")}
+
+              {lockedAnswerMode && (
+                <View style={styles.answerModeBanner}>
+                  <View style={styles.answerModeBannerIcon}>
+                    <Ionicons
+                      name={
+                        guidedNotesMode ? "create-outline" : "eye-off-outline"
+                      }
+                      size={16}
+                      color="#ffffff"
+                    />
+                  </View>
+                  <ThemedText style={styles.answerModeBannerText}>
+                    {guidedNotesMode
+                      ? t("study.guidedNotesMode")
+                      : t("study.answerModeLocked")}
                   </ThemedText>
-                </Pressable>
-              )}
-            </View>
-            {recallHintRevealed && (
-              <ThemedText style={styles.socraticHintText}>
-                {recallHintText}
-              </ThemedText>
-            )}
-          </View>
-        )}
-
-        {!lockedAnswerMode && studyPlanEntry && (
-          <View style={styles.topicFocusBadge}>
-            <Ionicons name="locate" size={14} color="#10b981" />
-            <ThemedText style={styles.topicFocusText}>
-              {t("study.focusBadge", {
-                concepts:
-                  studyPlanEntry.keyConcepts?.slice(0, 3).join(", ") ||
-                  t("study.focusConceptsFallback"),
-              })}
-            </ThemedText>
-          </View>
-        )}
-
-        {studyPlanEntry && depthProgressItems.length > 0 && (
-          <StudyDepthProgress
-            styles={styles}
-            palette={palette}
-            t={t}
-            items={depthProgressItems}
-          />
-        )}
-
-        {!lockedAnswerMode && (
-          <ThemedText style={{ marginBottom: 8, color: "#64748b" }}>
-            {studyOutline}
-          </ThemedText>
-        )}
-
-        <View style={styles.workspaceRail}>
-          <View style={styles.workspaceRailHeader}>
-            <View style={styles.workspaceTitleStack}>
-              <ThemedText type="defaultSemiBold" style={styles.workspaceTitle}>
-                {t("study.canvasTitle")}
-              </ThemedText>
-              <ThemedText style={styles.workspaceSubtitle}>
-                {activePage
-                  ? activePage.stageLabel
-                    ? getStagePageLabel(
-                        activePage.stageLabel,
-                        activePage.stagePageNumber ?? 1,
-                      )
-                    : t("study.pageLabel", {
-                        number:
-                          canvasPages.findIndex((page) => page.id === activePage.id) + 1,
-                      })
-                  : t("study.pageLabel", { number: 1 })}
-              </ThemedText>
-            </View>
-            <Pressable
-              style={styles.referencesButton}
-              onPress={() => setReferencesOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t("study.referencesTitle")}
-            >
-              <Ionicons name="library-outline" size={16} color={palette.primary} />
-              <ThemedText style={styles.referencesButtonText}>
-                {referenceCountLabel}
-              </ThemedText>
-            </Pressable>
-          </View>
-
-          <View style={styles.pageNavContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.pageTabsContent}
-            >
-              {canvasPages.map((page, index) => (
-                <Pressable
-                  key={page.id}
-                  style={[
-                    styles.pageTab,
-                    page.id === activePageId && styles.pageTabActive,
-                  ]}
-                  onPress={() => onSelectPage(page.id)}
-                >
-                  {page.titleStrokes.length > 0 ? (
-                    <View style={styles.pageTitlePreview}>
-                      <HandwritingCanvas
-                        width={60}
-                        height={20}
-                        initialStrokes={page.titleStrokes}
-                        mode="pen"
-                        readOnly
-                      />
-                    </View>
-                  ) : (
-                    <ThemedText
-                      style={[
-                        styles.pageTabText,
-                        page.id === activePageId && styles.pageTabTextActive,
-                      ]}
+                  {guidedAudioAvailable && (
+                    <Pressable
+                      style={styles.guidedAudioButton}
+                      onPress={
+                        guidedAudioPlaying
+                          ? onStopGuidedAudio
+                          : onReplayGuidedAudio
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        guidedAudioPlaying
+                          ? t("study.stopGuidedAudio")
+                          : t("study.replayGuidedAudio")
+                      }
                     >
-                      {page.stageLabel
-                        ? getStagePageLabel(page.stageLabel, page.stagePageNumber ?? 1)
-                        : t("study.pageLabel", { number: index + 1 })}
+                      <Ionicons
+                        name={
+                          guidedAudioPlaying ? "stop-circle" : "play-circle"
+                        }
+                        size={16}
+                        color={palette.primary}
+                      />
+                      <ThemedText style={styles.guidedAudioButtonText}>
+                        {guidedAudioPlaying
+                          ? t("study.stopGuidedAudio")
+                          : t("study.replayGuidedAudio")}
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                  <Pressable
+                    style={styles.referenceSummaryButton}
+                    onPress={() => setReferencesOpen(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("study.referencesTitle")}
+                  >
+                    <Ionicons
+                      name="library-outline"
+                      size={15}
+                      color={palette.primary}
+                    />
+                    <ThemedText style={styles.referenceSummaryText}>
+                      {referenceCountLabel}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+              )}
+
+              {lockedAnswerMode && recallHintText && (
+                <View style={styles.socraticHintCard}>
+                  <View style={styles.socraticHintHeader}>
+                    <View style={styles.socraticHintIcon}>
+                      <Ionicons name="bulb-outline" size={15} color="#ffffff" />
+                    </View>
+                    <View style={styles.socraticHintCopy}>
+                      <ThemedText style={styles.socraticHintTitle}>
+                        {t("study.socraticHintTitle")}
+                      </ThemedText>
+                      <ThemedText style={styles.socraticHintSubtitle}>
+                        {t("study.socraticHintSubtitle")}
+                      </ThemedText>
+                    </View>
+                    {!recallHintRevealed && (
+                      <Pressable
+                        style={styles.socraticHintButton}
+                        onPress={onRevealRecallHint}
+                        accessibilityRole="button"
+                        accessibilityLabel={t("study.showHint")}
+                      >
+                        <Ionicons
+                          name="eye-outline"
+                          size={14}
+                          color={palette.warning}
+                        />
+                        <ThemedText style={styles.socraticHintButtonText}>
+                          {t("study.showHint")}
+                        </ThemedText>
+                      </Pressable>
+                    )}
+                  </View>
+                  {recallHintRevealed && (
+                    <ThemedText style={styles.socraticHintText}>
+                      {recallHintText}
                     </ThemedText>
                   )}
-                </Pressable>
-              ))}
-              <Pressable style={styles.addPageButton} onPress={onAddPage}>
-                <Ionicons name="add" size={20} color="#10b981" />
-              </Pressable>
-            </ScrollView>
-          </View>
+                </View>
+              )}
 
-          <View style={styles.pageTitleContainer}>
-            <ThemedText style={styles.pageTitleLabel}>
-              {t("study.pageTitleLabel")}
-            </ThemedText>
-            <View style={styles.pageTitleCanvasWrapper}>
-              <HandwritingCanvas
-                key={activePage?.id ? `${activePage.id}-title` : "title-default"}
-                ref={titleCanvasRef}
-                width={260}
-                height={34}
-                strokeColor={canvasColor}
-                strokeWidth={2}
-                initialStrokes={activePage?.titleStrokes}
-                onStrokesChange={onTitleStrokesChange}
-              />
-            </View>
-          </View>
-
-          {visibleReferences.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.referenceStrip}
-            >
-              {visibleReferences.map((item) => (
-                <Pressable
-                  key={item.key}
-                  style={styles.referenceChip}
-                  onPress={() => onOpenCitation(item.citation)}
-                  accessibilityRole="button"
-                >
-                  <ThemedText style={styles.referenceChipSource}>
-                    {item.sourceLabel}
+              {!lockedAnswerMode && studyPlanEntry && (
+                <View style={styles.topicFocusBadge}>
+                  <Ionicons name="locate" size={14} color="#10b981" />
+                  <ThemedText style={styles.topicFocusText}>
+                    {t("study.focusBadge", {
+                      concepts:
+                        studyPlanEntry.keyConcepts?.slice(0, 3).join(", ") ||
+                        t("study.focusConceptsFallback"),
+                    })}
                   </ThemedText>
-                  <ThemedText
-                    style={styles.referenceChipText}
-                    numberOfLines={1}
-                    ellipsizeMode="middle"
+                </View>
+              )}
+
+              {studyPlanEntry && depthProgressItems.length > 0 && (
+                <StudyDepthProgress
+                  styles={styles}
+                  palette={palette}
+                  t={t}
+                  items={depthProgressItems}
+                />
+              )}
+
+              {!lockedAnswerMode && (
+                <ThemedText style={{ marginBottom: 8, color: "#64748b" }}>
+                  {studyOutline}
+                </ThemedText>
+              )}
+
+              <View style={styles.workspaceRail}>
+                <View style={styles.workspaceRailHeader}>
+                  <View style={styles.workspaceTitleStack}>
+                    <ThemedText
+                      type="defaultSemiBold"
+                      style={styles.workspaceTitle}
+                    >
+                      {t("study.canvasTitle")}
+                    </ThemedText>
+                    <ThemedText style={styles.workspaceSubtitle}>
+                      {activePage
+                        ? activePage.stageLabel
+                          ? getStagePageLabel(
+                              activePage.stageLabel,
+                              activePage.stagePageNumber ?? 1,
+                            )
+                          : t("study.pageLabel", {
+                              number:
+                                canvasPages.findIndex(
+                                  (page) => page.id === activePage.id,
+                                ) + 1,
+                            })
+                        : t("study.pageLabel", { number: 1 })}
+                    </ThemedText>
+                  </View>
+                  <Pressable
+                    style={styles.referencesButton}
+                    onPress={() => setReferencesOpen(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t("study.referencesTitle")}
                   >
-                    {item.label}
+                    <Ionicons
+                      name="library-outline"
+                      size={16}
+                      color={palette.primary}
+                    />
+                    <ThemedText style={styles.referencesButtonText}>
+                      {referenceCountLabel}
+                    </ThemedText>
+                  </Pressable>
+                </View>
+
+                <View style={styles.pageNavContainer}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.pageTabsContent}
+                  >
+                    {canvasPages.map((page, index) => (
+                      <Pressable
+                        key={page.id}
+                        style={[
+                          styles.pageTab,
+                          page.id === activePageId && styles.pageTabActive,
+                        ]}
+                        onPress={() => onSelectPage(page.id)}
+                      >
+                        {page.titleStrokes.length > 0 ? (
+                          <View style={styles.pageTitlePreview}>
+                            <HandwritingCanvas
+                              width={60}
+                              height={20}
+                              initialStrokes={page.titleStrokes}
+                              mode="pen"
+                              readOnly
+                            />
+                          </View>
+                        ) : (
+                          <ThemedText
+                            style={[
+                              styles.pageTabText,
+                              page.id === activePageId &&
+                                styles.pageTabTextActive,
+                            ]}
+                          >
+                            {page.stageLabel
+                              ? getStagePageLabel(
+                                  page.stageLabel,
+                                  page.stagePageNumber ?? 1,
+                                )
+                              : t("study.pageLabel", { number: index + 1 })}
+                          </ThemedText>
+                        )}
+                      </Pressable>
+                    ))}
+                    <Pressable style={styles.addPageButton} onPress={onAddPage}>
+                      <Ionicons name="add" size={20} color="#10b981" />
+                    </Pressable>
+                  </ScrollView>
+                </View>
+
+                <View style={styles.pageTitleContainer}>
+                  <ThemedText style={styles.pageTitleLabel}>
+                    {t("study.pageTitleLabel")}
                   </ThemedText>
-                </Pressable>
-              ))}
-            </ScrollView>
+                  <View style={styles.pageTitleCanvasWrapper}>
+                    <HandwritingCanvas
+                      key={
+                        activePage?.id
+                          ? `${activePage.id}-title`
+                          : "title-default"
+                      }
+                      ref={titleCanvasRef}
+                      width={260}
+                      height={34}
+                      strokeColor={canvasColor}
+                      strokeWidth={2}
+                      initialStrokes={activePage?.titleStrokes}
+                      onStrokesChange={onTitleStrokesChange}
+                    />
+                  </View>
+                </View>
+
+                {visibleReferences.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.referenceStrip}
+                  >
+                    {visibleReferences.map((item) => (
+                      <Pressable
+                        key={item.key}
+                        style={styles.referenceChip}
+                        onPress={() => onOpenCitation(item.citation)}
+                        accessibilityRole="button"
+                      >
+                        <ThemedText style={styles.referenceChipSource}>
+                          {item.sourceLabel}
+                        </ThemedText>
+                        <ThemedText
+                          style={styles.referenceChipText}
+                          numberOfLines={1}
+                          ellipsizeMode="middle"
+                        >
+                          {item.label}
+                        </ThemedText>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            </View>
           )}
         </View>
 
-        <View style={styles.canvasScrollShell}>
+        <View
+          style={[
+            styles.canvasScrollShell,
+            { height: canvasViewportSize.height },
+          ]}
+        >
           {grading && (
             <View style={styles.gradingCanvasOverlay} pointerEvents="auto">
               <View style={styles.gradingCanvasCard}>
@@ -532,8 +663,8 @@ export function StudyCanvasPanel({
                     style={[
                       styles.canvasWrapper,
                       {
-                        width: canvasSize.width,
-                        height: canvasSize.height,
+                        width: canvasPaperSize.width,
+                        height: canvasPaperSize.height,
                         transform: [{ scale: canvasZoom }],
                       },
                     ]}
@@ -559,8 +690,8 @@ export function StudyCanvasPanel({
                     <HandwritingCanvas
                       key={activePage?.id || "canvas-default"}
                       ref={canvasRef}
-                      width={canvasSize.width}
-                      height={canvasSize.height}
+                      width={canvasPaperSize.width}
+                      height={canvasPaperSize.height}
                       strokeColor={canvasColor}
                       coordinateScale={canvasZoom}
                       onDrawingStart={onDrawingStart}
@@ -669,9 +800,15 @@ export function StudyCanvasPanel({
           onClear={onClearCanvas}
           onUndo={onUndo}
           zoomLabel={zoomLabel}
-          onZoomOut={() => setCanvasZoom((current) => getNextCanvasZoom(current, "out"))}
-          onZoomIn={() => setCanvasZoom((current) => getNextCanvasZoom(current, "in"))}
-          onZoomReset={() => setCanvasZoom((current) => getNextCanvasZoom(current, "reset"))}
+          onZoomOut={() =>
+            setCanvasZoom((current) => getNextCanvasZoom(current, "out"))
+          }
+          onZoomIn={() =>
+            setCanvasZoom((current) => getNextCanvasZoom(current, "in"))
+          }
+          onZoomReset={() =>
+            setCanvasZoom((current) => getNextCanvasZoom(current, "reset"))
+          }
           zoomOutLabel={t("study.zoomOut")}
           zoomInLabel={t("study.zoomIn")}
           zoomResetLabel={t("study.zoomReset")}
@@ -691,7 +828,10 @@ export function StudyCanvasPanel({
           <Pressable style={styles.referencesModal} onPress={() => undefined}>
             <View style={styles.referencesModalHeader}>
               <View>
-                <ThemedText type="defaultSemiBold" style={styles.referencesModalTitle}>
+                <ThemedText
+                  type="defaultSemiBold"
+                  style={styles.referencesModalTitle}
+                >
                   {t("study.referencesTitle")}
                 </ThemedText>
                 <ThemedText style={styles.referencesModalSubtitle}>

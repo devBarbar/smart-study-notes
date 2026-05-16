@@ -35,3 +35,11 @@ Feature: Canvas-first listening notes for tutor checks
       | missing_question  | Explanation only.            |
       | embedded_question | Prompt? More explanation.    |
       | trailing_question | Explanation before question. |
+
+  Scenario: Restored guided notes keep replay audio available
+    Given a restored guided tutor message
+    Then the restored replay audio is "Explanation before question."
+
+  Scenario: Restored diagnostic messages do not expose guided replay
+    Given a restored diagnostic tutor message
+    Then no restored replay audio is available

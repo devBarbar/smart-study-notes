@@ -399,6 +399,8 @@ const en = {
   'study.gradingHint': 'Your canvas and answer text will be graded',
   'study.recallTimer': 'Read, understand, and memorize. Tutor hides in {{seconds}}s.',
   'study.answerModeLocked': 'Answer from memory. The tutor will return after you submit.',
+  'study.showStudyDetails': 'Show study details',
+  'study.hideStudyDetails': 'Hide study details',
   'study.guidedNotesMode': 'Listen and write notes on this page. The question appears on a clean answer page when the explanation ends.',
   'study.replayGuidedAudio': 'Replay audio',
   'study.stopGuidedAudio': 'Stop and answer',

@@ -1,51 +1,76 @@
-import assert from 'node:assert/strict';
+import assert from "node:assert/strict";
 
-import { Given, Then, When } from '@cucumber/cucumber';
-import { fireEvent, render } from '@testing-library/react-native/pure';
-import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Given, Then, When } from "@cucumber/cucumber";
+import { fireEvent, render } from "@testing-library/react-native/pure";
+import React, { useState } from "react";
+import { Pressable, Text, View } from "react-native";
 
 import {
   getCanvasZoomPercentLabel,
+  getEndlessCanvasPaperSize,
   getNextCanvasZoom,
   scaleCanvasZoomByPinch,
-} from '../../lib/canvas-zoom';
+} from "../../lib/canvas-zoom";
 import {
   buildCanvasFeedbackData,
   estimateCanvasFeedbackBlockSize,
   getCanvasFeedbackToneColor,
   insertCanvasFeedbackBlockBelowAnswer,
-} from '../../lib/study/canvas-feedback';
-import { buildInitialCanvasPage } from '../../lib/study/study-canvas-pages';
-import { StudyFeedback } from '../../types';
-import { AppWorld } from '../support/world';
+} from "../../lib/study/canvas-feedback";
+import { buildInitialCanvasPage } from "../../lib/study/study-canvas-pages";
+import { StudyFeedback } from "../../types";
+import { AppWorld } from "../support/world";
 
 const CanvasZoomHarness = () => {
   const [zoom, setZoom] = useState(1);
   const [strokeCount, setStrokeCount] = useState(0);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const paperSize = getEndlessCanvasPaperSize(
+    { width: 1400, height: 760 },
+    zoom,
+    { width: 900, height: 900 },
+  );
 
   return (
     <View>
       <Text testID="zoom-label">{getCanvasZoomPercentLabel(zoom)}</Text>
       <Text testID="stroke-count">{strokeCount}</Text>
+      <Text testID="paper-width">{paperSize.width}</Text>
+      <Text testID="paper-height">{paperSize.height}</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={
+          detailsOpen ? "Hide study details" : "Show study details"
+        }
+        onPress={() => setDetailsOpen((current) => !current)}
+      >
+        <Text>{detailsOpen ? "Hide study details" : "Show study details"}</Text>
+      </Pressable>
+      {detailsOpen && (
+        <View testID="study-details">
+          <Text>Study outline</Text>
+        </View>
+      )}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Zoom out"
-        onPress={() => setZoom((current) => getNextCanvasZoom(current, 'out'))}
+        onPress={() => setZoom((current) => getNextCanvasZoom(current, "out"))}
       >
         <Text>Zoom out</Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Zoom in"
-        onPress={() => setZoom((current) => getNextCanvasZoom(current, 'in'))}
+        onPress={() => setZoom((current) => getNextCanvasZoom(current, "in"))}
       >
         <Text>Zoom in</Text>
       </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Reset zoom"
-        onPress={() => setZoom((current) => getNextCanvasZoom(current, 'reset'))}
+        onPress={() =>
+          setZoom((current) => getNextCanvasZoom(current, "reset"))
+        }
       >
         <Text>Reset zoom</Text>
       </Pressable>
@@ -63,25 +88,28 @@ const CanvasZoomHarness = () => {
   );
 };
 
-const gradingPresets: Record<string, { feedback: StudyFeedback; passed: boolean }> = {
+const gradingPresets: Record<
+  string,
+  { feedback: StudyFeedback; passed: boolean }
+> = {
   failed: {
     passed: false,
     feedback: {
-      summary: 'The answer misses a causal link.',
-      correctness: 'incorrect',
+      summary: "The answer misses a causal link.",
+      correctness: "incorrect",
       score: 50,
-      whatWentWrong: ['Missing the key cause'],
-      correctAnswer: 'Name the cause and explain why it changes the result.',
-      rewriteExample: 'The key cause is X, so the result changes because Y.',
+      whatWentWrong: ["Missing the key cause"],
+      correctAnswer: "Name the cause and explain why it changes the result.",
+      rewriteExample: "The key cause is X, so the result changes because Y.",
     },
   },
   passed: {
     passed: true,
     feedback: {
-      summary: 'The answer is complete.',
-      correctness: 'correct',
+      summary: "The answer is complete.",
+      correctness: "correct",
       score: 94,
-      whatWentRight: ['Named the key idea'],
+      whatWentRight: ["Named the key idea"],
       whatWentWrong: [],
     },
   },
@@ -97,14 +125,14 @@ const InlineFeedbackHarness = ({
   const data = buildCanvasFeedbackData(selected.feedback, selected.passed);
   const size = estimateCanvasFeedbackBlockSize(data);
   const inserted = insertCanvasFeedbackBlockBelowAnswer({
-    pages: [buildInitialCanvasPage('page-1')],
-    pageId: 'page-1',
+    pages: [buildInitialCanvasPage("page-1")],
+    pageId: "page-1",
     messageId: `feedback-${preset}`,
     feedback: selected.feedback,
     isPassed: selected.passed,
     answerBounds: { x: 40, y: 620, width: 280, height: 90 },
     id: `feedback-block-${preset}`,
-    createdAt: '2026-05-16T00:00:00.000Z',
+    createdAt: "2026-05-16T00:00:00.000Z",
   });
   const color = getCanvasFeedbackToneColor(data.status);
 
@@ -135,56 +163,86 @@ const InlineFeedbackHarness = ({
   );
 };
 
-Given('the study canvas zoom harness is open', function (this: AppWorld) {
+Given("the study canvas zoom harness is open", function (this: AppWorld) {
   this.screen = render(<CanvasZoomHarness />);
 });
 
 Given(
-  'the inline grading harness has a {word} answer',
+  "the inline grading harness has a {word} answer",
   function (this: AppWorld, preset: keyof typeof gradingPresets) {
     assert.ok(gradingPresets[preset], `Unknown grading preset: ${preset}`);
     this.screen = render(<InlineFeedbackHarness preset={preset} />);
   },
 );
 
-When('the student zooms out', function (this: AppWorld) {
-  fireEvent.press(this.screen!.getByText('Zoom out'));
+When("the student zooms out", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Zoom out"));
 });
 
-When('the student zooms in', function (this: AppWorld) {
-  fireEvent.press(this.screen!.getByText('Zoom in'));
+When("the student zooms in", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Zoom in"));
 });
 
-When('the student resets zoom', function (this: AppWorld) {
-  fireEvent.press(this.screen!.getByText('Reset zoom'));
+When("the student resets zoom", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Reset zoom"));
 });
 
-When('the student pinches the canvas larger', function (this: AppWorld) {
-  fireEvent.press(this.screen!.getByText('Pinch larger'));
+When("the student pinches the canvas larger", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Pinch larger"));
 });
 
-When('the tutor writes feedback below the answer', function (this: AppWorld) {
-  fireEvent.press(this.screen!.getByText('Write feedback'));
+When("the student expands the study details", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Show study details"));
 });
 
-Then('the canvas zoom reads {string}', function (this: AppWorld, label: string) {
-  assert.equal(this.screen!.getByTestId('zoom-label').props.children, label);
+When("the student collapses the study details", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Hide study details"));
 });
 
-Then('no handwriting stroke is created', function (this: AppWorld) {
-  assert.equal(this.screen!.getByTestId('stroke-count').props.children, 0);
-});
-
-Then('the canvas feedback is red', function (this: AppWorld) {
-  assert.equal(this.screen!.getByTestId('feedback-color').props.children, '#dc2626');
-});
-
-Then('the canvas feedback is green', function (this: AppWorld) {
-  assert.equal(this.screen!.getByTestId('feedback-color').props.children, '#16a34a');
+When("the tutor writes feedback below the answer", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Write feedback"));
 });
 
 Then(
-  'the canvas feedback includes {string}',
+  "the canvas zoom reads {string}",
+  function (this: AppWorld, label: string) {
+    assert.equal(this.screen!.getByTestId("zoom-label").props.children, label);
+  },
+);
+
+Then("no handwriting stroke is created", function (this: AppWorld) {
+  assert.equal(this.screen!.getByTestId("stroke-count").props.children, 0);
+});
+
+Then("the paper still fills the canvas viewport", function (this: AppWorld) {
+  assert.equal(this.screen!.getByTestId("paper-width").props.children, 1400);
+  assert.equal(this.screen!.getByTestId("paper-height").props.children, 1200);
+});
+
+Then("the study details are hidden", function (this: AppWorld) {
+  assert.equal(this.screen!.queryByTestId("study-details"), null);
+});
+
+Then("the study details are visible", function (this: AppWorld) {
+  assert.ok(this.screen!.getByTestId("study-details"));
+});
+
+Then("the canvas feedback is red", function (this: AppWorld) {
+  assert.equal(
+    this.screen!.getByTestId("feedback-color").props.children,
+    "#dc2626",
+  );
+});
+
+Then("the canvas feedback is green", function (this: AppWorld) {
+  assert.equal(
+    this.screen!.getByTestId("feedback-color").props.children,
+    "#16a34a",
+  );
+});
+
+Then(
+  "the canvas feedback includes {string}",
   function (this: AppWorld, text: string) {
     assert.ok(this.screen!.getByText(text));
   },

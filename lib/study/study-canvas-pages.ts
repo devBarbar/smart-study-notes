@@ -3,11 +3,11 @@ import {
   EDGE_THRESHOLD,
   INITIAL_CANVAS_HEIGHT,
   INITIAL_CANVAS_WIDTH,
-} from './study-session-constants';
-import { CanvasStageInfo } from './study-session-types';
-import { CanvasPage, CanvasStrokeData } from '../../types';
+} from "./study-session-constants";
+import { CanvasStageInfo } from "./study-session-types";
+import { CanvasPage, CanvasStrokeData } from "../../types";
 
-export const buildInitialCanvasPage = (id = 'page-1'): CanvasPage => ({
+export const buildInitialCanvasPage = (id = "page-1"): CanvasPage => ({
   id,
   titleStrokes: [],
   strokes: [],
@@ -64,17 +64,14 @@ export const replacePageStrokes = (
   pages: CanvasPage[],
   pageId: string,
   strokes: CanvasStrokeData[],
-) =>
-  pages.map((page) => (page.id === pageId ? { ...page, strokes } : page));
+) => pages.map((page) => (page.id === pageId ? { ...page, strokes } : page));
 
 export const replacePageTitleStrokes = (
   pages: CanvasPage[],
   pageId: string,
   titleStrokes: CanvasStrokeData[],
 ) =>
-  pages.map((page) =>
-    page.id === pageId ? { ...page, titleStrokes } : page,
-  );
+  pages.map((page) => (page.id === pageId ? { ...page, titleStrokes } : page));
 
 export const clearPageStrokes = (pages: CanvasPage[], pageId: string) =>
   replacePageStrokes(pages, pageId, []);
@@ -102,8 +99,12 @@ export const growPageNearEdge = (
 
     updatedPages.push({
       ...page,
-      width: nearRightEdge ? page.width + CANVAS_GROW_CHUNK : page.width,
-      height: nearBottomEdge ? page.height + CANVAS_GROW_CHUNK : page.height,
+      width: nearRightEdge
+        ? Math.max(page.width + CANVAS_GROW_CHUNK, position.x + EDGE_THRESHOLD)
+        : page.width,
+      height: nearBottomEdge
+        ? Math.max(page.height + CANVAS_GROW_CHUNK, position.y + EDGE_THRESHOLD)
+        : page.height,
     });
   }
 

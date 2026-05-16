@@ -399,6 +399,8 @@ const de = {
   'study.gradingHint': 'Dein Canvas und deine Antwort werden bewertet',
   'study.recallTimer': 'Lies, verstehe und merke es dir. Der Tutor wird in {{seconds}}s ausgeblendet.',
   'study.answerModeLocked': 'Antworte aus dem Gedächtnis. Der Tutor kommt nach dem Absenden zurück.',
+  'study.showStudyDetails': 'Studiendetails anzeigen',
+  'study.hideStudyDetails': 'Studiendetails ausblenden',
   'study.guidedNotesMode': 'Höre zu und schreibe Notizen auf diese Seite. Die Frage erscheint nach der Erklärung auf einer leeren Antwortseite.',
   'study.replayGuidedAudio': 'Audio erneut abspielen',
   'study.stopGuidedAudio': 'Stoppen und antworten',
