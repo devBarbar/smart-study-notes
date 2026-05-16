@@ -423,6 +423,7 @@ export default function StudySessionScreen() {
     canvasSize,
     initialCanvasStrokes,
     activeVisualBlocks,
+    canvasPagesRef,
     saveCanvasDebounceRef,
     saveCanvasPagesNow,
     createNewPage,
@@ -3284,31 +3285,29 @@ export default function StudySessionScreen() {
         ? getNextTutorCheckType(latestDepthChecks, targetPassScore)
         : null;
       const feedbackMessageId = uuid();
-      let insertedFeedbackBlock: CanvasVisualBlockType | null = null;
-      setCanvasPages((prev) => {
-        const result = insertCanvasFeedbackBlockBelowAnswer({
-          pages: prev,
-          pageId: activePageId,
-          messageId: feedbackMessageId,
-          feedback: {
-            ...feedback,
-            score: normalizedScore,
-          },
-          isPassed: isCheckPassed,
-          answerBounds: canvasBounds ?? undefined,
-        });
-        insertedFeedbackBlock = result.block;
-        saveCanvasPagesNow(result.pages);
-        return result.pages;
+      const feedbackInsertResult = insertCanvasFeedbackBlockBelowAnswer({
+        pages:
+          canvasPagesRef.current.length > 0
+            ? canvasPagesRef.current
+            : canvasPages,
+        pageId: activePageId,
+        messageId: feedbackMessageId,
+        feedback: {
+          ...feedback,
+          score: normalizedScore,
+        },
+        isPassed: isCheckPassed,
+        answerBounds: canvasBounds ?? undefined,
       });
+      setCanvasPages(feedbackInsertResult.pages);
+      saveCanvasPagesNow(feedbackInsertResult.pages);
       setTimeout(() => {
-        if (!insertedFeedbackBlock) return;
         canvasScrollRef.current?.scrollTo({
-          y: Math.max(insertedFeedbackBlock.position.y - 24, 0),
+          y: Math.max(feedbackInsertResult.block.position.y - 24, 0),
           animated: true,
         });
         canvasHScrollRef.current?.scrollTo({
-          x: Math.max(insertedFeedbackBlock.position.x - 24, 0),
+          x: Math.max(feedbackInsertResult.block.position.x - 24, 0),
           animated: true,
         });
       }, 150);

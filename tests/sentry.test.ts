@@ -39,7 +39,7 @@ test('sentry launch config does not enable Hermes profiling by default', () => {
   assert.equal('profilesSampleRate' in options, false);
 });
 
-test('sentry mobile replay is opt-in through positive replay sample rates', () => {
+test('sentry native replay stays disabled even with positive replay sample rates', () => {
   const options = buildSentryInitOptions({
     env: {
       ...baseEnv,
@@ -48,6 +48,21 @@ test('sentry mobile replay is opt-in through positive replay sample rates', () =
     },
     expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
     platformOS: 'ios',
+  });
+
+  assert.equal('replaysSessionSampleRate' in options, false);
+  assert.equal('replaysOnErrorSampleRate' in options, false);
+});
+
+test('sentry web replay is opt-in through positive replay sample rates', () => {
+  const options = buildSentryInitOptions({
+    env: {
+      ...baseEnv,
+      EXPO_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE: '0.25',
+      EXPO_PUBLIC_SENTRY_REPLAY_ON_ERROR_SAMPLE_RATE: '1',
+    },
+    expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
+    platformOS: 'web',
   });
 
   assert.equal(options.replaysSessionSampleRate, 0.25);
@@ -67,7 +82,7 @@ test('sentry Hermes profiling stays disabled when only a positive profile sample
   assert.equal('profilesSampleRate' in options, false);
 });
 
-test('sentry Hermes profiling requires an explicit enable flag and positive profile sample rate', () => {
+test('sentry native profiling stays disabled with an explicit enable flag and positive profile sample rate', () => {
   const options = buildSentryInitOptions({
     env: {
       ...baseEnv,
@@ -76,6 +91,20 @@ test('sentry Hermes profiling requires an explicit enable flag and positive prof
     },
     expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
     platformOS: 'ios',
+  });
+
+  assert.equal('profilesSampleRate' in options, false);
+});
+
+test('sentry web profiling requires an explicit enable flag and positive profile sample rate', () => {
+  const options = buildSentryInitOptions({
+    env: {
+      ...baseEnv,
+      EXPO_PUBLIC_SENTRY_ENABLE_PROFILING: 'true',
+      EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE: '0.5',
+    },
+    expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
+    platformOS: 'web',
   });
 
   assert.equal(options.profilesSampleRate, 0.5);

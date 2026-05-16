@@ -37,6 +37,7 @@ export const buildSentryInitOptions = (params: BuildSentryInitOptionsParams = {}
     env.EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE === undefined
       ? undefined
       : parseSampleRate(Number(env.EXPO_PUBLIC_SENTRY_PROFILES_SAMPLE_RATE), 0);
+  const nativeTelemetryRiskDisabled = platformOS === 'ios' || platformOS === 'android';
 
   const options: SentryInitOptions = {
     dsn: sentryDsn,
@@ -59,9 +60,9 @@ export const buildSentryInitOptions = (params: BuildSentryInitOptionsParams = {}
     ],
   };
 
-  if (profilingEnabled && profilesSampleRate !== undefined && profilesSampleRate > 0) options.profilesSampleRate = profilesSampleRate;
-  if (replayOnErrorSampleRate !== undefined && replayOnErrorSampleRate > 0) options.replaysOnErrorSampleRate = replayOnErrorSampleRate;
-  if (replaySessionSampleRate !== undefined && replaySessionSampleRate > 0) options.replaysSessionSampleRate = replaySessionSampleRate;
+  if (!nativeTelemetryRiskDisabled && profilingEnabled && profilesSampleRate !== undefined && profilesSampleRate > 0) options.profilesSampleRate = profilesSampleRate;
+  if (!nativeTelemetryRiskDisabled && replayOnErrorSampleRate !== undefined && replayOnErrorSampleRate > 0) options.replaysOnErrorSampleRate = replayOnErrorSampleRate;
+  if (!nativeTelemetryRiskDisabled && replaySessionSampleRate !== undefined && replaySessionSampleRate > 0) options.replaysSessionSampleRate = replaySessionSampleRate;
   return options; };
 
 Sentry.init(buildSentryInitOptions());
