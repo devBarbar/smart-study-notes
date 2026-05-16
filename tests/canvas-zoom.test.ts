@@ -59,9 +59,10 @@ test("canvas zoom converts screen and logical canvas coordinates", () => {
 });
 
 test("zoomed handwriting canvas keeps gesture coordinates aligned with the pen", () => {
-  assert.equal(getCanvasDrawingCoordinateScale(0.5), 1);
+  assert.equal(getCanvasDrawingCoordinateScale(0.5), 0.5);
   assert.equal(getCanvasDrawingCoordinateScale(1), 1);
-  assert.equal(getCanvasDrawingCoordinateScale(2), 1);
+  assert.equal(getCanvasDrawingCoordinateScale(2), 2);
+  assert.equal(getCanvasDrawingCoordinateScale(3), CANVAS_ZOOM_MAX);
 });
 
 test("endless canvas paper keeps the zoomed page at least as tall as the viewport", () => {

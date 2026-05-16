@@ -79,6 +79,19 @@ type ActiveStrokeStyle = {
   width: number;
 } | null;
 
+type GesturePoint = CanvasPoint & {
+  absoluteX?: number;
+  absoluteY?: number;
+};
+
+type CanvasWindowFrame = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  measured: boolean;
+};
+
 const PAPER_COLOR = "#f8fafc";
 const LINE_COLOR = "#e2e8f0";
 
@@ -135,6 +148,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     ref,
   ) => {
     const skiaCanvasRef = useCanvasRef();
+    const gestureSurfaceRef = useRef<View | null>(null);
     const nextStrokeIdRef = useRef(1);
     const renderStroke = useCallback((stroke: CanvasStroke): RenderStroke => {
       const id = nextStrokeIdRef.current;
@@ -177,6 +191,13 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       null,
     );
     const hasLoadedInitialRef = useRef(false);
+    const canvasWindowFrameRef = useRef<CanvasWindowFrame>({
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      measured: false,
+    });
 
     const modeRef = useRef(currentMode);
     const colorRef = useRef(currentColor);
@@ -202,9 +223,33 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     onStrokesChangeRef.current = onStrokesChange;
     coordinateScaleRef.current = coordinateScale;
 
+    const measureGestureSurface = useCallback(() => {
+      gestureSurfaceRef.current?.measureInWindow((x, y, measuredWidth, measuredHeight) => {
+        canvasWindowFrameRef.current = {
+          x,
+          y,
+          width: measuredWidth,
+          height: measuredHeight,
+          measured: true,
+        };
+      });
+    }, []);
+
     const toCanvasPoint = useCallback(
-      (point: CanvasPoint): CanvasPoint => {
+      (point: GesturePoint): CanvasPoint => {
         const scale = coordinateScaleRef.current || 1;
+        const frame = canvasWindowFrameRef.current;
+        if (
+          frame.measured &&
+          typeof point.absoluteX === "number" &&
+          typeof point.absoluteY === "number"
+        ) {
+          return {
+            x: (point.absoluteX - frame.x) / scale,
+            y: (point.absoluteY - frame.y) / scale,
+          };
+        }
+
         return {
           x: point.x / scale,
           y: point.y / scale,
@@ -345,7 +390,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       .onBegin((event) => {
         if (!isStylusEvent(event)) return;
 
-        const point = toCanvasPoint({ x: event.x, y: event.y });
+        const point = toCanvasPoint({
+          x: event.x,
+          y: event.y,
+          absoluteX: event.absoluteX,
+          absoluteY: event.absoluteY,
+        });
         isDrawingRef.current = true;
         lastDrawingPositionRef.current = point;
         onDrawingStartRef.current?.();
@@ -359,7 +409,12 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       .onUpdate((event) => {
         if (!isDrawingRef.current) return;
 
-        const point = toCanvasPoint({ x: event.x, y: event.y });
+        const point = toCanvasPoint({
+          x: event.x,
+          y: event.y,
+          absoluteX: event.absoluteX,
+          absoluteY: event.absoluteY,
+        });
         lastDrawingPositionRef.current = point;
 
         if (modeRef.current === "eraser") {
@@ -461,7 +516,13 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           canvas
         ) : (
           <GestureDetector gesture={combinedGesture}>
-            <View style={styles.canvas}>{canvas}</View>
+            <View
+              ref={gestureSurfaceRef}
+              style={styles.canvas}
+              onLayout={measureGestureSurface}
+            >
+              {canvas}
+            </View>
           </GestureDetector>
         )}
       </View>

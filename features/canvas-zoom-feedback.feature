@@ -21,7 +21,12 @@ Feature: Canvas zoom and inline grading feedback
   Scenario: Zoomed drawing remains aligned with the pen
     Given the study canvas zoom harness is open
     When the student zooms out
-    Then drawing coordinates are not rescaled
+    Then drawing coordinates follow the visible zoom scale
+
+  Scenario: Zoomed native drawing remains aligned with the pen
+    Given the native Skia handwriting canvas is open at 200% zoom
+    When the student writes a transformed stylus stroke
+    Then the live ink follows the visible pen location
 
   Scenario: Native Skia canvas draws live ink safely
     Given the native Skia handwriting canvas is open

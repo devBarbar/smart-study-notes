@@ -181,6 +181,20 @@ const installNativeCanvasMocks = () => {
   };
 };
 
+const measureNativeCanvasLayout = async (
+  renderer: TestRenderer.ReactTestRenderer,
+) => {
+  const layoutViews = renderer.root.findAll(
+    (node) =>
+      (node.type as unknown) === "View" &&
+      typeof node.props.onLayout === "function",
+  );
+  assert.ok(layoutViews.length > 0);
+  await act(async () => {
+    layoutViews[0].props.onLayout();
+  });
+};
+
 const CanvasZoomHarness = () => {
   const [zoom, setZoom] = useState(1);
   const [strokeCount, setStrokeCount] = useState(0);
@@ -348,14 +362,62 @@ Given("the native Skia handwriting canvas is open", async function () {
   await act(async () => {
     renderer = TestRenderer.create(
       <HandwritingCanvas width={320} height={240} />,
+      {
+        createNodeMock: () => ({
+          measureInWindow: (
+            callback: (
+              x: number,
+              y: number,
+              width: number,
+              height: number,
+            ) => void,
+          ) => callback(0, 0, 320, 240),
+        }),
+      },
     );
   });
+  await measureNativeCanvasLayout(renderer);
 
   nativeCanvasHarness = {
     ...mocks,
     renderer,
   };
 });
+
+Given(
+  "the native Skia handwriting canvas is open at 200% zoom",
+  async function () {
+    const mocks = installNativeCanvasMocks();
+    const nativeCanvasPath = "../../components/handwriting-canvas.native";
+    delete require.cache[require.resolve(nativeCanvasPath)];
+    const { HandwritingCanvas } = require(nativeCanvasPath);
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <HandwritingCanvas width={320} height={240} coordinateScale={2} />,
+        {
+          createNodeMock: () => ({
+            measureInWindow: (
+              callback: (
+                x: number,
+                y: number,
+                width: number,
+                height: number,
+              ) => void,
+            ) => callback(30, 40, 640, 480),
+          }),
+        },
+      );
+    });
+    await measureNativeCanvasLayout(renderer);
+
+    nativeCanvasHarness = {
+      ...mocks,
+      renderer,
+    };
+  },
+);
 
 When("the student zooms out", function (this: AppWorld) {
   fireEvent.press(this.screen!.getByText("Zoom out"));
@@ -400,6 +462,33 @@ When("the student writes a short stylus stroke", async function () {
   });
 });
 
+When("the student writes a transformed stylus stroke", async function () {
+  assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
+  const pan = nativeCanvasHarness.getLastPanGesture();
+  assert.ok(pan, "Skia canvas did not register a pan gesture");
+
+  await act(async () => {
+    pan.handlers.onTouchesDown(
+      { numberOfTouches: 1, pointerType: "stylus" },
+      { activate: () => undefined, fail: () => undefined },
+    );
+    pan.handlers.onBegin({
+      pointerType: "stylus",
+      x: 10,
+      y: 20,
+      absoluteX: 130,
+      absoluteY: 240,
+    });
+    pan.handlers.onUpdate({
+      pointerType: "stylus",
+      x: 12,
+      y: 22,
+      absoluteX: 150,
+      absoluteY: 260,
+    });
+  });
+});
+
 Then(
   "the canvas zoom reads {string}",
   function (this: AppWorld, label: string) {
@@ -411,8 +500,8 @@ Then("no handwriting stroke is created", function (this: AppWorld) {
   assert.equal(this.screen!.getByTestId("stroke-count").props.children, 0);
 });
 
-Then("drawing coordinates are not rescaled", function (this: AppWorld) {
-  assert.equal(this.screen!.getByTestId("drawing-scale").props.children, 1);
+Then("drawing coordinates follow the visible zoom scale", function (this: AppWorld) {
+  assert.equal(this.screen!.getByTestId("drawing-scale").props.children, 0.75);
 });
 
 Then("the paper still fills the canvas viewport", function (this: AppWorld) {
@@ -462,6 +551,29 @@ Then("the live ink uses a copied Skia path snapshot", async function () {
     "L14,22",
   ]);
   assert.equal(paths[0].props.path._isReanimatedSharedValue, undefined);
+
+  const pan = nativeCanvasHarness.getLastPanGesture();
+  assert.ok(pan, "Skia canvas did not register a pan gesture");
+  await act(async () => {
+    pan.handlers.onEnd();
+    nativeCanvasHarness?.renderer.unmount();
+  });
+  nativeCanvasHarness.restore();
+  nativeCanvasHarness = null;
+});
+
+Then("the live ink follows the visible pen location", async function () {
+  assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
+  const paths = nativeCanvasHarness.renderer.root.findAll(
+    (node) => (node.type as unknown) === "SkiaPath",
+  );
+
+  assert.equal(paths.length, 1);
+  assert.deepEqual(paths[0].props.path.commands, [
+    "M50,100",
+    "L50.01,100",
+    "L60,110",
+  ]);
 
   const pan = nativeCanvasHarness.getLastPanGesture();
   assert.ok(pan, "Skia canvas did not register a pan gesture");
