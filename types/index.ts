@@ -94,6 +94,61 @@ export type StudyReadiness = {
   updatedAt?: string;
 };
 
+export type ExamSprintStatus = 'setup_required' | 'ready';
+
+export type ExamSprintRiskLevel = 'critical' | 'tight' | 'on_track';
+
+export type ExamSprintTaskType =
+  | 'setup'
+  | 'study'
+  | 'review'
+  | 'practice_exam'
+  | 'cluster_quiz'
+  | 'cheat_sheet';
+
+export type ExamSprintTaskAction =
+  | 'set_exam_date'
+  | 'start_topic'
+  | 'review_flashcards'
+  | 'generate_practice_exam'
+  | 'open_practice_exam'
+  | 'generate_cluster_quiz'
+  | 'open_cluster_quiz'
+  | 'open_cheat_sheet';
+
+export type ExamSprintTask = {
+  id: string;
+  type: ExamSprintTaskType;
+  action: ExamSprintTaskAction;
+  title: string;
+  subtitle?: string;
+  estimatedMinutes: number;
+  priority: number;
+  studyPlanEntryId?: string;
+  category?: string;
+  practiceExamId?: string;
+};
+
+export type ExamSprintDay = {
+  date: string;
+  label: string;
+  capacityMinutes: number;
+  totalMinutes: number;
+  tasks: ExamSprintTask[];
+};
+
+export type ExamSprintPlan = {
+  status: ExamSprintStatus;
+  daysUntilExam: number;
+  dailyCapacityMinutes: number;
+  totalAvailableMinutes: number;
+  readiness?: StudyReadiness;
+  riskLevel: ExamSprintRiskLevel;
+  days: ExamSprintDay[];
+  nextTask?: ExamSprintTask;
+  generatedAt: string;
+};
+
 export type ExamRelevance = 'high' | 'medium' | 'low';
 
 export type SourceRef = {

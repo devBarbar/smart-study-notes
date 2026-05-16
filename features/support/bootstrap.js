@@ -30,6 +30,7 @@ const reactNativeShim = {
   Text: hostComponent('Text'),
   View: hostComponent('View'),
   findNodeHandle: () => null,
+  useColorScheme: () => 'light',
 };
 
 Module._load = function load(request, parent, isMain) {
@@ -67,6 +68,12 @@ Module._load = function load(request, parent, isMain) {
       addIntegration: () => undefined,
       supabaseIntegration: () => ({}),
       wrap: (component) => component,
+    };
+  }
+
+  if (request === '@expo/vector-icons') {
+    return {
+      Ionicons: hostComponent('Ionicons'),
     };
   }
 

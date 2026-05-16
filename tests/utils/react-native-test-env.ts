@@ -46,6 +46,7 @@ const reactNativeShim = {
   TextInput: hostComponent('TextInput'),
   View: hostComponent('View'),
   findNodeHandle: () => null,
+  useColorScheme: () => 'light',
 };
 
 const loadPatchedModule = function (
@@ -88,6 +89,12 @@ const loadPatchedModule = function (
       addIntegration: () => undefined,
       supabaseIntegration: () => ({}),
       wrap: (component: unknown) => component,
+    };
+  }
+
+  if (request === '@expo/vector-icons') {
+    return {
+      Ionicons: hostComponent('Ionicons'),
     };
   }
 

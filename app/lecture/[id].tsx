@@ -8,6 +8,7 @@ import { v4 as uuid } from 'uuid';
 
 import { CircularReadinessGraph } from '@/components/circular-readiness-graph';
 import { EntryActionSheet } from '@/components/entry-action-sheet';
+import { ExamSprintPanel } from '@/components/exam-sprint-panel';
 import { FlashcardDeck } from '@/components/flashcard-deck';
 import { LinearProgressBar } from '@/components/linear-progress-bar';
 import { PdfWebView } from '@/components/pdf-webview';
@@ -29,11 +30,12 @@ import {
   selectOverviewSessionAction,
   sortSessionsByRecency,
 } from '@/lib/lecture-session-routing';
+import { buildExamSprintPlan } from '@/lib/exam-sprint-orchestrator';
 import { enqueueCheatSheetRefresh, generateCheatSheet, generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
 import { getLectureProgressResetInvalidationKeys } from '@/lib/lecture-progress-reset';
 import { resetLectureProgress } from '@/lib/lecture-progress-reset-service';
 import { createSession, deleteLecture, enqueueLecturePlanGeneration, getCurrentUser, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, markLectureCheatSheetPending, saveLectureCheatSheetSettings, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
-import { PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
+import { ExamSprintTask, PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 
 const stripCodeFences = (text: string) => {
   const fenceMatch = text.match(/```(?:json)?\n?([\s\S]*?)```/i);
@@ -649,6 +651,76 @@ export default function LectureDetailScreen() {
   const cheatSheet = lecture?.cheatSheet;
   const cheatSheetContent = cheatSheet?.content;
 
+  const examSprintPlan = useMemo(
+    () =>
+      buildExamSprintPlan({
+        planSettings: buildPlanSettingsDraft(),
+        planEntries: orderedPlan,
+        readiness,
+        practiceExams,
+        flashcardCount,
+        cheatSheet,
+      }),
+    [buildPlanSettingsDraft, cheatSheet, flashcardCount, orderedPlan, practiceExams, readiness],
+  );
+
+  const handleSprintSetup = useCallback(() => {
+    setActiveTab('overview');
+  }, []);
+
+  const handleSprintTask = useCallback(async (task: ExamSprintTask) => {
+    switch (task.action) {
+      case 'set_exam_date':
+        handleSprintSetup();
+        return;
+      case 'start_topic': {
+        const entry = orderedPlan.find((candidate) => candidate.id === task.studyPlanEntryId);
+        if (!entry) return;
+        const existingSession = existingEntrySessions[entry.id];
+        if (existingSession) {
+          await continueSession(existingSession);
+        } else {
+          await startSession(entry);
+        }
+        return;
+      }
+      case 'review_flashcards':
+        setActiveTab('flashcards');
+        return;
+      case 'open_practice_exam':
+      case 'open_cluster_quiz':
+        if (task.practiceExamId) {
+          goToPracticeExam(task.practiceExamId);
+        }
+        return;
+      case 'generate_practice_exam':
+        setActiveTab('practice');
+        await handleGeneratePracticeExam();
+        return;
+      case 'generate_cluster_quiz': {
+        if (!task.category) return;
+        const categoryEntries =
+          planGroups.find((group) => group.category === task.category)?.entries ??
+          orderedPlan.filter((entry) => (entry.category || 'General') === task.category);
+        await handleGenerateClusterQuiz(task.category, Math.max(1, categoryEntries.length));
+        return;
+      }
+      case 'open_cheat_sheet':
+        setActiveTab('cheatSheet');
+        return;
+    }
+  }, [
+    continueSession,
+    existingEntrySessions,
+    goToPracticeExam,
+    handleGenerateClusterQuiz,
+    handleGeneratePracticeExam,
+    handleSprintSetup,
+    orderedPlan,
+    planGroups,
+    startSession,
+  ]);
+
   const refreshInsights = useCallback(async () => {
     if (!lecture || orderedPlan.length === 0) return;
     setLoadingInsights(true);
@@ -879,6 +951,14 @@ export default function LectureDetailScreen() {
 
   const renderOverviewTab = () => (
     <View style={styles.tabContent}>
+      <ExamSprintPanel
+        plan={examSprintPlan}
+        onTaskPress={(task) => {
+          void handleSprintTask(task);
+        }}
+        onSetupPress={handleSprintSetup}
+      />
+
       {/* Readiness Section */}
       {hasStudyPlan && (
         <View style={styles.readinessCard}>

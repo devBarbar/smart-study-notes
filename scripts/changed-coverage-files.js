@@ -115,6 +115,11 @@ const getAllFileLines = (filePath) => {
     .map(({ lineNumber }) => lineNumber);
 };
 
+const filterChangedLinesToSource = (filePath, changedLines) => {
+  const sourceLines = fs.readFileSync(filePath, 'utf8').split('\n');
+  return changedLines.filter((lineNumber) => sourceLines[lineNumber - 1]?.trim().length > 0);
+};
+
 const getChangedCoverageTargets = ({
   base = process.env.COVERAGE_BASE || DEFAULT_BASE,
 } = {}) => {
@@ -123,7 +128,7 @@ const getChangedCoverageTargets = ({
     const diffLines = getDiffChangedLines(filePath, base);
     return {
       filePath,
-      changedLines: diffLines.length > 0 ? diffLines : getAllFileLines(filePath),
+      changedLines: diffLines.length > 0 ? filterChangedLinesToSource(filePath, diffLines) : getAllFileLines(filePath),
     };
   });
 };
@@ -133,4 +138,5 @@ module.exports = {
   getChangedCoverageFiles,
   isCoverageSourceFile,
   parseChangedLinesFromDiff,
+  filterChangedLinesToSource,
 };
