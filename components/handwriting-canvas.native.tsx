@@ -190,6 +190,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     const lastDrawingPositionRef = useRef<{ x: number; y: number } | null>(
       null,
     );
+    const gestureIdRef = useRef(0);
     const hasLoadedInitialRef = useRef(false);
     const canvasWindowFrameRef = useRef<CanvasWindowFrame>({
       x: 0,
@@ -223,8 +224,8 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     onStrokesChangeRef.current = onStrokesChange;
     coordinateScaleRef.current = coordinateScale;
 
-    const measureGestureSurface = useCallback(() => {
-      gestureSurfaceRef.current?.measureInWindow((x, y, measuredWidth, measuredHeight) => {
+    const storeGestureSurfaceFrame = useCallback(
+      (x: number, y: number, measuredWidth: number, measuredHeight: number) => {
         canvasWindowFrameRef.current = {
           x,
           y,
@@ -232,13 +233,17 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
           height: measuredHeight,
           measured: true,
         };
-      });
-    }, []);
+      },
+      [],
+    );
 
-    const toCanvasPoint = useCallback(
-      (point: GesturePoint): CanvasPoint => {
+    const measureGestureSurface = useCallback(() => {
+      gestureSurfaceRef.current?.measureInWindow(storeGestureSurfaceFrame);
+    }, [storeGestureSurfaceFrame]);
+
+    const convertPointWithFrame = useCallback(
+      (point: GesturePoint, frame: CanvasWindowFrame): CanvasPoint => {
         const scale = coordinateScaleRef.current || 1;
-        const frame = canvasWindowFrameRef.current;
         if (
           frame.measured &&
           typeof point.absoluteX === "number" &&
@@ -256,6 +261,28 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         };
       },
       [],
+    );
+
+    const withCanvasPoint = useCallback(
+      (point: GesturePoint, callback: (point: CanvasPoint) => void) => {
+        const gestureSurface = gestureSurfaceRef.current;
+        if (
+          gestureSurface &&
+          typeof point.absoluteX === "number" &&
+          typeof point.absoluteY === "number"
+        ) {
+          gestureSurface.measureInWindow((x, y, measuredWidth, measuredHeight) => {
+            storeGestureSurfaceFrame(x, y, measuredWidth, measuredHeight);
+            callback(
+              convertPointWithFrame(point, canvasWindowFrameRef.current),
+            );
+          });
+          return;
+        }
+
+        callback(convertPointWithFrame(point, canvasWindowFrameRef.current));
+      },
+      [convertPointWithFrame, storeGestureSurfaceFrame],
     );
 
     const commitRenderStrokes = useCallback((strokes: RenderStroke[]) => {
@@ -382,38 +409,57 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       .onBegin((event) => {
         if (!isStylusEvent(event)) return;
 
-        const point = toCanvasPoint({
-          x: event.x,
-          y: event.y,
-          absoluteX: event.absoluteX,
-          absoluteY: event.absoluteY,
-        });
+        const gestureId = gestureIdRef.current + 1;
+        gestureIdRef.current = gestureId;
         isDrawingRef.current = true;
-        lastDrawingPositionRef.current = point;
-        onDrawingStartRef.current?.();
+        withCanvasPoint(
+          {
+            x: event.x,
+            y: event.y,
+            absoluteX: event.absoluteX,
+            absoluteY: event.absoluteY,
+          },
+          (point) => {
+            if (!isDrawingRef.current || gestureId !== gestureIdRef.current) {
+              return;
+            }
 
-        if (modeRef.current === "eraser") {
-          eraseAtPoint(point);
-        } else {
-          startStrokeAtPoint(point);
-        }
+            lastDrawingPositionRef.current = point;
+            onDrawingStartRef.current?.();
+
+            if (modeRef.current === "eraser") {
+              eraseAtPoint(point);
+            } else {
+              startStrokeAtPoint(point);
+            }
+          },
+        );
       })
       .onUpdate((event) => {
         if (!isDrawingRef.current) return;
 
-        const point = toCanvasPoint({
-          x: event.x,
-          y: event.y,
-          absoluteX: event.absoluteX,
-          absoluteY: event.absoluteY,
-        });
-        lastDrawingPositionRef.current = point;
+        const gestureId = gestureIdRef.current;
+        withCanvasPoint(
+          {
+            x: event.x,
+            y: event.y,
+            absoluteX: event.absoluteX,
+            absoluteY: event.absoluteY,
+          },
+          (point) => {
+            if (!isDrawingRef.current || gestureId !== gestureIdRef.current) {
+              return;
+            }
 
-        if (modeRef.current === "eraser") {
-          eraseAtPoint(point);
-        } else {
-          appendPointToCurrentStroke(point);
-        }
+            lastDrawingPositionRef.current = point;
+
+            if (modeRef.current === "eraser") {
+              eraseAtPoint(point);
+            } else {
+              appendPointToCurrentStroke(point);
+            }
+          },
+        );
       })
       .onEnd(() => {
         notifyDrawingEnd();

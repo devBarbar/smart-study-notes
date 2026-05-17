@@ -173,6 +173,14 @@ const createMeasuredNodeMock =
     ) => callback(frame.x, frame.y, frame.width, frame.height),
   });
 
+const activePathCommands = (renderer: TestRenderer.ReactTestRenderer) => {
+  const paths = renderer.root.findAll(
+    (node) => (node.type as unknown) === "SkiaPath",
+  );
+  assert.equal(paths.length, 1);
+  return paths[0].props.path.commands;
+};
+
 const measureCanvasLayout = async (renderer: TestRenderer.ReactTestRenderer) => {
   const layoutViews = renderer.root.findAll(
     (node) =>
@@ -303,6 +311,133 @@ describe("Skia handwriting renderer", () => {
 
     await act(async () => {
       pan.handlers.onEnd();
+      renderer.unmount();
+    });
+    mocks.restore();
+  });
+
+  it("refreshes the canvas window frame before mapping scrolled stylus coordinates", async () => {
+    const mocks = installNativeCanvasMocks();
+    const { HandwritingCanvas } = loadNativeCanvas();
+    const frame = {
+      x: 30,
+      y: 40,
+      width: 640,
+      height: 480,
+    };
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        React.createElement(HandwritingCanvas, {
+          width: 320,
+          height: 240,
+          coordinateScale: 2,
+        }),
+        {
+          createNodeMock: createMeasuredNodeMock(frame),
+        },
+      );
+    });
+    await measureCanvasLayout(renderer);
+
+    frame.y = -160;
+    const pan = mocks.getLastPanGesture();
+    assert.ok(pan);
+
+    await act(async () => {
+      pan.handlers.onBegin({
+        pointerType: "stylus",
+        x: 10,
+        y: 20,
+        absoluteX: 130,
+        absoluteY: 240,
+      });
+      pan.handlers.onUpdate({
+        pointerType: "stylus",
+        x: 12,
+        y: 22,
+        absoluteX: 150,
+        absoluteY: 260,
+      });
+    });
+
+    assert.deepEqual(activePathCommands(renderer), [
+      "M50,200",
+      "L50.01,200",
+      "L60,210",
+    ]);
+
+    await act(async () => {
+      pan.handlers.onEnd();
+      renderer.unmount();
+    });
+    mocks.restore();
+  });
+
+  it("uses the refreshed scrolled canvas frame when erasing strokes", async () => {
+    const mocks = installNativeCanvasMocks();
+    const { HandwritingCanvas } = loadNativeCanvas();
+    const frame = {
+      x: 30,
+      y: 40,
+      width: 640,
+      height: 480,
+    };
+    const canvasRef = React.createRef<{
+      setMode: (mode: "pen" | "eraser") => void;
+      getStrokes: () => { points: { x: number; y: number }[] }[];
+    }>();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        React.createElement(HandwritingCanvas, {
+          ref: canvasRef,
+          width: 320,
+          height: 240,
+          coordinateScale: 2,
+          initialStrokes: [
+            {
+              points: [
+                { x: 50, y: 200 },
+                { x: 60, y: 210 },
+              ],
+              color: "#0f172a",
+              width: 3,
+            },
+          ],
+        }),
+        {
+          createNodeMock: createMeasuredNodeMock(frame),
+        },
+      );
+    });
+    await measureCanvasLayout(renderer);
+
+    frame.y = -160;
+    assert.equal(canvasRef.current?.getStrokes().length, 1);
+    await act(async () => {
+      canvasRef.current?.setMode("eraser");
+    });
+
+    const pan = mocks.getLastPanGesture();
+    assert.ok(pan);
+
+    await act(async () => {
+      pan.handlers.onBegin({
+        pointerType: "stylus",
+        x: 10,
+        y: 20,
+        absoluteX: 130,
+        absoluteY: 240,
+      });
+      pan.handlers.onEnd();
+    });
+
+    assert.equal(canvasRef.current?.getStrokes().length, 0);
+
+    await act(async () => {
       renderer.unmount();
     });
     mocks.restore();

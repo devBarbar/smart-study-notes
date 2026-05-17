@@ -602,6 +602,48 @@ Given(
   },
 );
 
+Given(
+  "the native Skia handwriting canvas is open at 200% zoom after scrolling",
+  async function () {
+    const mocks = installNativeCanvasMocks();
+    const nativeCanvasPath = "../../components/handwriting-canvas.native";
+    delete require.cache[require.resolve(nativeCanvasPath)];
+    const { HandwritingCanvas } = require(nativeCanvasPath);
+    const frame = {
+      x: 30,
+      y: 40,
+      width: 640,
+      height: 480,
+    };
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <HandwritingCanvas width={320} height={240} coordinateScale={2} />,
+        {
+          createNodeMock: () => ({
+            measureInWindow: (
+              callback: (
+                x: number,
+                y: number,
+                width: number,
+                height: number,
+              ) => void,
+            ) => callback(frame.x, frame.y, frame.width, frame.height),
+          }),
+        },
+      );
+    });
+    await measureNativeCanvasLayout(renderer);
+    frame.y = -160;
+
+    nativeCanvasHarness = {
+      ...mocks,
+      renderer,
+    };
+  },
+);
+
 When("the student zooms out", function (this: AppWorld) {
   fireEvent.press(this.screen!.getByText("Zoom out"));
 });
@@ -791,6 +833,29 @@ Then("the live ink follows the visible pen location", async function () {
     "M50,100",
     "L50.01,100",
     "L60,110",
+  ]);
+
+  const pan = nativeCanvasHarness.getLastPanGesture();
+  assert.ok(pan, "Skia canvas did not register a pan gesture");
+  await act(async () => {
+    pan.handlers.onEnd();
+    nativeCanvasHarness?.renderer.unmount();
+  });
+  nativeCanvasHarness.restore();
+  nativeCanvasHarness = null;
+});
+
+Then("the live ink follows the scrolled visible pen location", async function () {
+  assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
+  const paths = nativeCanvasHarness.renderer.root.findAll(
+    (node) => (node.type as unknown) === "SkiaPath",
+  );
+
+  assert.equal(paths.length, 1);
+  assert.deepEqual(paths[0].props.path.commands, [
+    "M50,200",
+    "L50.01,200",
+    "L60,210",
   ]);
 
   const pan = nativeCanvasHarness.getLastPanGesture();

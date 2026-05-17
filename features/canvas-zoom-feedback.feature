@@ -28,6 +28,11 @@ Feature: Canvas zoom and inline grading feedback
     When the student writes a transformed stylus stroke
     Then the live ink follows the visible pen location
 
+  Scenario: Zoomed native drawing remains aligned after scrolling
+    Given the native Skia handwriting canvas is open at 200% zoom after scrolling
+    When the student writes a transformed stylus stroke
+    Then the live ink follows the scrolled visible pen location
+
   Scenario: Native Skia canvas draws live ink safely
     Given the native Skia handwriting canvas is open
     When the student writes a short stylus stroke
