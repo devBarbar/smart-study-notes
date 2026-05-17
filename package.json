@@ -1,6 +1,6 @@
 {
   "name": "smart-learning-notes",
-  "main": "expo-router/entry",
+  "main": "./index.js",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
@@ -10,6 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "build:ios:local:production": "bash ./scripts/eas-local-ios-production.sh",
+    "publish:ios:local:production": "bash ./scripts/eas-local-ios-publish.sh",
+    "submit:ios:local:production": "npx eas-cli@latest submit --platform ios --profile production --path ./dist/smart-learning-notes-production.ipa --non-interactive",
     "build:ios:local:simulator": "bash ./scripts/eas-local-ios-simulator.sh",
     "update:production": "bash ./scripts/eas-update-production.sh",
     "deploy-functions": "npx supabase functions deploy extract-pdf-text embed-texts generate-lecture-metadata generate-study-plan feynman-chat evaluate-answer transcribe-audio enqueue-job process-job stream-tts ai-settings generate-practice-exam",

@@ -44,19 +44,25 @@ Use these steps to produce EAS builds that include the JS bundle, so the app run
 Notes: keep `developmentClient: false` so the JS is bundled; adjust `enterpriseProvisioning`/distribution to match how you sign iOS builds.
 
 ## Build (no dev server)
-- Internal test (embedded bundle):  
-  - Android: `eas build --platform android --profile preview`  
-  - iOS: `eas build --platform ios --profile preview`
-- Store-ready:  
-  - Android: `eas build --platform android --profile production`  
-  - iOS: `eas build --platform ios --profile production`
-- Local iOS production build: run `npm run build:ios:local:production`. This loads the production EAS environment with `eas env:exec production`; no `.env.local` file is required.
+- Store-ready iOS local build: `npm run build:ios:local:production`
+- The local iOS production build loads the production EAS environment with `eas env:exec production`; no `.env.local` file is required.
+- This avoids EAS cloud build minutes; the build still runs locally on your machine.
 
 ## Install or submit
-- Download the artifact from the EAS dashboard; install the APK on Android or distribute the IPA via TestFlight/ad-hoc.
-- Submit to stores after a production build:  
-  - Android: `eas submit --platform android --profile production --latest`  
-  - iOS: `eas submit --platform ios --profile production --latest`
+- Build locally, then submit the generated IPA to App Store Connect/TestFlight through EAS Submit:
+
+```bash
+npm run publish:ios:local:production
+```
+
+- Submit the existing local IPA without rebuilding:
+
+```bash
+npm run submit:ios:local:production
+```
+
+- EAS Submit accepts locally built `.ipa` and `.aab` artifacts with `--path`; the binary still has to be signed for store distribution.
+- Android submission requires Google Play service-account configuration before adding a non-interactive publish script.
 
 ## OTA updates
 Once a production/preview build is installed, push JS-only changes with the production EAS environment:
