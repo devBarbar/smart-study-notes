@@ -41,6 +41,7 @@ import {
 } from "../_shared/pdf-source.ts";
 import { insertUsageLog } from "../_shared/usage.ts";
 import { captureSentryException, setSentryJobContext, withSentry } from "../_shared/sentry.ts";
+import { calculateReadinessFallbackPercentage } from "../_shared/readiness.ts";
 
 // EdgeRuntime is available in Supabase Edge Functions for background work
 declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
@@ -1525,23 +1526,21 @@ const handleReadinessRoadmap = async (
     progress = { passed: 0, inProgress: 0, notStarted: 0, failed: 0 },
     language = "en",
     clusterQuizResults = [],
+    stageProgress,
   } = payload ?? {};
   const entries = Array.isArray(planEntries) ? planEntries : [];
   const quizzes = Array.isArray(clusterQuizResults) ? clusterQuizResults : [];
-  const total = Math.max(entries.length, 1);
   const passedClusters = quizzes.filter((q: any) => q.passed).length;
   const totalClusters = quizzes.length;
   const avgQuizScore = quizzes.length > 0
     ? quizzes.reduce((sum: number, q: any) => sum + (Number(q.score) || 0), 0) / quizzes.length
     : 0;
-  const baseCompletionRatio =
-    ((Number(progress.passed) || 0) +
-      (Number(progress.inProgress) || 0) * 0.6 +
-      (Number(progress.failed) || 0) * 0.3) /
-    total;
-  const clusterBonus = totalClusters > 0 ? (passedClusters / totalClusters) * 0.15 : 0;
-  const completionRatio = Math.min(1, baseCompletionRatio + clusterBonus);
-  const fallbackPercentage = Math.max(0, Math.min(100, Math.round(20 + completionRatio * 70)));
+  const fallbackPercentage = calculateReadinessFallbackPercentage({
+    entryCount: entries.length,
+    progress,
+    stageProgress,
+    clusterQuizResults: quizzes,
+  });
 
   const notesBlock = additionalNotes
     ? `Instructor / additional notes (HIGH PRIORITY - topics mentioned here should be prioritized):\n${truncateToTokenLimit(String(additionalNotes), 2000)}\n`
@@ -1552,6 +1551,24 @@ const handleReadinessRoadmap = async (
           `- ${q.category}: ${q.score}% (${q.passed ? "PASSED" : "FAILED"}) - ${q.questionCount} questions`
         ).join("\n")
       }\n\nAverage quiz score: ${Math.round(avgQuizScore)}% | Clusters passed: ${passedClusters}/${totalClusters}\n`
+    : "";
+  const stageProgressBlock = stageProgress
+    ? `Depth stage progress (IMPORTANT - "why" carries the highest partial-readiness weight after recall):
+- Completed depth stages: ${stageProgress.completedDepthStages ?? 0}/${stageProgress.totalDepthStages ?? 0}
+- Average weighted topic completion: ${Math.round((Number(stageProgress.averageWeightedCompletion) || 0) * 100)}%
+- Completion weights: recall 25%, why 40%, apply 15%, transfer 10%, teach-back 10%
+- Anchor: if recall and why are completed across all topics, readiness should be clearly above 50% (around 65%) even before final topic pass.
+Per-topic depth progress:
+${
+        Array.isArray(stageProgress.topics)
+          ? stageProgress.topics.map((topic: any) => {
+              const stages = Array.isArray(topic.completedStages) && topic.completedStages.length > 0
+                ? topic.completedStages.join(", ")
+                : "none";
+              return `- ${topic.title}: ${Math.round((Number(topic.weightedCompletion) || 0) * 100)}% weighted completion; completed stages: ${stages}`;
+            }).join("\n")
+          : "No per-topic stage details provided."
+      }\n`
     : "";
 
   const enhancedPlanSummary = entries
@@ -1592,12 +1609,13 @@ Progress counts:
 Study plan entries (note: [EXAM TOPIC] = from past exam, [LIKELY EXAM] = high exam relevance, [PROF FOCUS] = mentioned in instructor notes):
 ${enhancedPlanSummary || "No plan entries provided."}
 
-${clusterQuizBlock}${notesBlock}
+${clusterQuizBlock}${stageProgressBlock}${notesBlock}
 
 IMPORTANT:
 - Estimate a realistic readiness percentage based on progress, quiz scores, and topic coverage
 - Items marked [EXAM TOPIC], [LIKELY EXAM], or [PROF FOCUS] are critical for exam success
 - CLUSTER QUIZ RESULTS are strong indicators of actual exam performance
+- WHY-stage completion is a strong readiness signal; recall+why across most topics should materially raise the percentage
 - Be conservative - only give high percentages when most topics are passed
 
 Return JSON ONLY with this shape:

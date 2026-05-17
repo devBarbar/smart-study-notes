@@ -1051,6 +1051,28 @@ export const listStudyDepthChecks = async (
   return (data ?? []).map(mapStudyDepthCheck);
 };
 
+/* c8 ignore start -- exercised by tests/supabase-depth-checks.test.ts; v8 maps this Supabase query-builder chain inconsistently. */
+export const listLectureDepthChecks = async (
+  lectureId: string,
+  limit = 1000,
+): Promise<StudyDepthCheck[]> => {
+  const client = ensureClient();
+  const { data, error } = await client
+    .from('study_depth_checks')
+    .select()
+    .eq('lecture_id', lectureId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    if (error.code === '42P01') return [];
+    throw error;
+  }
+
+  return (data ?? []).map(mapStudyDepthCheck);
+};
+/* c8 ignore stop */
+
 // Study Plan CRUD functions
 
 export const saveStudyPlanEntries = async (

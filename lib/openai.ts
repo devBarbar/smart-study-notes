@@ -1,6 +1,7 @@
 import { CheatSheetContent, LanguageCode, Lecture, LectureFile, RoadmapStep, StudyFeedback, StudyPlanEntry, StudyQuestion, StudyReadiness, StudyWarmupQuestion } from '@/types';
 import type { AIPlatform } from './ai-model-options';
 import { splitTextIntoLineChunks } from './pdf-source';
+import type { LectureStageProgress } from './readiness-progress';
 import { captureTelemetryError, traceAsyncOperation } from './sentry';
 import { getSupabase } from './supabase';
 
@@ -786,10 +787,12 @@ type RoadmapRequest = {
   lectureId?: string;
   /** Cluster quiz results to factor into readiness calculation */
   clusterQuizResults?: ClusterQuizResult[];
+  /** Weighted per-stage progress for depth-aware readiness fallback and prompting */
+  stageProgress?: LectureStageProgress;
 };
 
 export const generateReadinessAndRoadmap = async (
-  { planEntries, additionalNotes, progress, language = 'en', lectureId, clusterQuizResults = [] }: RoadmapRequest
+  { planEntries, additionalNotes, progress, language = 'en', lectureId, clusterQuizResults = [], stageProgress }: RoadmapRequest
 ): Promise<{ readiness: StudyReadiness; roadmap: RoadmapStep[] }> => {
   const jobId = await enqueueJob('readiness_roadmap', {
     planEntries,
@@ -798,6 +801,7 @@ export const generateReadinessAndRoadmap = async (
     language,
     lectureId,
     clusterQuizResults,
+    stageProgress,
   });
   const data = await waitForJobResult<{
     readiness?: StudyReadiness;

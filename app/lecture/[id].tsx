@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router/react-navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, LayoutChangeEvent, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, View } from 'react-native';
@@ -33,8 +33,9 @@ import {
 import { buildExamSprintPlan } from '@/lib/exam-sprint-orchestrator';
 import { enqueueCheatSheetRefresh, generateCheatSheet, generatePracticeExam, generateReadinessAndRoadmap } from '@/lib/openai';
 import { getLectureProgressResetInvalidationKeys } from '@/lib/lecture-progress-reset';
+import { buildFallbackStudyReadiness, buildLectureStageProgress } from '@/lib/readiness-progress';
 import { resetLectureProgress } from '@/lib/lecture-progress-reset-service';
-import { createSession, deleteLecture, enqueueLecturePlanGeneration, getCurrentUser, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, markLectureCheatSheetPending, saveLectureCheatSheetSettings, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
+import { createSession, deleteLecture, enqueueLecturePlanGeneration, getCurrentUser, getLatestSessionForLectureScope, getLectureTotalCost, getSupabase, listLectureDepthChecks, markLectureCheatSheetPending, saveLectureCheatSheetSettings, saveLectureInsights, saveLecturePlanSettings, updateLectureNotes, updateLecturePlanStatus } from '@/lib/supabase';
 import { ExamSprintTask, PlanSettings, PracticeExam, RoadmapStep, SectionStatus, StudyPlanEntry, StudyReadiness, StudySession } from '@/types';
 
 const stripCodeFences = (text: string) => {
@@ -506,6 +507,32 @@ export default function LectureDetailScreen() {
         : [],
     [lecture?.studyPlan]
   );
+  const hasStudyPlan = orderedPlan.length > 0;
+
+  const {
+    data: lectureDepthChecks = [],
+    refetch: refetchLectureDepthChecks,
+  } = useQuery({
+    queryKey: ['lecture-depth-checks', id],
+    enabled: Boolean(id && hasStudyPlan),
+    queryFn: async () => (id ? listLectureDepthChecks(id) : []),
+  });
+
+  const stageProgress = useMemo(
+    () =>
+      buildLectureStageProgress({
+        entries: orderedPlan,
+        depthChecks: lectureDepthChecks,
+        targetGrade: targetGradeDraft,
+      }),
+    [lectureDepthChecks, orderedPlan, targetGradeDraft],
+  );
+
+  useFocusEffect(useCallback(() => {
+    if (hasStudyPlan) {
+      refetchLectureDepthChecks();
+    }
+  }, [hasStudyPlan, refetchLectureDepthChecks]));
 
   const scrollToEntry = useCallback((roadmapTitle: string) => {
     if (!orderedPlan || orderedPlan.length === 0) return;
@@ -628,7 +655,6 @@ export default function LectureDetailScreen() {
     });
   }, [planGroups]);
 
-  const hasStudyPlan = orderedPlan.length > 0;
   const planStatus = lecture?.planStatus ?? (hasStudyPlan ? 'ready' : undefined);
   const isPlanPending = planStatus === 'pending';
   const isPlanFailed = planStatus === 'failed';
@@ -726,6 +752,12 @@ export default function LectureDetailScreen() {
     setLoadingInsights(true);
     setInsightError(null);
     try {
+      const refreshedDepthChecks = await refetchLectureDepthChecks();
+      const latestStageProgress = buildLectureStageProgress({
+        entries: orderedPlan,
+        depthChecks: refreshedDepthChecks.data ?? lectureDepthChecks,
+        targetGrade: targetGradeDraft,
+      });
       const result = await generateReadinessAndRoadmap({
         planEntries: orderedPlan,
         additionalNotes: (notesDraft || lecture.additionalNotes || '').trim(),
@@ -738,6 +770,7 @@ export default function LectureDetailScreen() {
         language: agentLanguage,
         lectureId: lecture.id,
         clusterQuizResults,
+        stageProgress: latestStageProgress,
       });
       setReadiness(result.readiness);
       setRoadmap(result.roadmap);
@@ -749,7 +782,7 @@ export default function LectureDetailScreen() {
     } finally {
       setLoadingInsights(false);
     }
-  }, [agentLanguage, clusterQuizResults, lecture, notesDraft, orderedPlan, queryClient, sectionStatusCounts.failed, sectionStatusCounts.inProgress, sectionStatusCounts.notStarted, sectionStatusCounts.passed, t]);
+  }, [agentLanguage, clusterQuizResults, lecture, lectureDepthChecks, notesDraft, orderedPlan, queryClient, refetchLectureDepthChecks, sectionStatusCounts.failed, sectionStatusCounts.inProgress, sectionStatusCounts.notStarted, sectionStatusCounts.passed, t, targetGradeDraft]);
 
   const toggleCheatSheetEnabled = useCallback(async (enabled: boolean) => {
     if (!lecture) return;
@@ -936,7 +969,11 @@ export default function LectureDetailScreen() {
     );
   };
 
-  const readinessData = readiness ?? { percentage: 0, predictedGrade: 'Failed' as const };
+  const readinessData = readiness ?? buildFallbackStudyReadiness({
+    entries: orderedPlan,
+    stageProgress,
+    clusterQuizResults,
+  });
   const roadmapItems = roadmap ?? [];
 
   // Tab rendering
@@ -971,7 +1008,8 @@ export default function LectureDetailScreen() {
               loading={loadingInsights}
               size={90}
               strokeWidth={7}
-              showRefreshButton={false}
+              refreshLabel={t('lectureDetail.refreshInsights')}
+              showRefreshButton
             />
             <View style={styles.readinessInfo}>
               <LinearProgressBar counts={sectionStatusCounts} height={6} showLabels={false} />

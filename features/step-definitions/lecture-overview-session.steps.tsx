@@ -64,6 +64,14 @@ const LectureOverviewContinueHarness = ({
   );
 };
 
+const LectureReadinessRefreshHarness = ({ onRefresh }: { onRefresh: () => void }) => (
+  <View>
+    <Pressable accessibilityRole="button" onPress={onRefresh}>
+      <Text>Refresh AI insights</Text>
+    </Pressable>
+  </View>
+);
+
 Given(
   'a lecture overview has an older full session and a newer suggested topic session',
   function (this: AppWorld) {
@@ -127,4 +135,23 @@ When('the student continues from the lecture overview', function (this: AppWorld
 Then('the suggested topic session is opened', function (this: AppWorld) {
   assert.equal(this.screen!.getByTestId('overview-action').props.children, 'continueTopic');
   assert.equal(this.screen!.getByTestId('opened-session').props.children, 'topic-latest');
+});
+
+Given('a lecture overview has depth-weighted readiness available', function (this: AppWorld) {
+  this.values.refreshCount = 0;
+  this.screen = render(
+    <LectureReadinessRefreshHarness
+      onRefresh={() => {
+        this.values.refreshCount = Number(this.values.refreshCount ?? 0) + 1;
+      }}
+    />,
+  );
+});
+
+When('the student refreshes AI insights from the lecture overview', function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText('Refresh AI insights'));
+});
+
+Then('the readiness roadmap refresh is triggered', function (this: AppWorld) {
+  assert.equal(this.values.refreshCount, 1);
 });

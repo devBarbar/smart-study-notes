@@ -18,6 +18,7 @@ type CircularReadinessGraphProps = {
   onRefresh?: () => void;
   loading?: boolean;
   showRefreshButton?: boolean;
+  refreshLabel?: string;
 };
 
 export const CircularReadinessGraph = ({
@@ -29,6 +30,7 @@ export const CircularReadinessGraph = ({
   onRefresh,
   loading = false,
   showRefreshButton = true,
+  refreshLabel = 'Refresh',
 }: CircularReadinessGraphProps) => {
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
@@ -103,7 +105,7 @@ export const CircularReadinessGraph = ({
             ) : (
               <>
                 <Ionicons name="refresh" size={14} color={palette.textMuted} />
-                <ThemedText style={styles.refreshText}>Refresh</ThemedText>
+                <ThemedText style={styles.refreshText}>{refreshLabel}</ThemedText>
               </>
             )}
           </Pressable>
