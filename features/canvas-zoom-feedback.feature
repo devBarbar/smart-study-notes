@@ -37,7 +37,7 @@ Feature: Canvas zoom and inline grading feedback
     Given the native Skia handwriting canvas is open
     When the student writes a short stylus stroke
     Then the native drawing gesture does not switch gesture state from JavaScript
-    And the live ink uses a copied Skia path snapshot
+    And the live ink uses an animated Skia path value
 
   Scenario: Native Skia canvas sanitizes unsafe drawing input
     Given the native Skia handwriting canvas has malformed strokes

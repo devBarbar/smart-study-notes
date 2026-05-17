@@ -115,6 +115,14 @@ const createFakePath = (commands: string[] = []) => ({
   },
 });
 
+const createSharedValue = <T,>(value: T) => ({
+  value,
+  _isReanimatedSharedValue: true,
+});
+
+const pathCommands = (path: any) =>
+  path?._isReanimatedSharedValue ? path.value.commands : path.commands;
+
 const installNativeCanvasMocks = () => {
   const moduleWithLoader = Module as unknown as {
     _load: (
@@ -157,6 +165,17 @@ const installNativeCanvasMocks = () => {
         Path: hostComponent("SkiaPath"),
         Skia: { Path: { Make: () => createFakePath() } },
         useCanvasRef: () => React.useRef({ makeImageSnapshot: () => null }),
+      };
+    }
+    if (request === "react-native-reanimated") {
+      return {
+        useSharedValue: (value: unknown) => {
+          const sharedValueRef = React.useRef<any>(null);
+          if (!sharedValueRef.current) {
+            sharedValueRef.current = createSharedValue(value);
+          }
+          return sharedValueRef.current;
+        },
       };
     }
     if (request === "expo-file-system/legacy") {
@@ -859,19 +878,19 @@ Then("empty answer bounds are unavailable", function (this: AppWorld) {
   );
 });
 
-Then("the live ink uses a copied Skia path snapshot", async function () {
+Then("the live ink uses an animated Skia path value", async function () {
   assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
   const paths = nativeCanvasHarness.renderer.root.findAll(
     (node) => (node.type as unknown) === "SkiaPath",
   );
 
   assert.equal(paths.length, 1);
-  assert.deepEqual(paths[0].props.path.commands, [
+  assert.equal(paths[0].props.path._isReanimatedSharedValue, true);
+  assert.deepEqual(pathCommands(paths[0].props.path), [
     "M10,20",
     "L10.01,20",
     "L14,22",
   ]);
-  assert.equal(paths[0].props.path._isReanimatedSharedValue, undefined);
 
   const pan = nativeCanvasHarness.getLastPanGesture();
   assert.ok(pan, "Skia canvas did not register a pan gesture");
@@ -900,9 +919,9 @@ Then("only safe Skia paths and paint values are rendered", async function () {
   );
 
   assert.equal(paths.length, 2);
-  assert.deepEqual(paths[0].props.path.commands, ["M10,20", "L12,22"]);
+  assert.deepEqual(pathCommands(paths[0].props.path), ["M10,20", "L12,22"]);
   assert.equal(paths[0].props.strokeWidth, 24);
-  assert.deepEqual(paths[1].props.path.commands, [
+  assert.deepEqual(pathCommands(paths[1].props.path), [
     "M20,30",
     "L20.01,30",
     "L24,34",
@@ -926,7 +945,7 @@ Then("the live ink follows the visible pen location", async function () {
   );
 
   assert.equal(paths.length, 1);
-  assert.deepEqual(paths[0].props.path.commands, [
+  assert.deepEqual(pathCommands(paths[0].props.path), [
     "M50,100",
     "L50.01,100",
     "L60,110",
@@ -949,7 +968,7 @@ Then("the live ink follows the scrolled visible pen location", async function ()
   );
 
   assert.equal(paths.length, 1);
-  assert.deepEqual(paths[0].props.path.commands, [
+  assert.deepEqual(pathCommands(paths[0].props.path), [
     "M50,200",
     "L50.01,200",
     "L60,210",

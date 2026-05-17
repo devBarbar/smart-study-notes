@@ -85,6 +85,14 @@ const createFakePath = (commands: string[] = []) => ({
   },
 });
 
+const createSharedValue = <T,>(value: T) => ({
+  value,
+  _isReanimatedSharedValue: true,
+});
+
+const pathCommands = (path: any) =>
+  path?._isReanimatedSharedValue ? path.value.commands : path.commands;
+
 const installNativeCanvasMocks = () => {
   const moduleWithLoader = Module as unknown as {
     _load: (request: string, parent: NodeModule | null, isMain: boolean) => unknown;
@@ -127,6 +135,17 @@ const installNativeCanvasMocks = () => {
         Path: hostComponent("SkiaPath"),
         Skia: { Path: { Make: () => createFakePath() } },
         useCanvasRef: () => React.useRef({ makeImageSnapshot: () => null }),
+      };
+    }
+    if (request === "react-native-reanimated") {
+      return {
+        useSharedValue: (value: unknown) => {
+          const sharedValueRef = React.useRef<any>(null);
+          if (!sharedValueRef.current) {
+            sharedValueRef.current = createSharedValue(value);
+          }
+          return sharedValueRef.current;
+        },
       };
     }
     if (request === "expo-file-system/legacy") {
@@ -178,7 +197,7 @@ const activePathCommands = (renderer: TestRenderer.ReactTestRenderer) => {
     (node) => (node.type as unknown) === "SkiaPath",
   );
   assert.equal(paths.length, 1);
-  return paths[0].props.path.commands;
+  return pathCommands(paths[0].props.path);
 };
 
 const measureCanvasLayout = async (renderer: TestRenderer.ReactTestRenderer) => {
@@ -194,19 +213,19 @@ const measureCanvasLayout = async (renderer: TestRenderer.ReactTestRenderer) => 
 };
 
 describe("Skia handwriting renderer", () => {
-  it("keeps native handwriting on Skia without passing shared values into Path", () => {
+  it("keeps native handwriting on Skia without React path snapshot state", () => {
     const source = nativeRenderer();
 
     assert.match(source, /@shopify\/react-native-skia/);
-    assert.doesNotMatch(source, /useSharedValue/);
-    assert.doesNotMatch(source, /path=\{activePath\}/);
+    assert.match(source, /path=\{activePath\}/);
     assert.doesNotMatch(source, /manualActivation\(true\)/);
     assert.doesNotMatch(source, /\.onTouchesDown\(/);
-    assert.doesNotMatch(source, /activeMutablePathRef/);
-    assert.match(source, /activePathSnapshot/);
+    assert.match(source, /useSharedValue/);
+    assert.doesNotMatch(source, /setActivePathSnapshot/);
+    assert.doesNotMatch(source, /activePathSnapshot/);
   });
 
-  it("renders live ink through copied Skia path snapshots", async () => {
+  it("renders live ink through a shared Skia path value", async () => {
     const mocks = installNativeCanvasMocks();
     const { HandwritingCanvas } = loadNativeCanvas();
     let renderer!: TestRenderer.ReactTestRenderer;
@@ -238,12 +257,12 @@ describe("Skia handwriting renderer", () => {
       (node) => (node.type as unknown) === "SkiaPath",
     );
     assert.equal(paths.length, 1);
-    assert.deepEqual(paths[0].props.path.commands, [
+    assert.equal(paths[0].props.path._isReanimatedSharedValue, true);
+    assert.deepEqual(pathCommands(paths[0].props.path), [
       "M10,20",
       "L10.01,20",
       "L14,22",
     ]);
-    assert.equal(paths[0].props.path._isReanimatedSharedValue, undefined);
 
     await act(async () => {
       pan.handlers.onEnd();
@@ -308,7 +327,7 @@ describe("Skia handwriting renderer", () => {
       (node) => (node.type as unknown) === "SkiaPath",
     );
     assert.equal(paths.length, 1);
-    assert.deepEqual(paths[0].props.path.commands, [
+    assert.deepEqual(pathCommands(paths[0].props.path), [
       "M50,100",
       "L50.01,100",
       "L60,110",
@@ -491,7 +510,7 @@ describe("Skia handwriting renderer", () => {
       (node) => (node.type as unknown) === "SkiaPath",
     );
     assert.equal(paths.length, 1);
-    assert.deepEqual(paths[0].props.path.commands, ["M10,20", "L12,22"]);
+    assert.deepEqual(pathCommands(paths[0].props.path), ["M10,20", "L12,22"]);
     assert.equal(paths[0].props.strokeWidth, 24);
 
     await act(async () => {
@@ -555,7 +574,11 @@ describe("Skia handwriting renderer", () => {
       (node) => (node.type as unknown) === "SkiaPath",
     );
     assert.equal(paths.length, 1);
-    assert.deepEqual(paths[0].props.path.commands, ["M10,20", "L10.01,20", "L14,22"]);
+    assert.deepEqual(pathCommands(paths[0].props.path), [
+      "M10,20",
+      "L10.01,20",
+      "L14,22",
+    ]);
     assert.equal(paths[0].props.strokeWidth, 24);
 
     await act(async () => {
