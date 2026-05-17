@@ -13,8 +13,13 @@ Use these steps to produce EAS builds that include the JS bundle, so the app run
 2) Add EAS environment variables for production builds and updates:
    - `EXPO_PUBLIC_SUPABASE_URL`
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+   - `EXPO_PUBLIC_SENTRY_DSN`
+   - `SENTRY_ORG`
+   - `SENTRY_PROJECT`
+   - `SENTRY_AUTH_TOKEN` for Sentry source map upload
    Example: `eas env:create --environment production --visibility plaintext --name EXPO_PUBLIC_SUPABASE_URL --value <url>`
    Use plaintext or sensitive visibility for `EXPO_PUBLIC_` values needed by app JavaScript. Secret visibility is not readable when bundling updates.
+   Use `secret` visibility for `SENTRY_AUTH_TOKEN` on remote EAS builders. If local builds must upload source maps through `eas env:exec`, use `sensitive` visibility instead because EAS does not expose `secret` values locally.
 3) Create/update `eas.json` with non-dev profiles (ensures the bundle is embedded and the matching EAS environment is used):
 ```json
 {
@@ -45,7 +50,7 @@ Notes: keep `developmentClient: false` so the JS is bundled; adjust `enterpriseP
 - Store-ready:  
   - Android: `eas build --platform android --profile production`  
   - iOS: `eas build --platform ios --profile production`
-- Local iOS production build: run `npm run build:ios:local:production`. This loads `.env.local` before calling EAS so the release IPA contains the required public Supabase configuration.
+- Local iOS production build: run `npm run build:ios:local:production`. This loads the production EAS environment with `eas env:exec production`; no `.env.local` file is required.
 
 ## Install or submit
 - Download the artifact from the EAS dashboard; install the APK on Android or distribute the IPA via TestFlight/ad-hoc.

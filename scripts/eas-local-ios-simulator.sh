@@ -4,11 +4,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [[ -f .env.local ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source .env.local
-  set +a
+environment="${EAS_LOCAL_SIMULATOR_ENVIRONMENT:-development}"
+
+if [[ "${EAS_LOCAL_SIMULATOR_ENV_LOADED:-}" != "1" ]]; then
+  output_path="${1:-./dist/smart-learning-notes-simulator.tar.gz}"
+  quoted_output_path="$(printf '%q' "$output_path")"
+  exec npx eas-cli@latest env:exec "$environment" \
+    "EAS_LOCAL_SIMULATOR_ENV_LOADED=1 EAS_LOCAL_SIMULATOR_ENVIRONMENT=$environment bash ./scripts/eas-local-ios-simulator.sh ${quoted_output_path}" \
+    --non-interactive
 fi
 
 missing=()
@@ -20,7 +23,7 @@ done
 
 if (( ${#missing[@]} > 0 )); then
   printf 'Missing required local build env vars: %s\n' "${missing[*]}" >&2
-  printf 'Add them to .env.local or export them before running this script.\n' >&2
+  printf 'Load an Expo environment with eas env:exec. EXPO_PUBLIC_* values must use plaintext or sensitive EAS visibility, not secret.\n' >&2
   exit 1
 fi
 

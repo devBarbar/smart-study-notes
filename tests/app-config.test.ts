@@ -33,7 +33,21 @@ test('production config fails clearly when Sentry runtime env is missing', () =>
   assert.notEqual(result.status, 0);
   assert.match(
     result.stderr,
-    /Missing required Expo production telemetry environment variables: EXPO_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT/,
+    /Missing required Expo telemetry environment variables: EXPO_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT/,
+  );
+});
+
+test('preview EAS config fails clearly when Sentry runtime env is missing', () => {
+  const result = runAppConfig({
+    ...productionBuildEnv,
+    NODE_ENV: 'development',
+    EAS_BUILD_PROFILE: 'preview',
+  });
+
+  assert.notEqual(result.status, 0);
+  assert.match(
+    result.stderr,
+    /Missing required Expo telemetry environment variables: EXPO_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT/,
   );
 });
 

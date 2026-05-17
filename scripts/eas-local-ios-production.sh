@@ -6,31 +6,11 @@ cd "$ROOT_DIR"
 
 output_path="${1:-./dist/smart-learning-notes-production.ipa}"
 
-if [[ "${EAS_LOCAL_PRODUCTION_ENV_LOADED:-}" != "1" && "${SKIP_EAS_ENV_EXEC:-}" != "1" ]]; then
+if [[ "${EAS_LOCAL_PRODUCTION_ENV_LOADED:-}" != "1" ]]; then
   quoted_output_path="$(printf '%q' "$output_path")"
   exec npx eas-cli@latest env:exec production \
     "EAS_LOCAL_PRODUCTION_ENV_LOADED=1 bash ./scripts/eas-local-ios-production.sh ${quoted_output_path}" \
     --non-interactive
-fi
-
-load_missing_env_file() {
-  local env_file="$1"
-  local name
-  local value
-
-  while IFS='=' read -r name value || [[ -n "$name" ]]; do
-    name="${name#export }"
-    if [[ -z "$name" || "$name" == \#* ]]; then
-      continue
-    fi
-    if [[ -z "${!name:-}" ]]; then
-      export "$name=$value"
-    fi
-  done < "$env_file"
-}
-
-if [[ -f .env.local ]]; then
-  load_missing_env_file .env.local
 fi
 
 missing=()
@@ -47,7 +27,7 @@ done
 
 if (( ${#missing[@]} > 0 )); then
   printf 'Missing required local production build env vars: %s\n' "${missing[*]}" >&2
-  printf 'Load Expo production env with eas env:exec and provide local secret-only values in .env.local.\n' >&2
+  printf 'Load the Expo production environment with eas env:exec. EXPO_PUBLIC_* values must use plaintext or sensitive EAS visibility, not secret.\n' >&2
   exit 1
 fi
 

@@ -9,6 +9,7 @@ test('local iOS production build loads Expo production env before building', () 
 
   assert.match(source, /env:exec production/);
   assert.match(source, /EAS_LOCAL_PRODUCTION_ENV_LOADED=1/);
+  assert.doesNotMatch(source, /\.env\.local/);
 });
 
 test('local iOS production build validates Sentry runtime telemetry', () => {
