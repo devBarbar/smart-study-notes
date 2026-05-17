@@ -20,7 +20,21 @@ export const CANVAS_FEEDBACK_PASS_COLOR = '#16a34a';
 export const CANVAS_FEEDBACK_FAIL_COLOR = '#dc2626';
 
 const normalizeList = (items?: string[]) =>
-  Array.isArray(items) ? items.map((item) => item.trim()).filter(Boolean) : [];
+  Array.isArray(items)
+    ? items
+        .map((item) => normalizeOptionalText(item))
+        .filter((item): item is string => Boolean(item))
+    : [];
+
+const normalizeOptionalText = (value: unknown) => {
+  if (typeof value === 'string') return value.trim() || undefined;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'boolean') return String(value);
+  return undefined;
+};
+
+const normalizeScore = (score: unknown) =>
+  typeof score === 'number' && Number.isFinite(score) ? score : undefined;
 
 const lineCount = (text?: string) => {
   const trimmed = text?.trim();
@@ -30,11 +44,29 @@ const lineCount = (text?: string) => {
 
 export const getCanvasFeedbackToneColor = (status: CanvasFeedbackBlockData['status']) => (status === 'passed' ? CANVAS_FEEDBACK_PASS_COLOR : CANVAS_FEEDBACK_FAIL_COLOR);
 
-export const buildCanvasFeedbackData = (feedback: StudyFeedback, isPassed: boolean): CanvasFeedbackBlockData => ({
-  status: isPassed ? 'passed' : 'failed', score: feedback.score, summary: feedback.summary?.trim() || 'No summary',
-  whatWentRight: normalizeList(feedback.whatWentRight), whatWentWrong: normalizeList(feedback.whatWentWrong),
-  correctAnswer: feedback.correctAnswer?.trim() || undefined, rewriteExample: feedback.rewriteExample?.trim() || undefined,
-});
+export const normalizeCanvasFeedbackBlockData = (
+  data: Partial<CanvasFeedbackBlockData> | StudyFeedback | null | undefined,
+  fallbackStatus: CanvasFeedbackBlockData['status'] = 'failed',
+): CanvasFeedbackBlockData => {
+  const record = (data ?? {}) as Record<string, unknown>;
+  const status =
+    record.status === 'passed' || record.status === 'failed'
+      ? record.status
+      : fallbackStatus;
+
+  return {
+    status,
+    score: normalizeScore(record.score),
+    summary: normalizeOptionalText(record.summary) || 'No summary',
+    whatWentRight: normalizeList(record.whatWentRight as string[] | undefined),
+    whatWentWrong: normalizeList(record.whatWentWrong as string[] | undefined),
+    correctAnswer: normalizeOptionalText(record.correctAnswer),
+    rewriteExample: normalizeOptionalText(record.rewriteExample),
+  };
+};
+
+export const buildCanvasFeedbackData = (feedback: StudyFeedback, isPassed: boolean): CanvasFeedbackBlockData =>
+  normalizeCanvasFeedbackBlockData(feedback, isPassed ? 'passed' : 'failed');
 
 export const estimateCanvasFeedbackBlockSize = (data: CanvasFeedbackBlockData) => {
   let height = FEEDBACK_PADDING * 2 + 42;

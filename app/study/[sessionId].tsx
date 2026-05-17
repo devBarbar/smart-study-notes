@@ -16,6 +16,7 @@ import {
 import { v4 as uuid } from "uuid";
 
 import { StreamingTTSPlayer, TTSPlayerState } from "@/lib/audio";
+import { calculateCanvasBounds } from "@/lib/canvas-stroke-geometry";
 import {
   DepthProgressState,
   buildDepthCheckProgressLine,
@@ -87,6 +88,7 @@ import {
   normalizeCanvasPageVisualBlocks,
   sessionHasInProgressCanvasWork,
 } from "@/lib/study/study-session-utils";
+import { createSubmissionGate } from "@/lib/study/submission-guard";
 
 import {
   CanvasMode,
@@ -415,6 +417,7 @@ export default function StudySessionScreen() {
   } | null>(null);
   const canvasBaselineRef = useRef(0);
   const hasInitializedCanvasRef = useRef(false);
+  const submitAnswerGateRef = useRef(createSubmissionGate());
 
   const resetCanvasInteractionState = useCallback(() => {
     setHasDrawnAfterQuestion(false);
@@ -952,62 +955,31 @@ export default function StudySessionScreen() {
     ],
   );
 
-  // Calculate bounds for a set of strokes
-  const computeBounds = useCallback(
-    (strokes: CanvasStrokeData[], padding = 16): CanvasBounds | null => {
-      let minX = Number.POSITIVE_INFINITY;
-      let minY = Number.POSITIVE_INFINITY;
-      let maxX = Number.NEGATIVE_INFINITY;
-      let maxY = Number.NEGATIVE_INFINITY;
-
-      strokes.forEach((stroke) => {
-        stroke.points.forEach((p) => {
-          minX = Math.min(minX, p.x);
-          minY = Math.min(minY, p.y);
-          maxX = Math.max(maxX, p.x);
-          maxY = Math.max(maxY, p.y);
-        });
-      });
-
-      if (
-        !Number.isFinite(minX) ||
-        !Number.isFinite(minY) ||
-        !Number.isFinite(maxX) ||
-        !Number.isFinite(maxY)
-      ) {
-        return null;
-      }
-
-      const paddedX = Math.max(minX - padding, 0);
-      const paddedY = Math.max(minY - padding, 0);
-      const width = Math.min(
-        maxX - minX + padding * 2,
-        canvasSize.width - paddedX,
-      );
-      const height = Math.min(
-        maxY - minY + padding * 2,
-        canvasSize.height - paddedY,
-      );
-
-      return { x: paddedX, y: paddedY, width, height };
-    },
-    [canvasSize.width, canvasSize.height],
-  );
-
-  const getNewStrokeBounds = useCallback((): CanvasBounds | null => {
-    const newStrokes = canvasStrokes.slice(canvasBaselineRef.current);
-    const boundsFromNew = computeBounds(newStrokes);
+  const getNewStrokeBounds = useCallback((strokes = canvasStrokes): CanvasBounds | null => {
+    const newStrokes = strokes.slice(canvasBaselineRef.current);
+    const boundsFromNew = calculateCanvasBounds(newStrokes, canvasSize);
     if (boundsFromNew) return boundsFromNew;
 
     if (lastDrawingPosition) {
       const size = 180;
-      const x = Math.max(lastDrawingPosition.x - size / 2, 0);
-      const y = Math.max(lastDrawingPosition.y - size / 2, 0);
-      return { x, y, width: size, height: size };
+      const x = Math.min(
+        Math.max(lastDrawingPosition.x - size / 2, 0),
+        Math.max(canvasSize.width, 0),
+      );
+      const y = Math.min(
+        Math.max(lastDrawingPosition.y - size / 2, 0),
+        Math.max(canvasSize.height, 0),
+      );
+      return {
+        x,
+        y,
+        width: Math.max(0, Math.min(size, canvasSize.width - x)),
+        height: Math.max(0, Math.min(size, canvasSize.height - y)),
+      };
     }
 
-    return computeBounds(canvasStrokes);
-  }, [canvasStrokes, computeBounds, lastDrawingPosition]);
+    return calculateCanvasBounds(strokes, canvasSize);
+  }, [canvasSize, canvasStrokes, lastDrawingPosition]);
 
   const getQuestionTextForMessage = useCallback(
     (message: StudyChatMessage): string | null => {
@@ -2968,6 +2940,7 @@ export default function StudySessionScreen() {
         : null;
 
     if (!questionToEvaluate) return;
+    if (!submitAnswerGateRef.current.tryEnter()) return;
 
     const isFinalQuizAnswer =
       questionToEvaluate.assessmentKind === "final_quiz";
@@ -2983,8 +2956,11 @@ export default function StudySessionScreen() {
 
     setGrading(true);
     try {
+      const submittedStrokes =
+        (canvasRef.current?.getStrokes?.() as CanvasStrokeData[] | undefined) ??
+        canvasStrokes;
       const imageUri = await canvasRef.current?.exportAsImage();
-      const canvasBounds = getNewStrokeBounds();
+      const canvasBounds = getNewStrokeBounds(submittedStrokes);
       const base64 = imageUri
         ? await FileSystem.readAsStringAsync(imageUri, {
             encoding: FileSystem.EncodingType.Base64,
@@ -3272,7 +3248,7 @@ export default function StudySessionScreen() {
         canvasBounds: canvasBounds ?? undefined,
       };
       setAnswerMarkers((prev) => [...prev, newMarker]);
-      canvasBaselineRef.current = canvasStrokes.length;
+      canvasBaselineRef.current = submittedStrokes.length;
 
       // Reset drawing detection after submission
       setHasDrawnAfterQuestion(false);
@@ -3294,11 +3270,18 @@ export default function StudySessionScreen() {
         ? getNextTutorCheckType(latestDepthChecks, targetPassScore)
         : null;
       const feedbackMessageId = uuid();
+      const pagesForFeedback = (
+        canvasPagesRef.current.length > 0 ? canvasPagesRef.current : canvasPages
+      ).map((page) =>
+        page.id === activePageId
+          ? {
+              ...page,
+              strokes: submittedStrokes,
+            }
+          : page,
+      );
       const feedbackInsertResult = insertCanvasFeedbackBlockBelowAnswer({
-        pages:
-          canvasPagesRef.current.length > 0
-            ? canvasPagesRef.current
-            : canvasPages,
+        pages: pagesForFeedback,
         pageId: activePageId,
         messageId: feedbackMessageId,
         feedback: {
@@ -3749,6 +3732,7 @@ export default function StudySessionScreen() {
       setStudyPhase("answer");
     } finally {
       setGrading(false);
+      submitAnswerGateRef.current.leave();
     }
   };
 

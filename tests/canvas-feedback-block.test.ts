@@ -58,6 +58,28 @@ test('canvas feedback tone colors and empty summaries are normalized', () => {
   );
 });
 
+test('canvas feedback data tolerates malformed AI fields', () => {
+  const feedback = {
+    summary: { text: 'not a string' },
+    correctness: 'partially correct',
+    score: Number.NaN,
+    whatWentRight: ['  useful term  ', 42, null, { text: 'ignored' }],
+    whatWentWrong: 'missing reason',
+    correctAnswer: 123,
+    rewriteExample: { text: 'not renderable' },
+  } as unknown as StudyFeedback;
+
+  assert.deepEqual(buildCanvasFeedbackData(feedback, false), {
+    status: 'failed',
+    score: undefined,
+    summary: 'No summary',
+    whatWentRight: ['useful term', '42'],
+    whatWentWrong: [],
+    correctAnswer: '123',
+    rewriteExample: undefined,
+  });
+});
+
 test('canvas feedback data marks passed answers green with strengths', () => {
   const feedback: StudyFeedback = {
     summary: 'Clear and complete.',

@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   appendPoint,
   buildSmoothPathCommands,
+  calculateCanvasBounds,
   eraseStrokesAtPoint,
   getStrokeBounds,
   normalizeCanvasStrokes,
@@ -94,6 +95,58 @@ describe("canvas stroke geometry", () => {
         width: 24,
         height: 24,
       },
+    );
+  });
+
+  it("calculates canvas answer bounds without invalid dimensions", () => {
+    assert.deepEqual(
+      calculateCanvasBounds(
+        [
+          {
+            points: [
+              { x: 390, y: 295 },
+              { x: 460, y: 360 },
+            ],
+            color: "#000",
+            width: 4,
+          },
+        ],
+        { width: 400, height: 300 },
+      ),
+      { x: 374, y: 279, width: 26, height: 21 },
+    );
+
+    assert.equal(
+      calculateCanvasBounds(
+        [
+          {
+            points: [{ x: Number.NaN, y: 10 }],
+            color: "#000",
+            width: 4,
+          },
+        ],
+        { width: 400, height: 300 },
+      ),
+      null,
+    );
+
+    assert.deepEqual(
+      calculateCanvasBounds(
+        [
+          {
+            points: [{ x: 10, y: 20 }],
+            color: "#000",
+            width: 2,
+          },
+          {
+            points: [{ x: 80, y: 90 }],
+            color: "#000",
+            width: 2,
+          },
+        ],
+        { width: Number.POSITIVE_INFINITY, height: Number.POSITIVE_INFINITY },
+      ),
+      { x: 0, y: 4, width: 96, height: 102 },
     );
   });
 

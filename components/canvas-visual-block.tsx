@@ -15,7 +15,10 @@ import {
 } from '@/types';
 
 import { CanvasDiagram } from './canvas-diagram';
-import { getCanvasFeedbackToneColor } from '@/lib/study/canvas-feedback';
+import {
+  getCanvasFeedbackToneColor,
+  normalizeCanvasFeedbackBlockData,
+} from '@/lib/study/canvas-feedback';
 
 // Constants for rendering
 const BULLET_LINE_HEIGHT = 28;
@@ -348,29 +351,30 @@ const FeedbackRenderer: React.FC<{
   width?: number;
   t?: (key: string, params?: Record<string, any>) => string;
 }> = ({ data, width = 520, t }) => {
-  const toneColor = getCanvasFeedbackToneColor(data.status);
-  const softColor = data.status === 'passed' ? '#dcfce7' : '#fee2e2';
+  const safeData = normalizeCanvasFeedbackBlockData(data);
+  const toneColor = getCanvasFeedbackToneColor(safeData.status);
+  const softColor = safeData.status === 'passed' ? '#dcfce7' : '#fee2e2';
   const title =
-    data.status === 'passed'
+    safeData.status === 'passed'
       ? t?.('study.feedback.canvasPassed') ?? 'Tutor feedback: passed'
       : t?.('study.feedback.canvasFailed') ?? 'Tutor feedback: needs work';
-  const scoreLabel = typeof data.score === 'number' ? `${Math.round(data.score)}/100` : null;
+  const scoreLabel = typeof safeData.score === 'number' ? `${Math.round(safeData.score)}/100` : null;
   const sections = [
     {
       title: t?.('study.feedback.canvasWhatWentRight') ?? 'What you did right',
-      items: data.whatWentRight,
+      items: safeData.whatWentRight,
       color: '#16a34a',
     },
     {
       title: t?.('study.feedback.canvasWhatToFix') ?? 'What to fix',
-      items: data.whatWentWrong,
+      items: safeData.whatWentWrong,
       color: '#dc2626',
     },
   ].filter((section) => section.items.length > 0);
 
   return (
     <View
-      testID={`canvas-feedback-${data.status}`}
+      testID={`canvas-feedback-${safeData.status}`}
       style={[
         styles.feedbackCard,
         { width, borderColor: toneColor, backgroundColor: softColor },
@@ -387,7 +391,7 @@ const FeedbackRenderer: React.FC<{
           </ThemedText>
         )}
       </View>
-      <ThemedText style={styles.feedbackSummary}>{data.summary}</ThemedText>
+      <ThemedText style={styles.feedbackSummary}>{safeData.summary}</ThemedText>
       {sections.map((section) => (
         <View key={section.title} style={styles.feedbackSection}>
           <ThemedText style={[styles.feedbackSectionTitle, { color: section.color }]}>
@@ -400,20 +404,20 @@ const FeedbackRenderer: React.FC<{
           ))}
         </View>
       ))}
-      {data.correctAnswer && (
+      {safeData.correctAnswer && (
         <View style={styles.feedbackSection}>
           <ThemedText style={styles.feedbackSectionTitle}>
             {t?.('study.feedback.canvasCorrectAnswer') ?? 'Correct answer'}
           </ThemedText>
-          <ThemedText style={styles.feedbackBody}>{data.correctAnswer}</ThemedText>
+          <ThemedText style={styles.feedbackBody}>{safeData.correctAnswer}</ThemedText>
         </View>
       )}
-      {data.rewriteExample && (
+      {safeData.rewriteExample && (
         <View style={styles.feedbackSection}>
           <ThemedText style={styles.feedbackSectionTitle}>
             {t?.('study.feedback.canvasRewriteExample') ?? 'A stronger answer'}
           </ThemedText>
-          <ThemedText style={styles.feedbackBody}>{data.rewriteExample}</ThemedText>
+          <ThemedText style={styles.feedbackBody}>{safeData.rewriteExample}</ThemedText>
         </View>
       )}
     </View>

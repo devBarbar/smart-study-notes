@@ -17,6 +17,8 @@ export type StrokeBounds = {
   height: number;
 };
 
+export type CanvasSize = { width: number; height: number };
+
 export type PathCommand =
   | { type: "move"; x: number; y: number }
   | { type: "line"; x: number; y: number }
@@ -46,6 +48,50 @@ export const normalizeCanvasStrokes = <T extends CanvasStrokeLike>(
       width: stroke.width,
     }))
     .filter((stroke) => stroke.points.length > 0);
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+export const calculateCanvasBounds = (
+  strokes: CanvasStrokeLike[],
+  canvasSize: CanvasSize,
+  padding = 16,
+): { x: number; y: number; width: number; height: number } | null => {
+  const normalized = normalizeCanvasStrokes(strokes);
+  if (normalized.length === 0) return null;
+
+  let minX = Number.POSITIVE_INFINITY;
+  let minY = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let maxY = Number.NEGATIVE_INFINITY;
+
+  for (const stroke of normalized) {
+    for (const point of stroke.points) {
+      minX = Math.min(minX, point.x);
+      minY = Math.min(minY, point.y);
+      maxX = Math.max(maxX, point.x);
+      maxY = Math.max(maxY, point.y);
+    }
+  }
+
+  const maxCanvasX = Number.isFinite(canvasSize.width)
+    ? Math.max(canvasSize.width, 0)
+    : Number.POSITIVE_INFINITY;
+  const maxCanvasY = Number.isFinite(canvasSize.height)
+    ? Math.max(canvasSize.height, 0)
+    : Number.POSITIVE_INFINITY;
+  const paddedMinX = clamp(minX - padding, 0, maxCanvasX);
+  const paddedMinY = clamp(minY - padding, 0, maxCanvasY);
+  const paddedMaxX = clamp(maxX + padding, paddedMinX, maxCanvasX);
+  const paddedMaxY = clamp(maxY + padding, paddedMinY, maxCanvasY);
+
+  return {
+    x: paddedMinX,
+    y: paddedMinY,
+    width: paddedMaxX - paddedMinX,
+    height: paddedMaxY - paddedMinY,
+  };
+};
 
 export const shouldAppendPoint = (
   lastPoint: CanvasPoint | undefined,

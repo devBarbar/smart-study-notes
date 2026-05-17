@@ -15,6 +15,7 @@ import {
   getNextCanvasZoom,
   scaleCanvasZoomByPinch,
 } from "../../lib/canvas-zoom";
+import { calculateCanvasBounds } from "../../lib/canvas-stroke-geometry";
 import {
   buildCanvasFeedbackData,
   estimateCanvasFeedbackBlockSize,
@@ -295,6 +296,16 @@ const gradingPresets: Record<
       whatWentWrong: [],
     },
   },
+  malformed: {
+    passed: false,
+    feedback: {
+      summary: { text: "not renderable" },
+      correctness: "partially correct",
+      score: Number.NaN,
+      whatWentRight: [42],
+      whatWentWrong: "missing reason",
+    } as unknown as StudyFeedback,
+  },
 };
 
 const InlineFeedbackHarness = ({
@@ -459,6 +470,43 @@ const EmptyCanvasFeedbackHarness = () => {
     </View>
   );
 };
+
+const AnswerBoundsHarness = () => {
+  const bounds = calculateCanvasBounds(
+    [
+      {
+        points: [
+          { x: 390, y: 295 },
+          { x: 460, y: 360 },
+        ],
+        color: "#0f172a",
+        width: 4,
+      },
+    ],
+    { width: 400, height: 300 },
+  );
+  const emptyBounds = calculateCanvasBounds(
+    [{ points: [{ x: Number.NaN, y: 10 }], color: "#0f172a", width: 4 }],
+    { width: 400, height: 300 },
+  );
+
+  return (
+    <View>
+      <Text testID="answer-bounds">
+        {bounds
+          ? `${bounds.x},${bounds.y},${bounds.width},${bounds.height}`
+          : "none"}
+      </Text>
+      <Text testID="empty-answer-bounds">
+        {emptyBounds ? "available" : "none"}
+      </Text>
+    </View>
+  );
+};
+
+Given("the answer bounds harness has edge strokes", function (this: AppWorld) {
+  this.screen = render(<AnswerBoundsHarness />);
+});
 
 Given("the study canvas zoom harness is open", function (this: AppWorld) {
   this.screen = render(<CanvasZoomHarness />);
@@ -685,6 +733,17 @@ Then("only the feedback canvas save is sent", function () {
 
 Then("the feedback canvas has one page", function (this: AppWorld) {
   assert.equal(this.screen!.getByTestId("feedback-page-count").props.children, 1);
+});
+
+Then("the answer bounds read {string}", function (this: AppWorld, bounds: string) {
+  assert.equal(this.screen!.getByTestId("answer-bounds").props.children, bounds);
+});
+
+Then("empty answer bounds are unavailable", function (this: AppWorld) {
+  assert.equal(
+    this.screen!.getByTestId("empty-answer-bounds").props.children,
+    "none",
+  );
 });
 
 Then("the live ink uses a copied Skia path snapshot", async function () {

@@ -66,3 +66,14 @@ Feature: Canvas zoom and inline grading feedback
     When the tutor writes feedback below the answer
     Then the canvas feedback includes "Missing the key cause"
     And the feedback canvas has one page
+
+  Scenario: Malformed grading feedback is sanitized before rendering on canvas
+    Given the inline grading harness has a malformed answer
+    When the tutor writes feedback below the answer
+    Then the canvas feedback includes "No summary"
+    And the canvas feedback includes "42"
+
+  Scenario: Answer bounds stay valid near the canvas edge
+    Given the answer bounds harness has edge strokes
+    Then the answer bounds read "374,279,26,21"
+    And empty answer bounds are unavailable
