@@ -567,6 +567,59 @@ Given("the native Skia handwriting canvas is open", async function () {
   };
 });
 
+Given("the native Skia handwriting canvas has malformed strokes", async function () {
+  const mocks = installNativeCanvasMocks();
+  const nativeCanvasPath = "../../components/handwriting-canvas.native";
+  delete require.cache[require.resolve(nativeCanvasPath)];
+  const { HandwritingCanvas } = require(nativeCanvasPath);
+  let renderer!: TestRenderer.ReactTestRenderer;
+
+  await act(async () => {
+    renderer = TestRenderer.create(
+      <HandwritingCanvas
+        width={320}
+        height={240}
+        strokeWidth={Number.POSITIVE_INFINITY}
+        initialStrokes={[
+          {
+            points: [
+              { x: Number.NaN, y: 20 },
+              { x: 10, y: 20 },
+              { x: Number.POSITIVE_INFINITY, y: 40 },
+              { x: 12, y: 22 },
+            ],
+            color: "#0f172a",
+            width: Number.POSITIVE_INFINITY,
+          },
+          {
+            points: [{ x: Number.NaN, y: Number.NaN }],
+            color: "#0f172a",
+            width: Number.NaN,
+          },
+        ]}
+      />,
+      {
+        createNodeMock: () => ({
+          measureInWindow: (
+            callback: (
+              x: number,
+              y: number,
+              width: number,
+              height: number,
+            ) => void,
+          ) => callback(0, 0, 320, 240),
+        }),
+      },
+    );
+  });
+  await measureNativeCanvasLayout(renderer);
+
+  nativeCanvasHarness = {
+    ...mocks,
+    renderer,
+  };
+});
+
 Given(
   "the native Skia handwriting canvas is open at 200% zoom",
   async function () {
@@ -686,6 +739,24 @@ When("the student writes a short stylus stroke", async function () {
   await act(async () => {
     pan.handlers.onBegin({ pointerType: "stylus", x: 10, y: 20 });
     pan.handlers.onUpdate({ pointerType: "stylus", x: 14, y: 22 });
+  });
+});
+
+When("the student writes an unsafe stylus stroke", async function () {
+  assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
+  const pan = nativeCanvasHarness.getLastPanGesture();
+  assert.ok(pan, "Skia canvas did not register a pan gesture");
+
+  await act(async () => {
+    pan.handlers.onBegin({ pointerType: "stylus", x: Number.NaN, y: 20 });
+    pan.handlers.onUpdate({ pointerType: "stylus", x: 14, y: 22 });
+    pan.handlers.onBegin({ pointerType: "stylus", x: 20, y: 30 });
+    pan.handlers.onUpdate({
+      pointerType: "stylus",
+      x: Number.POSITIVE_INFINITY,
+      y: 32,
+    });
+    pan.handlers.onUpdate({ pointerType: "stylus", x: 24, y: 34 });
   });
 });
 
@@ -821,6 +892,32 @@ Then(
     assert.equal(pan.handlers.onTouchesDown, undefined);
   },
 );
+
+Then("only safe Skia paths and paint values are rendered", async function () {
+  assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");
+  const paths = nativeCanvasHarness.renderer.root.findAll(
+    (node) => (node.type as unknown) === "SkiaPath",
+  );
+
+  assert.equal(paths.length, 2);
+  assert.deepEqual(paths[0].props.path.commands, ["M10,20", "L12,22"]);
+  assert.equal(paths[0].props.strokeWidth, 24);
+  assert.deepEqual(paths[1].props.path.commands, [
+    "M20,30",
+    "L20.01,30",
+    "L24,34",
+  ]);
+  assert.equal(paths[1].props.strokeWidth, 24);
+
+  const pan = nativeCanvasHarness.getLastPanGesture();
+  assert.ok(pan, "Skia canvas did not register a pan gesture");
+  await act(async () => {
+    pan.handlers.onEnd();
+    nativeCanvasHarness?.renderer.unmount();
+  });
+  nativeCanvasHarness.restore();
+  nativeCanvasHarness = null;
+});
 
 Then("the live ink follows the visible pen location", async function () {
   assert.ok(nativeCanvasHarness, "Native Skia canvas harness is not open");

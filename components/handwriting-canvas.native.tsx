@@ -94,21 +94,59 @@ type CanvasWindowFrame = {
 
 const PAPER_COLOR = "#f8fafc";
 const LINE_COLOR = "#e2e8f0";
+const DEFAULT_STROKE_WIDTH = 3;
+const MIN_SKIA_STROKE_WIDTH = 0.5;
+const MAX_SKIA_STROKE_WIDTH = 24;
+const MAX_SKIA_COORDINATE = 1_000_000;
 
-const makeEmptyPath = () => Skia.Path.Make();
+const isSafeCanvasCoordinate = (value: number) =>
+  Number.isFinite(value) && Math.abs(value) <= MAX_SKIA_COORDINATE;
+
+const isSafeCanvasPoint = (point: CanvasPoint) =>
+  isSafeCanvasCoordinate(point.x) && isSafeCanvasCoordinate(point.y);
+
+const sanitizeStrokeWidth = (width: number) => {
+  if (Number.isNaN(width)) return DEFAULT_STROKE_WIDTH;
+  if (width === Number.POSITIVE_INFINITY) return MAX_SKIA_STROKE_WIDTH;
+  if (width === Number.NEGATIVE_INFINITY) return MIN_SKIA_STROKE_WIDTH;
+  return Math.min(
+    Math.max(width, MIN_SKIA_STROKE_WIDTH),
+    MAX_SKIA_STROKE_WIDTH,
+  );
+};
+
+const sanitizeStroke = (stroke: CanvasStroke): CanvasStroke | null => {
+  const points = stroke.points.filter(isSafeCanvasPoint).map((point) => ({
+    x: point.x,
+    y: point.y,
+  }));
+  if (points.length === 0) return null;
+
+  return {
+    points,
+    color:
+      typeof stroke.color === "string" && stroke.color
+        ? stroke.color
+        : "#0f172a",
+    width: sanitizeStrokeWidth(stroke.width),
+  };
+};
+
+const sanitizeStrokes = (strokes: CanvasStroke[] = []) =>
+  normalizeCanvasStrokes(strokes)
+    .map((stroke) => sanitizeStroke(stroke))
+    .filter((stroke): stroke is CanvasStroke => stroke !== null);
 
 const makePathFromPoints = (points: CanvasPoint[], smoothed: boolean) => {
   const path = Skia.Path.Make();
-  const commands = smoothed
-    ? buildSmoothPathCommands(points)
-    : points.map((point, index) =>
-        index === 0
-          ? ({ type: "move", x: point.x, y: point.y } as const)
-          : ({ type: "line", x: point.x, y: point.y } as const),
-      );
+  const commands = smoothed ? buildSmoothPathCommands(points) : [];
 
-  if (!smoothed && points.length === 1) {
+  if (!smoothed && points.length > 0) {
+    commands.push({ type: "move", x: points[0].x, y: points[0].y });
     commands.push({ type: "line", x: points[0].x + 0.01, y: points[0].y });
+    points.slice(1).forEach((point) => {
+      commands.push({ type: "line", x: point.x, y: point.y });
+    });
   }
 
   commands.forEach((command) => {
@@ -155,7 +193,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
       nextStrokeIdRef.current += 1;
       return {
         ...stroke,
-        points: stroke.points.map((point) => ({ x: point.x, y: point.y })),
         id,
         path: makePathFromPoints(stroke.points, true),
         bounds: getStrokeBounds(stroke),
@@ -164,9 +201,7 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     const initialRenderStrokes = useMemo(
       () =>
-        normalizeCanvasStrokes(initialStrokes).map((stroke) =>
-          renderStroke(stroke),
-        ),
+        sanitizeStrokes(initialStrokes).map((stroke) => renderStroke(stroke)),
       [initialStrokes, renderStroke],
     );
     const [renderStrokes, setRenderStrokes] =
@@ -179,7 +214,6 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     const strokesRef = useRef<RenderStroke[]>(initialRenderStrokes);
     const activeStrokeRef = useRef<CanvasStroke | null>(null);
-    const activeMutablePathRef = useRef<SkPath>(makeEmptyPath());
     const activePathRenderFrameRef = useRef<number | null>(null);
     const [activePathSnapshot, setActivePathSnapshot] =
       useState<SkPath | null>(null);
@@ -243,7 +277,11 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     const convertPointWithFrame = useCallback(
       (point: GesturePoint, frame: CanvasWindowFrame): CanvasPoint => {
-        const scale = coordinateScaleRef.current || 1;
+        const requestedScale = coordinateScaleRef.current;
+        const scale =
+          Number.isFinite(requestedScale) && requestedScale > 0
+            ? requestedScale
+            : 1;
         if (
           frame.measured &&
           typeof point.absoluteX === "number" &&
@@ -265,6 +303,10 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
     const withCanvasPoint = useCallback(
       (point: GesturePoint, callback: (point: CanvasPoint) => void) => {
+        const invokeWithSafePoint = (canvasPoint: CanvasPoint) => {
+          if (!isSafeCanvasPoint(canvasPoint)) return;
+          callback(canvasPoint);
+        };
         const gestureSurface = gestureSurfaceRef.current;
         if (
           gestureSurface &&
@@ -273,14 +315,16 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
         ) {
           gestureSurface.measureInWindow((x, y, measuredWidth, measuredHeight) => {
             storeGestureSurfaceFrame(x, y, measuredWidth, measuredHeight);
-            callback(
+            invokeWithSafePoint(
               convertPointWithFrame(point, canvasWindowFrameRef.current),
             );
           });
           return;
         }
 
-        callback(convertPointWithFrame(point, canvasWindowFrameRef.current));
+        invokeWithSafePoint(
+          convertPointWithFrame(point, canvasWindowFrameRef.current),
+        );
       },
       [convertPointWithFrame, storeGestureSurfaceFrame],
     );
@@ -302,19 +346,21 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
 
       activePathRenderFrameRef.current = requestAnimationFrame(() => {
         activePathRenderFrameRef.current = null;
-        setActivePathSnapshot(activeMutablePathRef.current.copy());
+        const activeStroke = activeStrokeRef.current;
+        setActivePathSnapshot(
+          activeStroke ? makePathFromPoints(activeStroke.points, false) : null,
+        );
       });
     }, []);
 
     const resetActivePath = useCallback(() => {
       cancelActivePathRender();
-      activeMutablePathRef.current = makeEmptyPath();
       setActivePathSnapshot(null);
     }, [cancelActivePathRender]);
 
     const setCanvasStrokes = useCallback(
       (nextStrokes: CanvasStroke[]) => {
-        const normalized = normalizeCanvasStrokes(nextStrokes).map((stroke) =>
+        const normalized = sanitizeStrokes(nextStrokes).map((stroke) =>
           renderStroke(stroke),
         );
         commitRenderStrokes(normalized);
@@ -348,24 +394,24 @@ export const HandwritingCanvas = forwardRef<HandwritingCanvasHandle, Props>(
     );
 
     const startStrokeAtPoint = useCallback((point: CanvasPoint) => {
+      if (!isSafeCanvasPoint(point)) return;
       const stroke = {
         points: [point],
         color: colorRef.current,
-        width: strokeWidthRef.current,
+        width: sanitizeStrokeWidth(strokeWidthRef.current),
       };
       const path = makePathFromPoints(stroke.points, false);
       activeStrokeRef.current = stroke;
-      activeMutablePathRef.current = path;
-      setActivePathSnapshot(path.copy());
+      setActivePathSnapshot(path);
       setActiveStrokeStyle({ color: stroke.color, width: stroke.width });
     }, []);
 
     const appendPointToCurrentStroke = useCallback(
       (point: CanvasPoint) => {
+        if (!isSafeCanvasPoint(point)) return;
         const current = activeStrokeRef.current;
         if (!current || !appendPoint(current.points, point)) return;
 
-        activeMutablePathRef.current.lineTo(point.x, point.y);
         scheduleActivePathRender();
       },
       [scheduleActivePathRender],

@@ -202,6 +202,7 @@ describe("Skia handwriting renderer", () => {
     assert.doesNotMatch(source, /path=\{activePath\}/);
     assert.doesNotMatch(source, /manualActivation\(true\)/);
     assert.doesNotMatch(source, /\.onTouchesDown\(/);
+    assert.doesNotMatch(source, /activeMutablePathRef/);
     assert.match(source, /activePathSnapshot/);
   });
 
@@ -237,7 +238,11 @@ describe("Skia handwriting renderer", () => {
       (node) => (node.type as unknown) === "SkiaPath",
     );
     assert.equal(paths.length, 1);
-    assert.deepEqual(paths[0].props.path.commands, ["M10,20", "L10.01,20", "L14,22"]);
+    assert.deepEqual(paths[0].props.path.commands, [
+      "M10,20",
+      "L10.01,20",
+      "L14,22",
+    ]);
     assert.equal(paths[0].props.path._isReanimatedSharedValue, undefined);
 
     await act(async () => {
@@ -438,6 +443,123 @@ describe("Skia handwriting renderer", () => {
     assert.equal(canvasRef.current?.getStrokes().length, 0);
 
     await act(async () => {
+      renderer.unmount();
+    });
+    mocks.restore();
+  });
+
+  it("sanitizes persisted strokes before passing paths and paint to Skia", async () => {
+    const mocks = installNativeCanvasMocks();
+    const { HandwritingCanvas } = loadNativeCanvas();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        React.createElement(HandwritingCanvas, {
+          width: 320,
+          height: 240,
+          initialStrokes: [
+            {
+              points: [
+                { x: Number.NaN, y: 20 },
+                { x: 10, y: 20 },
+                { x: Number.POSITIVE_INFINITY, y: 40 },
+                { x: 12, y: 22 },
+              ],
+              color: "#0f172a",
+              width: Number.POSITIVE_INFINITY,
+            },
+            {
+              points: [{ x: Number.NaN, y: Number.NaN }],
+              color: "#0f172a",
+              width: Number.NaN,
+            },
+          ],
+        }),
+        {
+          createNodeMock: createMeasuredNodeMock({
+            x: 0,
+            y: 0,
+            width: 320,
+            height: 240,
+          }),
+        },
+      );
+    });
+
+    const paths = renderer.root.findAll(
+      (node) => (node.type as unknown) === "SkiaPath",
+    );
+    assert.equal(paths.length, 1);
+    assert.deepEqual(paths[0].props.path.commands, ["M10,20", "L12,22"]);
+    assert.equal(paths[0].props.strokeWidth, 24);
+
+    await act(async () => {
+      renderer.unmount();
+    });
+    mocks.restore();
+  });
+
+  it("ignores unsafe live stylus points and clamps live paint values", async () => {
+    const mocks = installNativeCanvasMocks();
+    const { HandwritingCanvas } = loadNativeCanvas();
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        React.createElement(HandwritingCanvas, {
+          width: 320,
+          height: 240,
+          strokeWidth: Number.POSITIVE_INFINITY,
+        }),
+        {
+          createNodeMock: createMeasuredNodeMock({
+            x: 0,
+            y: 0,
+            width: 320,
+            height: 240,
+          }),
+        },
+      );
+    });
+    await measureCanvasLayout(renderer);
+
+    const pan = mocks.getLastPanGesture();
+    assert.ok(pan);
+
+    await act(async () => {
+      pan.handlers.onBegin({
+        pointerType: "stylus",
+        x: Number.NaN,
+        y: 20,
+      });
+      pan.handlers.onUpdate({ pointerType: "stylus", x: 14, y: 22 });
+    });
+    assert.equal(
+      renderer.root.findAll((node) => (node.type as unknown) === "SkiaPath")
+        .length,
+      0,
+    );
+
+    await act(async () => {
+      pan.handlers.onBegin({ pointerType: "stylus", x: 10, y: 20 });
+      pan.handlers.onUpdate({
+        pointerType: "stylus",
+        x: Number.POSITIVE_INFINITY,
+        y: 22,
+      });
+      pan.handlers.onUpdate({ pointerType: "stylus", x: 14, y: 22 });
+    });
+
+    const paths = renderer.root.findAll(
+      (node) => (node.type as unknown) === "SkiaPath",
+    );
+    assert.equal(paths.length, 1);
+    assert.deepEqual(paths[0].props.path.commands, ["M10,20", "L10.01,20", "L14,22"]);
+    assert.equal(paths[0].props.strokeWidth, 24);
+
+    await act(async () => {
+      pan.handlers.onEnd();
       renderer.unmount();
     });
     mocks.restore();
