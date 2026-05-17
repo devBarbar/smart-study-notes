@@ -10,6 +10,11 @@ const React = require('react');
 
 const originalLoad = Module._load;
 const projectRoot = path.resolve(__dirname, '..', '..');
+const sentryMockState = {
+  messages: [],
+  logs: [],
+};
+global.__sentryMockState = sentryMockState;
 const hostComponent = (name) =>
   React.forwardRef(({ children, ...props }, ref) =>
     React.createElement(name, { ...props, ref }, children),
@@ -62,10 +67,19 @@ Module._load = function load(request, parent, isMain) {
     return {
       init: () => undefined,
       setUser: () => undefined,
+      captureMessage: (message, context) => {
+        sentryMockState.messages.push({ message, context });
+        return 'test-message-id';
+      },
       captureException: () => undefined,
       startSpan: (_options, callback) => callback(),
       addBreadcrumb: () => undefined,
       addIntegration: () => undefined,
+      logger: {
+        info: (message, attributes) => {
+          sentryMockState.logs.push({ level: 'info', message, attributes });
+        },
+      },
       supabaseIntegration: () => ({}),
       wrap: (component) => component,
     };

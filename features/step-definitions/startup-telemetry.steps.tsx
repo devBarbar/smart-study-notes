@@ -5,11 +5,18 @@ import { render } from '@testing-library/react-native/pure';
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { buildSentryInitOptions } from '../../lib/sentry';
+import { buildSentryInitOptions, captureSentryStartupTelemetry } from '../../lib/sentry';
 import { AppWorld } from '../support/world';
 
 type StartupTelemetryWorld = AppWorld & {
   telemetryEnv?: Record<string, string | undefined>;
+};
+type StartupTelemetryGlobal = typeof globalThis & {
+  __sentryMockState?: {
+    messages: Array<unknown>;
+    logs: Array<unknown>;
+  };
+  __smartLearningNotesSentryStartupCaptured?: boolean;
 };
 
 const StartupTelemetryHarness = ({
@@ -26,6 +33,9 @@ const StartupTelemetryHarness = ({
     (options.replaysOnErrorSampleRate ?? 0) > 0 ||
     (options.replaysSessionSampleRate ?? 0) > 0;
   const profilingEnabled = (options.profilesSampleRate ?? 0) > 0;
+  captureSentryStartupTelemetry(options);
+  captureSentryStartupTelemetry(options);
+  const sentryMockState = (globalThis as StartupTelemetryGlobal).__sentryMockState;
 
   return (
     <View>
@@ -37,6 +47,9 @@ const StartupTelemetryHarness = ({
       </Text>
       <Text testID="startup-sentry-status">
         {options.enabled ? 'enabled' : 'disabled'}
+      </Text>
+      <Text testID="startup-sentry-signal-count">
+        {`${sentryMockState?.messages.length ?? 0}:${sentryMockState?.logs.length ?? 0}`}
       </Text>
     </View>
   );
@@ -67,6 +80,10 @@ Given(
 
 When('the app prepares startup telemetry', function (this: StartupTelemetryWorld) {
   assert.ok(this.telemetryEnv, 'Expected telemetry env to be configured');
+  const startupGlobal = globalThis as StartupTelemetryGlobal;
+  startupGlobal.__smartLearningNotesSentryStartupCaptured = false;
+  startupGlobal.__sentryMockState?.messages.splice(0);
+  startupGlobal.__sentryMockState?.logs.splice(0);
   this.screen = render(<StartupTelemetryHarness env={this.telemetryEnv} />);
 });
 
@@ -80,4 +97,8 @@ Then(
 
 Then('startup telemetry reports Sentry enabled', function (this: StartupTelemetryWorld) {
   assert.equal(this.screen!.getByTestId('startup-sentry-status').props.children, 'enabled');
+});
+
+Then('startup telemetry emits one Sentry startup signal', function (this: StartupTelemetryWorld) {
+  assert.equal(this.screen!.getByTestId('startup-sentry-signal-count').props.children, '1:1');
 });

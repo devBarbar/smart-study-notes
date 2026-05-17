@@ -7,20 +7,26 @@ type ModuleWithLoad = typeof Module & {
   _load: (request: string, parent: NodeModule | null, isMain: boolean) => unknown;
 };
 
-test('app entry opts out of Expo native fetch before Expo Router loads', () => {
+test('app entry initializes runtime telemetry and opts out of Expo native fetch before Expo Router loads', () => {
   const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
   assert.equal(packageJson.main, './index.js');
 
   const moduleWithLoad = Module as ModuleWithLoad;
   const originalUseRnFetch = process.env.EXPO_PUBLIC_USE_RN_FETCH;
   const originalLoad = moduleWithLoad._load;
+  let loadedSentry = false;
   let loadedEntry = false;
 
   process.env.EXPO_PUBLIC_USE_RN_FETCH = '';
   moduleWithLoad._load = ((request: string, parent: NodeModule | null, isMain: boolean) => {
+    if (request === './lib/sentry') {
+      loadedSentry = true;
+      return {};
+    }
     if (request === 'expo-router/entry') {
       loadedEntry = true;
       assert.equal(process.env.EXPO_PUBLIC_USE_RN_FETCH, 'true');
+      assert.equal(loadedSentry, true);
       return {};
     }
     return originalLoad.call(Module, request, parent, isMain);
@@ -29,6 +35,7 @@ test('app entry opts out of Expo native fetch before Expo Router loads', () => {
   try {
     delete require.cache[require.resolve('../index.js')];
     require('../index.js');
+    assert.equal(loadedSentry, true);
     assert.equal(loadedEntry, true);
   } finally {
     moduleWithLoad._load = originalLoad;

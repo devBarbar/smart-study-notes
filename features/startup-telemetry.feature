@@ -10,6 +10,7 @@ Feature: Startup telemetry
     Given production telemetry is configured without replay opt in
     When the app prepares startup telemetry
     Then startup telemetry reports Sentry enabled
+    And startup telemetry emits one Sentry startup signal
 
   Scenario: A profile sample rate alone does not activate native profiling
     Given production telemetry is configured with a profile sample rate only

@@ -11,6 +11,7 @@ type TelemetryExpoConfig = {
 type BuildSentryInitOptionsParams = { env?: TelemetryEnv; expoConfig?: TelemetryExpoConfig | null; platformOS?: string };
 const SUPABASE_FUNCTION_TRACE_TARGET = /^https:\/\/.*\.supabase\.co\/functions\/v1\//;
 const LOCAL_FUNCTION_TRACE_TARGETS = [/^http:\/\/localhost(:\d+)?\/functions\/v1\//, /^http:\/\/127\.0\.0\.1(:\d+)?\/functions\/v1\//];
+const STARTUP_TELEMETRY_MESSAGE = 'smart-learning-notes startup telemetry initialized';
 
 const parseSampleRate = (value: number, fallback: number) => {
   if (!Number.isFinite(value)) return fallback;
@@ -66,7 +67,30 @@ export const buildSentryInitOptions = (params: BuildSentryInitOptionsParams = {}
   if (nativeTelemetryRiskDisabled) Object.assign(options, { profilesSampleRate: 0, replaysOnErrorSampleRate: 0, replaysSessionSampleRate: 0 });
   return options; };
 
-Sentry.init(buildSentryInitOptions());
+export const captureSentryStartupTelemetry = (options: SentryInitOptions) => {
+  if (!options.enabled || !options.dsn) return;
+
+  const startupGlobal = globalThis as typeof globalThis & Record<'__smartLearningNotesSentryStartupCaptured', boolean | undefined>;
+  if (startupGlobal.__smartLearningNotesSentryStartupCaptured) return;
+  startupGlobal.__smartLearningNotesSentryStartupCaptured = true;
+
+  const attributes = {
+    release: options.release,
+    environment: options.environment,
+    dist: options.dist,
+  };
+
+  Sentry.captureMessage(STARTUP_TELEMETRY_MESSAGE, {
+    level: 'info',
+    tags: { 'telemetry.source': 'startup' },
+    extra: attributes,
+  });
+  Sentry.logger.info(STARTUP_TELEMETRY_MESSAGE, attributes);
+};
+
+const sentryInitOptions = buildSentryInitOptions();
+Sentry.init(sentryInitOptions);
+captureSentryStartupTelemetry(sentryInitOptions);
 
 type TelemetryUser = {
   id?: string;

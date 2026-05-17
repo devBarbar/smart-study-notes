@@ -20,6 +20,13 @@ const moduleWithLoader = Module as unknown as {
 };
 const originalLoad = moduleWithLoader._load;
 const projectRoot = path.resolve(__dirname, '..', '..');
+const sentryMockState = {
+  messages: [] as Array<{ message: string; context: unknown }>,
+  logs: [] as Array<{ level: string; message: string; attributes: unknown }>,
+};
+
+(globalThis as typeof globalThis & { __sentryMockState?: typeof sentryMockState }).__sentryMockState =
+  sentryMockState;
 
 const hostComponent = (name: string) =>
   React.forwardRef(({ children, ...props }: any, ref) =>
@@ -83,10 +90,19 @@ const loadPatchedModule = function (
     return {
       init: () => undefined,
       setUser: () => undefined,
+      captureMessage: (message: string, context: unknown) => {
+        sentryMockState.messages.push({ message, context });
+        return 'test-message-id';
+      },
       captureException: () => undefined,
       startSpan: (_options: unknown, callback: () => unknown) => callback(),
       addBreadcrumb: () => undefined,
       addIntegration: () => undefined,
+      logger: {
+        info: (message: string, attributes: unknown) => {
+          sentryMockState.logs.push({ level: 'info', message, attributes });
+        },
+      },
       supabaseIntegration: () => ({}),
       wrap: (component: unknown) => component,
     };

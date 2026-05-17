@@ -3,12 +3,23 @@ import './utils/react-native-test-env';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildSentryInitOptions } from '../lib/sentry';
+import { buildSentryInitOptions, captureSentryStartupTelemetry } from '../lib/sentry';
 
 const baseEnv = {
   NODE_ENV: 'production',
   EXPO_PUBLIC_SENTRY_DSN: 'https://example@sentry.io/1',
   EXPO_PUBLIC_SUPABASE_URL: 'https://unit-test.supabase.co',
+};
+const sentryMockState = (globalThis as typeof globalThis & {
+  __sentryMockState: {
+    messages: Array<{ message: string; context: { level?: string; tags?: Record<string, string> } }>;
+    logs: Array<{ level: string; message: string; attributes: Record<string, unknown> }>;
+  };
+}).__sentryMockState;
+
+const clearSentryMockState = () => {
+  sentryMockState.messages.length = 0;
+  sentryMockState.logs.length = 0;
 };
 
 test('sentry launch config can be built from runtime defaults', () => {
@@ -174,4 +185,37 @@ test('sentry runtime reporting is enabled when a DSN is configured', () => {
   });
 
   assert.equal(options.enabled, true);
+});
+
+test('sentry startup telemetry sends a deterministic launch message and log', () => {
+  clearSentryMockState();
+  const options = buildSentryInitOptions({
+    env: baseEnv,
+    expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
+    platformOS: 'ios',
+  });
+
+  captureSentryStartupTelemetry(options);
+
+  assert.equal(sentryMockState.messages.length, 1);
+  assert.equal(sentryMockState.messages[0].message, 'smart-learning-notes startup telemetry initialized');
+  assert.equal(sentryMockState.messages[0].context.level, 'info');
+  assert.equal(sentryMockState.messages[0].context.tags?.['telemetry.source'], 'startup');
+  assert.equal(sentryMockState.logs.length, 1);
+  assert.equal(sentryMockState.logs[0].level, 'info');
+  assert.equal(sentryMockState.logs[0].message, 'smart-learning-notes startup telemetry initialized');
+});
+
+test('sentry startup telemetry stays silent when runtime reporting is disabled', () => {
+  clearSentryMockState();
+  const options = buildSentryInitOptions({
+    env: { NODE_ENV: 'production' },
+    expoConfig: { slug: 'smart-learning-notes', version: '1.0.0' },
+    platformOS: 'ios',
+  });
+
+  captureSentryStartupTelemetry(options);
+
+  assert.equal(sentryMockState.messages.length, 0);
+  assert.equal(sentryMockState.logs.length, 0);
 });
