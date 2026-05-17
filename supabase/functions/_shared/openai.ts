@@ -18,6 +18,7 @@ import {
   toTokenUsage,
   validateEmbeddingDimensions,
 } from "./openai-response-utils.ts";
+export { stripCodeFences } from "./json.ts";
 
 export type ChatCompletionContent = {
   type: "text" | "image_url";
@@ -143,11 +144,6 @@ export const resolveAIProviderRequest = (
     url: (endpoint: "responses" | "chat/completions" | "embeddings") =>
       getProviderUrl(config.platform, endpoint),
   };
-};
-
-export const stripCodeFences = (text: string) => {
-  const fenceMatch = text.match(/```(?:json)?\n?([\s\S]*?)```/i);
-  return fenceMatch ? fenceMatch[1].trim() : text.trim();
 };
 
 export const sanitizeForDatabase = (text: string): string => {
