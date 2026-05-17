@@ -20,6 +20,9 @@ const sentryMockState = (globalThis as typeof globalThis & {
 const clearSentryMockState = () => {
   sentryMockState.messages.length = 0;
   sentryMockState.logs.length = 0;
+  (globalThis as typeof globalThis & {
+    __smartLearningNotesSentryStartupCaptured?: boolean;
+  }).__smartLearningNotesSentryStartupCaptured = false;
 };
 
 test('sentry launch config can be built from runtime defaults', () => {
@@ -27,6 +30,9 @@ test('sentry launch config can be built from runtime defaults', () => {
 
   assert.equal(options.release, 'smart-learning-notes@1.0.0-test');
   assert.equal(options.dist, 'ios');
+  assert.equal(options.enabled, true);
+  assert.equal(options.dsn, baseEnv.EXPO_PUBLIC_SENTRY_DSN);
+  assert.equal(options.environment, 'production');
 });
 
 test('sentry launch config does not enable mobile replay by default', () => {

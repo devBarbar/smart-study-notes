@@ -3,6 +3,14 @@ process.env.EXPO_PUBLIC_SUPABASE_URL =
   process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://unit-test.supabase.co';
 process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'unit-test-anon-key';
+process.env.EXPO_PUBLIC_SENTRY_DSN =
+  process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://example@sentry.io/1';
+process.env.EXPO_PUBLIC_SENTRY_DEBUG =
+  process.env.EXPO_PUBLIC_SENTRY_DEBUG || 'false';
+process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT =
+  process.env.EXPO_PUBLIC_SENTRY_ENVIRONMENT || 'production';
+process.env.EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE =
+  process.env.EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE || '1';
 
 const Module = require('module');
 const path = require('path');
