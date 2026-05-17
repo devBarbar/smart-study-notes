@@ -3,7 +3,11 @@ import './utils/react-native-test-env';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildSentryInitOptions, captureSentryStartupTelemetry } from '../lib/sentry';
+import {
+  buildSentryInitOptions,
+  captureSentryStartupTelemetry,
+  logTelemetryCheckpoint,
+} from '../lib/sentry';
 
 const baseEnv = {
   NODE_ENV: 'production',
@@ -14,16 +18,44 @@ const sentryMockState = (globalThis as typeof globalThis & {
   __sentryMockState: {
     messages: Array<{ message: string; context: { level?: string; tags?: Record<string, string> } }>;
     logs: Array<{ level: string; message: string; attributes: Record<string, unknown> }>;
+    breadcrumbs: Array<{ category?: string; message?: string; data?: Record<string, unknown> }>;
   };
 }).__sentryMockState;
 
 const clearSentryMockState = () => {
   sentryMockState.messages.length = 0;
   sentryMockState.logs.length = 0;
+  sentryMockState.breadcrumbs.length = 0;
   (globalThis as typeof globalThis & {
     __smartLearningNotesSentryStartupCaptured?: boolean;
   }).__smartLearningNotesSentryStartupCaptured = false;
 };
+
+test('telemetry checkpoints are emitted as logs and breadcrumbs', () => {
+  clearSentryMockState();
+
+  logTelemetryCheckpoint('study.submitAnswer.evaluate.done', {
+    checkpoint: 'evaluate.done',
+    hasFeedback: true,
+    strokeCount: 3,
+  });
+
+  assert.equal(sentryMockState.logs.length, 1);
+  assert.equal(sentryMockState.logs[0].message, 'study.submitAnswer.evaluate.done');
+  assert.deepEqual(sentryMockState.logs[0].attributes, {
+    checkpoint: 'evaluate.done',
+    hasFeedback: true,
+    strokeCount: 3,
+  });
+  assert.equal(sentryMockState.breadcrumbs.length, 1);
+  assert.equal(sentryMockState.breadcrumbs[0].category, 'telemetry.checkpoint');
+  assert.equal(sentryMockState.breadcrumbs[0].message, 'study.submitAnswer.evaluate.done');
+  assert.deepEqual(sentryMockState.breadcrumbs[0].data, {
+    checkpoint: 'evaluate.done',
+    hasFeedback: true,
+    strokeCount: 3,
+  });
+});
 
 test('sentry launch config can be built from runtime defaults', () => {
   const options = buildSentryInitOptions();

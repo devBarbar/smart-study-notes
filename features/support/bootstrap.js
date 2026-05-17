@@ -21,6 +21,7 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 const sentryMockState = {
   messages: [],
   logs: [],
+  breadcrumbs: [],
 };
 global.__sentryMockState = sentryMockState;
 const hostComponent = (name) =>
@@ -81,7 +82,9 @@ Module._load = function load(request, parent, isMain) {
       },
       captureException: () => undefined,
       startSpan: (_options, callback) => callback(),
-      addBreadcrumb: () => undefined,
+      addBreadcrumb: (breadcrumb) => {
+        sentryMockState.breadcrumbs.push(breadcrumb);
+      },
       addIntegration: () => undefined,
       logger: {
         info: (message, attributes) => {

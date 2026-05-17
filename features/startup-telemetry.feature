@@ -16,3 +16,8 @@ Feature: Startup telemetry
     Given production telemetry is configured with a profile sample rate only
     When the app prepares startup telemetry
     Then startup telemetry reports native replay and profiling disabled
+
+  Scenario: Diagnostic checkpoints are visible in Sentry logs and breadcrumbs
+    Given production telemetry is configured without replay opt in
+    When the app records a diagnostic checkpoint
+    Then startup telemetry emits one diagnostic log and breadcrumb

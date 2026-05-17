@@ -5,7 +5,11 @@ import { render } from '@testing-library/react-native/pure';
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { buildSentryInitOptions, captureSentryStartupTelemetry } from '../../lib/sentry';
+import {
+  buildSentryInitOptions,
+  captureSentryStartupTelemetry,
+  logTelemetryCheckpoint,
+} from '../../lib/sentry';
 import { AppWorld } from '../support/world';
 
 type StartupTelemetryWorld = AppWorld & {
@@ -15,6 +19,7 @@ type StartupTelemetryGlobal = typeof globalThis & {
   __sentryMockState?: {
     messages: Array<unknown>;
     logs: Array<unknown>;
+    breadcrumbs: Array<unknown>;
   };
   __smartLearningNotesSentryStartupCaptured?: boolean;
 };
@@ -84,7 +89,20 @@ When('the app prepares startup telemetry', function (this: StartupTelemetryWorld
   startupGlobal.__smartLearningNotesSentryStartupCaptured = false;
   startupGlobal.__sentryMockState?.messages.splice(0);
   startupGlobal.__sentryMockState?.logs.splice(0);
+  startupGlobal.__sentryMockState?.breadcrumbs.splice(0);
   this.screen = render(<StartupTelemetryHarness env={this.telemetryEnv} />);
+});
+
+When('the app records a diagnostic checkpoint', function (this: StartupTelemetryWorld) {
+  const startupGlobal = globalThis as StartupTelemetryGlobal;
+  startupGlobal.__sentryMockState?.messages.splice(0);
+  startupGlobal.__sentryMockState?.logs.splice(0);
+  startupGlobal.__sentryMockState?.breadcrumbs.splice(0);
+
+  logTelemetryCheckpoint('study.submitAnswer.integration.checkpoint', {
+    checkpoint: 'integration.checkpoint',
+    hasFeedback: true,
+  });
 });
 
 Then(
@@ -102,3 +120,12 @@ Then('startup telemetry reports Sentry enabled', function (this: StartupTelemetr
 Then('startup telemetry emits one Sentry startup signal', function (this: StartupTelemetryWorld) {
   assert.equal(this.screen!.getByTestId('startup-sentry-signal-count').props.children, '1:1');
 });
+
+Then(
+  'startup telemetry emits one diagnostic log and breadcrumb',
+  function () {
+    const sentryMockState = (globalThis as StartupTelemetryGlobal).__sentryMockState;
+    assert.equal(sentryMockState?.logs.length, 1);
+    assert.equal(sentryMockState?.breadcrumbs.length, 1);
+  },
+);

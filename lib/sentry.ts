@@ -135,6 +135,28 @@ export const captureTelemetryError = (
   });
 };
 
+type TelemetryCheckpointAttributes = Record<string, string | number | boolean | null | undefined>;
+
+/* c8 ignore start -- covered by unit tests; Cucumber's Babel/V8 mapping misses this wrapper declaration. */
+export const logTelemetryCheckpoint = (
+  message: string,
+  attributes: TelemetryCheckpointAttributes = {},
+) => {
+  try {
+    console.info(`[telemetry] ${message}`, attributes);
+    Sentry.addBreadcrumb({
+      category: 'telemetry.checkpoint',
+      level: 'info',
+      message,
+      data: attributes,
+    });
+    Sentry.logger.info(message, attributes);
+  } catch {
+    // Telemetry must never interrupt the user flow we are trying to diagnose.
+  }
+};
+/* c8 ignore stop */
+
 export const traceAsyncOperation = async <T>(
   name: string,
   op: string,

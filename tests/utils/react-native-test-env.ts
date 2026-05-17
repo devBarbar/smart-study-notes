@@ -31,6 +31,7 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 const sentryMockState = {
   messages: [] as Array<{ message: string; context: unknown }>,
   logs: [] as Array<{ level: string; message: string; attributes: unknown }>,
+  breadcrumbs: [] as Array<{ category?: string; message?: string; data?: unknown }>,
 };
 
 (globalThis as typeof globalThis & { __sentryMockState?: typeof sentryMockState }).__sentryMockState =
@@ -104,7 +105,9 @@ const loadPatchedModule = function (
       },
       captureException: () => undefined,
       startSpan: (_options: unknown, callback: () => unknown) => callback(),
-      addBreadcrumb: () => undefined,
+      addBreadcrumb: (breadcrumb: { category?: string; message?: string; data?: unknown }) => {
+        sentryMockState.breadcrumbs.push(breadcrumb);
+      },
       addIntegration: () => undefined,
       logger: {
         info: (message: string, attributes: unknown) => {

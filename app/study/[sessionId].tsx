@@ -130,6 +130,7 @@ import {
 import { parseLearningResponse } from "@/lib/parse-learning-response";
 import { buildCitationSnippet } from "@/lib/pdf-source";
 import { parseSourceCitations } from "@/lib/source-citations";
+import { logTelemetryCheckpoint } from "@/lib/sentry";
 import { uploadCanvasImage } from "@/lib/storage";
 import {
   LectureFileChunk,
@@ -2892,6 +2893,36 @@ export default function StudySessionScreen() {
   );
 
   const submitAnswer = async () => {
+    const logSubmitCheckpoint = (
+      checkpoint: string,
+      attributes: Record<
+        string,
+        string | number | boolean | null | undefined
+      > = {},
+    ) => {
+      logTelemetryCheckpoint(`study.submitAnswer.${checkpoint}`, {
+        checkpoint,
+        sessionId: currentSessionId,
+        lectureId: typeof lectureId === "string" ? lectureId : null,
+        studyPlanEntryId:
+          typeof studyPlanEntryId === "string" ? studyPlanEntryId : null,
+        activePageId,
+        studyPhase,
+        grading,
+        messageCount: messages.length,
+        canvasPageCount: canvasPagesRef.current.length || canvasPages.length,
+        canvasStrokeCount: canvasStrokes.length,
+        answerDraftLength: answerDraft.length,
+        answerTextLength: answerText.length,
+        ...attributes,
+      });
+    };
+
+    logSubmitCheckpoint("invoked", {
+      hasCurrentQuestion: Boolean(currentQuestion),
+      hasCanvasRef: Boolean(canvasRef.current),
+    });
+
     // Get question context - either from formal quiz or last AI message
     const lastAiMessage = [...messages].reverse().find((m) => m.role === "ai");
     const lastAiQuestionText =
@@ -2939,8 +2970,25 @@ export default function StudySessionScreen() {
           }
         : null;
 
-    if (!questionToEvaluate) return;
-    if (!submitAnswerGateRef.current.tryEnter()) return;
+    if (!questionToEvaluate) {
+      logSubmitCheckpoint("no_question");
+      return;
+    }
+    logSubmitCheckpoint("question_resolved", {
+      questionId: questionToEvaluate.id,
+      assessmentKind: questionToEvaluate.assessmentKind ?? null,
+      checkType: questionToEvaluate.checkType ?? null,
+      hasLastAiMessage: Boolean(lastAiMessage),
+    });
+    if (!submitAnswerGateRef.current.tryEnter()) {
+      logSubmitCheckpoint("gate_busy", {
+        questionId: questionToEvaluate.id,
+      });
+      return;
+    }
+    logSubmitCheckpoint("gate_entered", {
+      questionId: questionToEvaluate.id,
+    });
 
     const isFinalQuizAnswer =
       questionToEvaluate.assessmentKind === "final_quiz";
@@ -2950,6 +2998,11 @@ export default function StudySessionScreen() {
     setTutorCollapsed(false);
     setStudyPhase("grading");
     setStudySurfacePreference("canvas");
+    logSubmitCheckpoint("ui_enter_grading", {
+      questionId: questionToEvaluate.id,
+      isFinalQuizAnswer,
+      isGuidedNotesAnswer,
+    });
     stopSpeaking().catch((err) =>
       console.warn("[study] Failed to stop tutor audio before grading:", err),
     );
@@ -2959,15 +3012,36 @@ export default function StudySessionScreen() {
       const submittedStrokes =
         (canvasRef.current?.getStrokes?.() as CanvasStrokeData[] | undefined) ??
         canvasStrokes;
+      logSubmitCheckpoint("strokes_collected", {
+        submittedStrokeCount: submittedStrokes.length,
+        canvasRefAvailable: Boolean(canvasRef.current),
+      });
       const imageUri = await canvasRef.current?.exportAsImage();
+      logSubmitCheckpoint("image_exported", {
+        hasImageUri: Boolean(imageUri),
+      });
       const canvasBounds = getNewStrokeBounds(submittedStrokes);
+      logSubmitCheckpoint("canvas_bounds_calculated", {
+        hasCanvasBounds: Boolean(canvasBounds),
+        boundsX: canvasBounds ? Math.round(canvasBounds.x) : null,
+        boundsY: canvasBounds ? Math.round(canvasBounds.y) : null,
+        boundsWidth: canvasBounds ? Math.round(canvasBounds.width) : null,
+        boundsHeight: canvasBounds ? Math.round(canvasBounds.height) : null,
+      });
       const base64 = imageUri
         ? await FileSystem.readAsStringAsync(imageUri, {
             encoding: FileSystem.EncodingType.Base64,
           })
         : undefined;
       const dataUrl = base64 ? `data:image/png;base64,${base64}` : undefined;
+      logSubmitCheckpoint("image_encoded", {
+        hasBase64: Boolean(base64),
+        base64Length: base64?.length ?? 0,
+      });
 
+      logSubmitCheckpoint("retrieval_start", {
+        questionId: questionToEvaluate.id,
+      });
       const gradingChunks = await fetchRelevantChunks(
         `${questionToEvaluate.prompt}\n${answerDraft || answerText}`,
         6,
@@ -2977,7 +3051,17 @@ export default function StudySessionScreen() {
         gradingSourceChunks.length > 0
           ? chunksToContextBlock(gradingSourceChunks)
           : fullMaterialContext;
+      logSubmitCheckpoint("retrieval_done", {
+        gradingChunkCount: gradingChunks.length,
+        gradingSourceChunkCount: gradingSourceChunks.length,
+        usesRetrievedContext: gradingSourceChunks.length > 0,
+      });
 
+      logSubmitCheckpoint("evaluate_start", {
+        questionId: questionToEvaluate.id,
+        hasAnswerImage: Boolean(dataUrl),
+        hasAnswerText: Boolean(answerDraft.trim()),
+      });
       const feedback = await evaluateAnswer(
         {
           question: questionToEvaluate,
@@ -2990,6 +3074,13 @@ export default function StudySessionScreen() {
         },
         agentLanguage,
       );
+      logSubmitCheckpoint("evaluate_done", {
+        correctness: feedback.correctness,
+        score: typeof feedback.score === "number" ? feedback.score : null,
+        sourceCitationCount: feedback.sourceCitationIds?.length ?? 0,
+        misconceptionCount: feedback.misconceptions?.length ?? 0,
+        hasFollowUpQuestion: Boolean(feedback.followUpQuestion),
+      });
       const gradingCitedChunks = selectCitedChunks(
         gradingSourceChunks,
         feedback.sourceCitationIds ?? [],
@@ -3003,11 +3094,21 @@ export default function StudySessionScreen() {
         typeof feedback.score === "number"
           ? Math.round(feedback.score)
           : undefined;
+      logSubmitCheckpoint("feedback_normalized", {
+        normalizedScore: normalizedScore ?? null,
+        gradingCitationCount: gradingCitations?.length ?? 0,
+      });
 
       let uploadedImageUri: string | undefined;
       if (imageUri) {
+        logSubmitCheckpoint("image_upload_start");
         const uploaded = await uploadCanvasImage(imageUri);
         uploadedImageUri = uploaded.publicUrl;
+        logSubmitCheckpoint("image_upload_done", {
+          hasUploadedImageUri: Boolean(uploadedImageUri),
+        });
+      } else {
+        logSubmitCheckpoint("image_upload_skipped");
       }
 
       const linkId = uuid();
@@ -3023,6 +3124,11 @@ export default function StudySessionScreen() {
       };
       await saveAnswerLink(link);
       setAnswerLinks((prev) => [link, ...prev]);
+      logSubmitCheckpoint("answer_link_saved", {
+        linkId,
+        hasUploadedImageUri: Boolean(uploadedImageUri),
+        hasCanvasBounds: Boolean(canvasBounds),
+      });
 
       const evaluatedCheckType = normalizeTutorCheckType(
         feedback.checkType ||
@@ -3032,6 +3138,9 @@ export default function StudySessionScreen() {
       );
       if (lectureId) {
         const currentLectureId = lectureId;
+        logSubmitCheckpoint("evaluation_save_queued", {
+          evaluatedCheckType,
+        });
         saveTutorAnswerEvaluation({
           lectureId: currentLectureId,
           studyPlanEntryId: studyPlanEntryId ?? undefined,
@@ -3056,7 +3165,12 @@ export default function StudySessionScreen() {
           })
           .catch((err) => {
             console.warn("[study] Failed to save cheat sheet evidence:", err);
+            logSubmitCheckpoint("evaluation_save_failed", {
+              errorName: err instanceof Error ? err.name : "unknown",
+            });
           });
+      } else {
+        logSubmitCheckpoint("evaluation_save_skipped_no_lecture");
       }
       const depthCheckPassed =
         !isFinalQuizAnswer &&
@@ -3094,17 +3208,34 @@ export default function StudySessionScreen() {
       let latestDepthChecks = depthChecks;
       if (localDepthCheck) {
         try {
+          logSubmitCheckpoint("depth_check_save_start", {
+            depthCheckPassed,
+            canCountForPass,
+          });
           const savedDepthCheck = await saveStudyDepthCheck(localDepthCheck);
           latestDepthChecks = [
             savedDepthCheck ?? localDepthCheck,
             ...depthChecks,
           ];
           setDepthChecks(latestDepthChecks);
+          logSubmitCheckpoint("depth_check_save_done", {
+            latestDepthCheckCount: latestDepthChecks.length,
+          });
         } catch (err) {
           console.warn("[study] Failed to save depth check", err);
           latestDepthChecks = [localDepthCheck, ...depthChecks];
           setDepthChecks(latestDepthChecks);
+          logSubmitCheckpoint("depth_check_save_failed", {
+            latestDepthCheckCount: latestDepthChecks.length,
+            errorName: err instanceof Error ? err.name : "unknown",
+          });
         }
+      } else {
+        logSubmitCheckpoint("depth_check_save_skipped", {
+          isFinalQuizAnswer,
+          isGuidedNotesAnswer,
+          hasStudyPlanEntryId: Boolean(studyPlanEntryId),
+        });
       }
 
       const deriveSectionStatus = (
@@ -3136,13 +3267,23 @@ export default function StudySessionScreen() {
           feedback.correctness,
           latestDepthChecks,
         );
+        logSubmitCheckpoint("section_status_resolved", {
+          nextStatus,
+          latestDepthCheckCount: latestDepthChecks.length,
+        });
         try {
           await updateStudyPlanEntryStatus(studyPlanEntryId, {
             status: nextStatus,
             statusScore: normalizedScore,
           });
+          logSubmitCheckpoint("section_status_saved", {
+            nextStatus,
+          });
         } catch (err) {
           console.warn("[study] Failed to update section status", err);
+          logSubmitCheckpoint("section_status_save_failed", {
+            errorName: err instanceof Error ? err.name : "unknown",
+          });
         }
 
         if (
@@ -3163,11 +3304,15 @@ export default function StudySessionScreen() {
             hasShownLecturePassedToastRef.current = true;
             setLecturePassedToast(true);
             setTimeout(() => setLecturePassedToast(false), 3500);
+            logSubmitCheckpoint("lecture_passed_toast_scheduled");
           }
         }
 
         // Record review + update mastery schedule
         try {
+          logSubmitCheckpoint("mastery_update_start", {
+            nextStatus,
+          });
           const responseQuality: ReviewQuality =
             feedback.correctness === "correct"
               ? "correct"
@@ -3201,9 +3346,14 @@ export default function StudySessionScreen() {
             status: nextStatus,
             statusScore: normalizedScore,
           });
+          logSubmitCheckpoint("mastery_update_done", {
+            masteryScore: Math.round(masteryScore),
+            reviewCount,
+          });
 
           // Update streak
           try {
+            logSubmitCheckpoint("streak_update_start");
             const streak = await getUserStreak();
             const today = new Date();
             const todayDate = today.toISOString().slice(0, 10);
@@ -3224,12 +3374,28 @@ export default function StudySessionScreen() {
               longest,
               lastReviewDate: todayDate,
             });
+            logSubmitCheckpoint("streak_update_done", {
+              currentStreak: current,
+              longestStreak: longest,
+            });
           } catch (err) {
             console.warn("[study] Failed to update streak", err);
+            logSubmitCheckpoint("streak_update_failed", {
+              errorName: err instanceof Error ? err.name : "unknown",
+            });
           }
         } catch (err) {
           console.warn("[study] Failed to update mastery schedule", err);
+          logSubmitCheckpoint("mastery_update_failed", {
+            errorName: err instanceof Error ? err.name : "unknown",
+          });
         }
+      } else {
+        logSubmitCheckpoint("section_status_skipped", {
+          hasStudyPlanEntryId: Boolean(studyPlanEntryId),
+          isFinalQuizAnswer,
+          isGuidedNotesAnswer,
+        });
       }
 
       // Create answer marker for linking canvas to chat
@@ -3249,10 +3415,16 @@ export default function StudySessionScreen() {
       };
       setAnswerMarkers((prev) => [...prev, newMarker]);
       canvasBaselineRef.current = submittedStrokes.length;
+      logSubmitCheckpoint("answer_marker_created", {
+        linkId,
+        markerQuestionIndex: newMarker.questionIndex,
+        messageIdForMarker,
+      });
 
       // Reset drawing detection after submission
       setHasDrawnAfterQuestion(false);
       setLastDrawingPosition(null);
+      logSubmitCheckpoint("drawing_state_reset");
 
       // Create flashcard if this depth check was answered well. Topic status
       // still requires the full depth ladder before it becomes passed.
@@ -3270,6 +3442,12 @@ export default function StudySessionScreen() {
         ? getNextTutorCheckType(latestDepthChecks, targetPassScore)
         : null;
       const feedbackMessageId = uuid();
+      logSubmitCheckpoint("feedback_insert_prepare", {
+        feedbackMessageId,
+        isCheckPassed,
+        isTopicDepthPassed,
+        nextMissingCheckType: nextMissingCheckType ?? null,
+      });
       const pagesForFeedback = (
         canvasPagesRef.current.length > 0 ? canvasPagesRef.current : canvasPages
       ).map((page) =>
@@ -3291,16 +3469,30 @@ export default function StudySessionScreen() {
         isPassed: isCheckPassed,
         answerBounds: canvasBounds ?? undefined,
       });
+      logSubmitCheckpoint("feedback_insert_done", {
+        feedbackPageCount: feedbackInsertResult.pages.length,
+        feedbackBlockX: Math.round(feedbackInsertResult.block.position.x),
+        feedbackBlockY: Math.round(feedbackInsertResult.block.position.y),
+      });
       setCanvasPages(feedbackInsertResult.pages);
       const feedbackPage =
         feedbackInsertResult.pages.find((page) => page.id === activePageId) ??
         feedbackInsertResult.pages[0];
       if (feedbackPage) {
         activatePage(feedbackPage);
+        logSubmitCheckpoint("feedback_page_activated", {
+          feedbackPageId: feedbackPage.id,
+        });
+      } else {
+        logSubmitCheckpoint("feedback_page_missing");
       }
       saveCanvasPagesNow(feedbackInsertResult.pages);
       setStudySurfacePreference("canvas");
+      logSubmitCheckpoint("canvas_pages_save_requested", {
+        feedbackPageCount: feedbackInsertResult.pages.length,
+      });
       setTimeout(() => {
+        logSubmitCheckpoint("feedback_scroll_start");
         canvasScrollRef.current?.scrollTo({
           y: Math.max(feedbackInsertResult.block.position.y - 24, 0),
           animated: true,
@@ -3309,6 +3501,7 @@ export default function StudySessionScreen() {
           x: Math.max(feedbackInsertResult.block.position.x - 24, 0),
           animated: true,
         });
+        logSubmitCheckpoint("feedback_scroll_done");
       }, 150);
 
       if (!isCheckPassed && feedback.misconceptions?.length && lectureId) {
@@ -3320,6 +3513,9 @@ export default function StudySessionScreen() {
           note: feedback.summary,
         }));
         try {
+          logSubmitCheckpoint("misconceptions_save_start", {
+            misconceptionCount: savedMisconceptions.length,
+          });
           await saveStudyMisconceptions(savedMisconceptions);
           setRecentMisconceptions((prev) =>
             [
@@ -3329,9 +3525,21 @@ export default function StudySessionScreen() {
               ...prev,
             ].slice(0, 8),
           );
+          logSubmitCheckpoint("misconceptions_save_done", {
+            misconceptionCount: savedMisconceptions.length,
+          });
         } catch (err) {
           console.warn("[study] Failed to save misconceptions:", err);
+          logSubmitCheckpoint("misconceptions_save_failed", {
+            errorName: err instanceof Error ? err.name : "unknown",
+          });
         }
+      } else {
+        logSubmitCheckpoint("misconceptions_save_skipped", {
+          isCheckPassed,
+          misconceptionCount: feedback.misconceptions?.length ?? 0,
+          hasLectureId: Boolean(lectureId),
+        });
       }
 
       if (!isCheckPassed) {
@@ -3350,6 +3558,13 @@ export default function StudySessionScreen() {
             source: isFinalQuizAnswer ? "final_quiz" : "recall",
           })),
         );
+        logSubmitCheckpoint("mistake_notebook_updated", {
+          notebookConceptCount: notebookConcepts.slice(0, 4).length,
+        });
+      } else {
+        logSubmitCheckpoint("mistake_notebook_skipped", {
+          isCheckPassed,
+        });
       }
 
       if (
@@ -3359,6 +3574,7 @@ export default function StudySessionScreen() {
         lectureId
       ) {
         try {
+          logSubmitCheckpoint("flashcard_save_start");
           // Collect AI explanation from previous messages (up to 3 messages before the question)
           const questionMsgIndex = messages.findIndex(
             (m) => m.id === lastAiMessage?.id,
@@ -3405,9 +3621,23 @@ export default function StudySessionScreen() {
           setTimeout(() => setFlashcardAdded(false), 3000);
 
           console.log("[study] Flashcard created for passed question");
+          logSubmitCheckpoint("flashcard_save_done", {
+            explanationMessageCount: explanationMessages.length,
+            visualBlockCount: collectedVisualBlocks.length,
+          });
         } catch (err) {
           console.warn("[study] Failed to create flashcard:", err);
+          logSubmitCheckpoint("flashcard_save_failed", {
+            errorName: err instanceof Error ? err.name : "unknown",
+          });
         }
+      } else {
+        logSubmitCheckpoint("flashcard_save_skipped", {
+          isFinalQuizAnswer,
+          isGuidedNotesAnswer,
+          isCheckPassed,
+          hasLectureId: Boolean(lectureId),
+        });
       }
 
       pushMessage(
@@ -3420,6 +3650,10 @@ export default function StudySessionScreen() {
         },
         false,
       );
+      logSubmitCheckpoint("user_answer_message_pushed", {
+        linkId,
+        questionId: questionToEvaluate.id,
+      });
 
       const correctnessText =
         feedback.correctness === "correct"
@@ -3651,13 +3885,29 @@ export default function StudySessionScreen() {
         citations: gradingCitations,
         tutorQuestion: followUpTutorQuestion,
       };
+      logSubmitCheckpoint("feedback_message_built", {
+        feedbackMessageId,
+        hasFollowUpQuestion: Boolean(followUpQuestion),
+        hasFollowUpTutorQuestion: Boolean(followUpTutorQuestion),
+        shouldUseFeedbackListeningNotes,
+        finalQuizComplete,
+        finalQuizPassed,
+        nextFinalQuizIndex,
+      });
       pushMessage(feedbackMessage, !shouldUseFeedbackListeningNotes);
+      logSubmitCheckpoint("feedback_message_pushed", {
+        feedbackMessageId,
+        speakImmediately: !shouldUseFeedbackListeningNotes,
+      });
 
       if (
         shouldUseFeedbackListeningNotes &&
         followUpQuestion &&
         followUpTutorQuestion
       ) {
+        logSubmitCheckpoint("feedback_listening_notes_start", {
+          feedbackMessageId,
+        });
         const { audioText } = beginListeningNotesStage({
           messageId: feedbackMessageId,
           questionText: followUpQuestion.prompt,
@@ -3666,14 +3916,29 @@ export default function StudySessionScreen() {
         });
         speakMessage(audioText, feedbackMessageId).catch((err) => {
           console.warn("[study] Failed to play listening notes audio:", err);
+          logSubmitCheckpoint("feedback_listening_notes_audio_failed", {
+            errorName: err instanceof Error ? err.name : "unknown",
+          });
           finishGuidedNotesStageRef.current();
         });
         if (!ttsEnabled) {
           setTimeout(() => finishGuidedNotesStageRef.current(), 0);
+          logSubmitCheckpoint("feedback_listening_notes_auto_finish_scheduled");
         }
+      } else {
+        logSubmitCheckpoint("feedback_listening_notes_skipped", {
+          shouldUseFeedbackListeningNotes,
+          hasFollowUpQuestion: Boolean(followUpQuestion),
+          hasFollowUpTutorQuestion: Boolean(followUpTutorQuestion),
+        });
       }
 
       if (isFinalQuizAnswer && finalQuizAnswer) {
+        logSubmitCheckpoint("final_quiz_state_update_start", {
+          finalQuizComplete,
+          finalQuizPassed,
+          nextFinalQuizAnswerCount: nextFinalQuizAnswers.length,
+        });
         setFinalQuizState({
           status: finalQuizComplete
             ? finalQuizPassed
@@ -3687,13 +3952,27 @@ export default function StudySessionScreen() {
           answers: nextFinalQuizAnswers,
           averageScore: finalQuizAverage,
         });
+        logSubmitCheckpoint("final_quiz_state_update_done", {
+          status: finalQuizComplete
+            ? finalQuizPassed
+              ? "passed"
+              : "failed"
+            : "active",
+        });
 
         if (finalQuizComplete && finalQuizAverage !== undefined) {
           if (finalQuizPassed) {
+            logSubmitCheckpoint("final_quiz_mark_passed_start", {
+              finalQuizAverage,
+            });
             await markFinalQuizPassed(finalQuizAverage);
+            logSubmitCheckpoint("final_quiz_mark_passed_done", {
+              finalQuizAverage,
+            });
           } else {
             finalQuizStartedRef.current = false;
             finalQuizPassedRef.current = false;
+            logSubmitCheckpoint("final_quiz_retry_flags_reset");
           }
           if (!endSummaryPushedRef.current) {
             endSummaryPushedRef.current = true;
@@ -3709,30 +3988,69 @@ export default function StudySessionScreen() {
                 mistakes: mistakeNotebook,
               }),
             });
+            logSubmitCheckpoint("session_summary_pushed");
           }
         } else if (nextFinalQuizQuestion) {
           pushFinalQuizQuestion(nextFinalQuizQuestion, nextFinalQuizIndex);
+          logSubmitCheckpoint("next_final_quiz_question_pushed", {
+            nextFinalQuizIndex,
+          });
         }
+      } else {
+        logSubmitCheckpoint("final_quiz_state_update_skipped", {
+          isFinalQuizAnswer,
+          hasFinalQuizAnswer: Boolean(finalQuizAnswer),
+        });
       }
 
       if (followUpQuestion) {
         setQuestions((prev) => [...prev, followUpQuestion]);
         setCurrentQuestion(followUpQuestion);
+        logSubmitCheckpoint("follow_up_question_set", {
+          followUpQuestionId: followUpQuestion.id,
+          checkType: followUpQuestion.checkType ?? null,
+          assessmentKind: followUpQuestion.assessmentKind ?? null,
+        });
+      } else {
+        logSubmitCheckpoint("follow_up_question_skipped");
       }
       if (shouldStartFinalQuiz) {
+        logSubmitCheckpoint("start_final_quiz_start");
         await startFinalQuiz();
+        logSubmitCheckpoint("start_final_quiz_done");
       } else if (!followUpQuestion && !nextFinalQuizQuestion) {
+        const nextStudyPhase =
+          finalQuizState.status === "active" ? "final_quiz" : "grading";
+        logSubmitCheckpoint("study_phase_after_feedback_set", {
+          nextStudyPhase,
+        });
         setStudyPhase(
-          finalQuizState.status === "active" ? "final_quiz" : "grading",
+          nextStudyPhase,
         );
+      } else {
+        logSubmitCheckpoint("study_phase_after_feedback_unchanged", {
+          shouldStartFinalQuiz,
+          hasFollowUpQuestion: Boolean(followUpQuestion),
+          hasNextFinalQuizQuestion: Boolean(nextFinalQuizQuestion),
+        });
       }
       setAnswerDraft("");
+      logSubmitCheckpoint("answer_draft_cleared");
     } catch (error) {
       console.warn(error);
+      logSubmitCheckpoint("failed", {
+        errorName: error instanceof Error ? error.name : "unknown",
+        errorMessage: error instanceof Error ? error.message.slice(0, 160) : "unknown",
+      });
       setStudyPhase("answer");
     } finally {
+      logSubmitCheckpoint("finally_before_grading_false");
       setGrading(false);
       submitAnswerGateRef.current.leave();
+      logSubmitCheckpoint("finally_after_gate_leave");
+      setTimeout(() => {
+        logSubmitCheckpoint("post_grading_false_tick");
+      }, 0);
     }
   };
 
