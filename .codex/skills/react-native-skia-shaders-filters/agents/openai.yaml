@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skia Shaders and Filters"
+  short_description: "Apply Skia shaders, gradients, masks, filters"
+  default_prompt: "Use $react-native-skia-shaders-filters to implement or debug Skia shaders, gradients, image filters, masks, and color effects."

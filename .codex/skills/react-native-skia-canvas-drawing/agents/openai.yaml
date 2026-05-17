@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skia Canvas Drawing"
+  short_description: "Build Skia canvases, shapes, and paths"
+  default_prompt: "Use $react-native-skia-canvas-drawing to build or review Canvas, path, shape, paint, group, and picture code."

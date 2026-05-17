@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skia Images and Media"
+  short_description: "Use Skia images, SVG, video, and Skottie"
+  default_prompt: "Use $react-native-skia-images-media to load, render, animate, or troubleshoot Skia image and media content."

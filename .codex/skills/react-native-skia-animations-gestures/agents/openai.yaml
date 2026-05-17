@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skia Animations and Gestures"
+  short_description: "Animate Skia with Reanimated and gestures"
+  default_prompt: "Use $react-native-skia-animations-gestures to animate Skia drawings with Reanimated, gestures, hooks, and UI-thread values."

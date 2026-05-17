@@ -1,0 +1,4 @@
+interface:
+  display_name: "React Native Skia Setup"
+  short_description: "Install and configure React Native Skia"
+  default_prompt: "Use $react-native-skia-setup to install, configure, or debug React Native Skia in this Expo app."

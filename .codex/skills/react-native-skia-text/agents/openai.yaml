@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skia Text"
+  short_description: "Render Skia text, fonts, glyphs, paragraphs"
+  default_prompt: "Use $react-native-skia-text to render or troubleshoot React Native Skia text, fonts, glyphs, and paragraphs."
