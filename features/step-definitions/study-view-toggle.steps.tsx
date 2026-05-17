@@ -36,6 +36,9 @@ const StudyViewToggleHarness = () => {
     setStudyPhase("grading");
     setGrading(true);
   };
+  const finishGrading = () => {
+    setGrading(false);
+  };
 
   return (
     <View>
@@ -49,6 +52,20 @@ const StudyViewToggleHarness = () => {
             onPress={() => switchSurface("canvas")}
           >
             <Text>Open tutor chat</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Submit answer from canvas"
+            onPress={submitAnswer}
+          >
+            <Text>Submit answer from canvas</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Finish grading"
+            onPress={finishGrading}
+          >
+            <Text>Finish grading</Text>
           </Pressable>
         </View>
       ) : (
@@ -102,9 +119,24 @@ When("the student submits an answer from the chat", function (this: AppWorld) {
   fireEvent.press(this.screen!.getByText("Submit answer"));
 });
 
+When("the student submits an answer from the canvas", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Submit answer from canvas"));
+});
+
+When("the tutor finishes grading the answer", function (this: AppWorld) {
+  fireEvent.press(this.screen!.getByText("Finish grading"));
+});
+
 Then("the tutor chat view is visible", function (this: AppWorld) {
   assert.ok(this.screen!.getByTestId("tutor-chat-view"));
 });
+
+Then(
+  "the canvas grading state is no longer visible",
+  function (this: AppWorld) {
+    assert.equal(this.screen!.queryByTestId("canvas-grading-state"), null);
+  },
+);
 
 Then("the answer canvas view is visible", function (this: AppWorld) {
   assert.ok(this.screen!.getByTestId("answer-canvas-view"));

@@ -15,3 +15,10 @@ Feature: Study canvas and chat view toggle
     When the student submits an answer from the chat
     Then the answer canvas view is visible
     And the canvas grading state is visible
+
+  Scenario: Canvas stays available after grading completes so feedback remains visible
+    Given the study session view toggle harness is on the answer canvas
+    When the student submits an answer from the canvas
+    And the tutor finishes grading the answer
+    Then the answer canvas view is visible
+    And the canvas grading state is no longer visible
